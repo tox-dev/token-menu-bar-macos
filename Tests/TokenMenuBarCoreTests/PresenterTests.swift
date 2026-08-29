@@ -300,3 +300,40 @@ private func sample(_ provider: ProviderID, _ percent: Double, at date: Date) ->
   #expect(presenter.state.data?.isEmpty == true)
   #expect(HistoryPresenter.sections([]).isEmpty)
 }
+
+@Test func cardsHideProvidersThatNeverSignedIn() {
+  let missing = ProviderState(availability: .authenticationRequired, credentialState: .missing("none"))
+  let expired = ProviderState(availability: .authenticationRequired, credentialState: .expired(fixedNow))
+  let cached = ProviderState(
+    snapshot: DemoData.snapshot(.copilot, now: fixedNow), availability: .stale, credentialState: .missing("none"))
+  let cards = UsagePresenter.cards(
+    state: [.gemini: missing, .cursor: expired, .copilot: cached], enabled: [.gemini, .cursor, .copilot],
+    samples: [:], now: fixedNow)
+  #expect(cards.map(\.provider) == [.copilot, .cursor])
+  #expect(!UsagePresenter.isVisible(missing, enabled: true))
+  #expect(!UsagePresenter.isVisible(expired, enabled: false))
+  #expect(UsagePresenter.isVisible(ProviderState(), enabled: true))
+}
+
+@Test func cardStatusTextTracksRefreshAndAge() {
+  let snapshot = DemoData.snapshot(.codex, now: fixedNow.addingTimeInterval(-120))
+  func card(_ state: ProviderState) -> ProviderCard {
+    UsagePresenter.card(provider: .codex, state: state, samples: [:], now: fixedNow)
+  }
+  let current = card(ProviderState(snapshot: snapshot, availability: .current))
+  #expect(current.statusText == "fetched \(current.fetchedAge)")
+  #expect(current.statusHelp.contains("last successful fetch"))
+  let refreshing = card(ProviderState(snapshot: snapshot, availability: .stale, isRefreshing: true))
+  #expect(refreshing.statusText == "updating · \(refreshing.fetchedAge)")
+  let stale = card(ProviderState(snapshot: snapshot, availability: .rateLimited))
+  #expect(stale.statusText == "\(QuotaAvailability.rateLimited.title) · \(stale.fetchedAge)")
+  let cached = card(
+    ProviderState(
+      snapshot: ProviderSnapshot(
+        provider: .codex, windows: snapshot.windows, source: .cache, fetchedAt: snapshot.fetchedAt),
+      availability: .stale, isRefreshing: true))
+  #expect(cached.statusHelp.contains("last ran"))
+  let firstRun = card(ProviderState(availability: .loading, isRefreshing: true))
+  #expect(firstRun.statusText == "Fetching…")
+  #expect(card(ProviderState(availability: .unavailable)).statusText == QuotaAvailability.unavailable.title)
+}

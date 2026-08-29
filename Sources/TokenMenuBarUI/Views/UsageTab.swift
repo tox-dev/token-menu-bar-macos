@@ -22,7 +22,7 @@ public struct UsageTab: View {
           ProviderCardView(card: card, environment: environment)
         }
       }
-      .frame(minWidth: 708, alignment: .leading)
+      .frame(minWidth: PopoverGeometry.contentWidth(for: .usage), alignment: .leading)
     }
   }
 
@@ -73,9 +73,10 @@ public struct ProviderCardView: View {
         Text(card.provider.displayName).font(.title2.weight(.semibold))
         Spacer()
         if card.isRefreshing { ProgressView().controlSize(.small) }
-        Text(card.availability == .current ? "fetched \(card.fetchedAge)" : card.availability.title)
+        Text(card.statusText)
           .font(.callout)
           .foregroundStyle(card.availability == .current ? Color.secondary : Color.orange)
+          .help(card.statusHelp)
         Button(action: openUsagePage) { Image(systemName: "safari") }
           .buttonStyle(.borderless)
           .help("Open \(card.provider.displayName) usage page")
@@ -88,7 +89,7 @@ public struct ProviderCardView: View {
           }
         }
       }
-      if card.isStale, let error = card.lastError {
+      if card.isStale, !card.isRefreshing, let error = card.lastError {
         Banner("Showing older values: \(error)")
       }
       ForEach(card.warnings, id: \.self) { warning in

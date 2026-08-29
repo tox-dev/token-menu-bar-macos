@@ -170,7 +170,7 @@ private func input(
       .iconTone == .attention)
   let offline = StatusItemBuilder.build(input(availability: [.claude: .networkUnavailable]))
   #expect(offline.iconTone == .offline)
-  #expect(offline.showsIcon)
+  #expect(!offline.showsIcon)
   #expect(StatusItemModel.empty.showsIcon)
   #expect(StatusItemBuilder.orderedProviders([]).isEmpty)
 }

@@ -313,3 +313,38 @@ extension UsageHistoryStore {
   #expect(state.state(for: .codex).availability == .unavailable)
   #expect(coordinator.nextAttempt(for: .codex) == box.date.addingTimeInterval(RefreshCoordinator.networkBackoff))
 }
+
+@Test @MainActor func coordinatorRestoresAndStoresCachedSnapshots() async throws {
+  let root = temporaryDirectory()
+  let cache = SnapshotCache(url: root.appendingPathComponent("snapshots.json"))
+  #expect(cache.load().isEmpty)
+  try cache.store([.codex: DemoData.snapshot(.codex, now: fixedNow)])
+  let restored = cache.load()
+  #expect(restored[.codex]?.source == .cache)
+  #expect(restored[.codex]?.fetchedAt == fixedNow)
+  let provider = DemoProvider(id: .codex)
+  let state = AppState()
+  let settings = makeSettings()
+  let history = try UsageHistoryStore(url: nil)
+  let coordinator = RefreshCoordinator(
+    registry: ProviderRegistry([provider]), settings: settings, state: state, history: history, log: makeLog(),
+    clock: testClock, cache: cache
+  ) { _ in }
+  #expect(state.state(for: .codex).snapshot?.source == .cache)
+  #expect(state.state(for: .codex).availability == .stale)
+  #expect(!state.statusModel.cells.isEmpty)
+  await coordinator.refresh(RefreshRequest(force: true))
+  #expect(state.state(for: .codex).snapshot?.source == .network)
+  #expect(cache.load()[.codex]?.windows.isEmpty == false)
+  let unwritable = SnapshotCache(url: URL(fileURLWithPath: "/dev/null/snapshots.json"))
+  #expect(unwritable.load().isEmpty)
+  let log = makeLog()
+  let failing = RefreshCoordinator(
+    registry: ProviderRegistry([provider]), settings: settings, state: AppState(), history: history, log: log,
+    clock: testClock, cache: unwritable
+  ) { _ in }
+  failing.storeCache()
+  #expect(log.text.contains("snapshot cache write failed"))
+  #expect(SnapshotCache(url: nil).load().isEmpty)
+  try SnapshotCache(url: nil).store([:])
+}

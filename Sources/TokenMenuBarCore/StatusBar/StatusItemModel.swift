@@ -185,7 +185,7 @@ public enum StatusItemBuilder {
       }
     }
     return StatusItemModel(
-      cells: cells, iconTone: tone, showsIcon: cells.isEmpty || tone != .normal,
+      cells: cells, iconTone: tone, showsIcon: cells.isEmpty,
       countdownActive: countdown && !cells.isEmpty)
   }
 

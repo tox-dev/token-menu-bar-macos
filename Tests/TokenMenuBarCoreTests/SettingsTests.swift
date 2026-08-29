@@ -130,3 +130,13 @@ private func freshDefaults() -> UserDefaults {
   #expect(settings.historyAnalyticsMetric == .surfaceUsagePercent)
   #expect(PopoverTab.allCases.count == 3)
 }
+
+@Test @MainActor func settingsFlushPersistsImmediately() {
+  let name = "flush-\(UUID().uuidString)"
+  let defaults = UserDefaults(suiteName: name)!
+  let settings = Settings(defaults: defaults)
+  settings.demoMode = true
+  settings.flush()
+  #expect(Settings(defaults: UserDefaults(suiteName: name)!).demoMode)
+  defaults.removePersistentDomain(forName: name)
+}

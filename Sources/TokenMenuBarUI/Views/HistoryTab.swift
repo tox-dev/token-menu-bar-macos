@@ -29,7 +29,7 @@ public struct HistoryTab: View {
           }
         }
       }
-      .frame(minWidth: 1274, alignment: .leading)
+      .frame(minWidth: PopoverGeometry.contentWidth(for: .history), alignment: .leading)
     }
     .task { presenter.reload() }
   }
@@ -337,6 +337,12 @@ public struct AnalyticsSectionsView: View {
           AxisMarks(values: .stride(by: .day, count: 7)) { _ in
             AxisGridLine()
             AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+          }
+        }
+        .chartYAxis {
+          AxisMarks { value in
+            AxisGridLine()
+            AxisValueLabel { Text(Format.compactNumber(value.as(Double.self) ?? 0)) }
           }
         }
         .frame(height: 170)

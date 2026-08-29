@@ -137,7 +137,7 @@ public struct ScrollerStyler: NSViewRepresentable {
   static func apply(from view: NSView) {
     guard let scrollView = view.enclosingScrollView else { return }
     scrollView.scrollerStyle = .overlay
-    scrollView.hasHorizontalScroller = true
+    scrollView.hasHorizontalScroller = false
     scrollView.flashScrollers()
   }
 }
@@ -150,11 +150,8 @@ public struct ScrollingTab<Content: View>: View {
   }
 
   public var body: some View {
-    GeometryReader { proxy in
-      ScrollView([.vertical, .horizontal]) {
-        content.padding(14).background(ScrollerStyler()).measureSize { _ in }
-          .frame(minWidth: proxy.size.width, minHeight: proxy.size.height, alignment: .top)
-      }
+    ScrollView(.vertical) {
+      content.padding(PopoverGeometry.contentPadding).background(ScrollerStyler()).measureSize { _ in }
     }
     .frame(minHeight: 200)
   }

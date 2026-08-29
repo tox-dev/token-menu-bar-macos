@@ -41,6 +41,7 @@ public final class RefreshCoordinator {
   private var lastAttempt: [ProviderID: Date] = [:]
   private var rateLimitStrikes: [ProviderID: Int] = [:]
   private var lastWidgetRows: [WidgetRow]?
+  private let cache: SnapshotCache
   public var widgetSink: ((WidgetSnapshot) -> Void)?
 
   public init(
@@ -50,6 +51,7 @@ public final class RefreshCoordinator {
     history: UsageHistoryStore,
     log: LogBuffer,
     clock: Clock = .system,
+    cache: SnapshotCache = SnapshotCache(url: nil),
     notify: @escaping @MainActor ([NotificationEvent]) -> Void
   ) {
     self.registry = registry
@@ -58,7 +60,15 @@ public final class RefreshCoordinator {
     self.history = history
     self.log = log
     self.clock = clock
+    self.cache = cache
     self.notify = notify
+    for (provider, snapshot) in cache.load() where registry[provider] != nil {
+      state.update(provider) {
+        $0.snapshot = snapshot
+        $0.availability = .stale
+      }
+    }
+    rebuildStatus()
   }
 
   public var isRunning: Bool {
@@ -128,7 +138,16 @@ public final class RefreshCoordinator {
       }
     }
     rebuildStatus(now: now)
+    storeCache()
     if !events.isEmpty { notify(events) }
+  }
+
+  func storeCache() {
+    do {
+      try cache.store(state.snapshots)
+    } catch {
+      log.logError("snapshot cache write failed: \(error)")
+    }
   }
 
   func isDue(_ provider: any UsageProvider, request: RefreshRequest, now: Date) -> Bool {
@@ -221,6 +240,7 @@ public final class RefreshCoordinator {
       currentAvailability: next.availability,
       provider: id,
       settings: settings.notifications,
+      credentialMissing: credentialState.isMissing,
       now: now
     )
   }

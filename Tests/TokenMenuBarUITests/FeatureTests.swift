@@ -145,6 +145,10 @@ private func makeFeatureDependencies(
   #expect(StatusItemController.onScreenFrame(of: window, screens: screens) == window.frame)
   window.setFrameOrigin(NSPoint(x: 100_000, y: 10))
   #expect(StatusItemController.onScreenFrame(of: window, screens: screens) == nil)
+  window.setFrameOrigin(NSPoint(x: (screens.first?.frame.maxX ?? 0) - 10, y: 10))
+  #expect(StatusItemController.onScreenFrame(of: window, screens: screens) == window.frame)
+  window.setFrame(NSRect(x: 10, y: 10, width: 0, height: 20), display: false)
+  #expect(StatusItemController.onScreenFrame(of: window, screens: screens) == nil)
   window.orderOut(nil)
 }
 
@@ -185,25 +189,6 @@ private func makeFeatureDependencies(
     defaults: UserDefaults(suiteName: "demo-\(UUID().uuidString)")!, notificationCenter: nil, updater: nil,
     isSandboxed: false)
   #expect(!viaSetting.isDemo)
-}
-
-@Test @MainActor func initialProviderSelectionFollowsCredentials() {
-  let settings = makeSettings()
-  #expect(!settings.enabledProvidersStored)
-  let present = StaticProvider(id: .claude, result: ProviderFetchResult(outcome: .failed("x")))
-  let missing = MissingProvider(id: .codex)
-  LiveDependencies.applyInitialProviderSelection(settings, registry: ProviderRegistry([present, missing]))
-  #expect(settings.enabledProviders == [.claude])
-  #expect(settings.enabledProvidersStored)
-  let stored = makeSettings()
-  stored.enabledProviders = [.gemini]
-  let reloaded = TokenMenuBarCore.Settings(defaults: UserDefaults(suiteName: "sel-\(UUID().uuidString)")!)
-  #expect(!reloaded.enabledProvidersStored)
-  LiveDependencies.applyInitialProviderSelection(stored, registry: ProviderRegistry([missing]))
-  #expect(stored.enabledProviders == [.gemini])
-  let empty = makeSettings()
-  LiveDependencies.applyInitialProviderSelection(empty, registry: ProviderRegistry([missing]))
-  #expect(empty.enabledProviders == [.codex])
 }
 
 @Test @MainActor func widgetStoreAndRelaunchHelpers() async {
@@ -257,15 +242,4 @@ private func makeFeatureDependencies(
   #expect(value == CGSize(width: 1, height: 1))
   ChromeSizeKey.reduce(value: &value) { CGSize(width: 2, height: 2) }
   #expect(value == CGSize(width: 2, height: 2))
-}
-
-struct MissingProvider: UsageProvider {
-  let id: ProviderID
-  let pollingPolicy = PollingPolicy(minimumInterval: 0, activeInterval: 0, defaultInterval: 0)
-
-  var credentialDescription: String { "missing" }
-  func credentialState(now: Date) -> CredentialState { .missing("none") }
-  func fetch(now: Date, options: FetchOptions) async -> ProviderFetchResult {
-    ProviderFetchResult(outcome: .notAuthenticated("none"))
-  }
 }

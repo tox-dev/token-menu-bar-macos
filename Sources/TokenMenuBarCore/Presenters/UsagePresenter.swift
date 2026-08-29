@@ -64,15 +64,32 @@ public struct ProviderCard: Sendable, Hashable, Identifiable {
   public var isStale: Bool {
     availability != .current && !rows.isEmpty
   }
+
+  public var statusText: String {
+    if isRefreshing && rows.isEmpty { return "Fetching…" }
+    if rows.isEmpty { return availability.title }
+    if isRefreshing { return "updating · \(fetchedAge)" }
+    return availability == .current ? "fetched \(fetchedAge)" : "\(availability.title) · \(fetchedAge)"
+  }
+
+  public var statusHelp: String {
+    source == .cache
+      ? "Values stored when the app last ran; refreshing now." : "Values as of the last successful fetch."
+  }
 }
 
 public enum UsagePresenter {
   public static func cards(
     state: [ProviderID: ProviderState], enabled: Set<ProviderID>, samples: [WindowKey: [UsageSample]], now: Date
   ) -> [ProviderCard] {
-    state.keys.sorted().filter { enabled.contains($0) || state[$0]?.snapshot != nil }.map { provider in
+    state.keys.sorted().filter { isVisible(state[$0]!, enabled: enabled.contains($0)) }.map { provider in
       card(provider: provider, state: state[provider]!, samples: samples, now: now)
     }
+  }
+
+  public static func isVisible(_ state: ProviderState, enabled: Bool) -> Bool {
+    if state.snapshot != nil { return true }
+    return enabled && state.credentialState?.isMissing != true
   }
 
   public static func card(

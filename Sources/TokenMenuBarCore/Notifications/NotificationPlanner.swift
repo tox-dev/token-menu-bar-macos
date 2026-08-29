@@ -50,11 +50,12 @@ public enum NotificationPlanner {
     currentAvailability: QuotaAvailability,
     provider: ProviderID,
     settings: NotificationSettings,
+    credentialMissing: Bool = false,
     now: Date
   ) -> [NotificationEvent] {
     guard settings.enabled else { return [] }
     var events: [NotificationEvent] = []
-    if settings.notifyOnAuthProblems, previousAvailability != currentAvailability {
+    if settings.notifyOnAuthProblems, !credentialMissing, previousAvailability != currentAvailability {
       if currentAvailability == .authenticationRequired {
         events.append(
           NotificationEvent(

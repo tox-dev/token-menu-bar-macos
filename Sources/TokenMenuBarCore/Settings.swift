@@ -42,13 +42,7 @@ public final class Settings {
     }
   }
 
-  public var enabledProviders: Set<ProviderID> {
-    didSet {
-      storeCodable(enabledProviders, key: .enabledProviders)
-      if !loading { enabledProvidersStored = true }
-    }
-  }
-  public private(set) var enabledProvidersStored: Bool
+  public var enabledProviders: Set<ProviderID> { didSet { storeCodable(enabledProviders, key: .enabledProviders) } }
   public var selectedWindows: [WindowKey] { didSet { storeCodable(selectedWindows, key: .selectedWindows) } }
   public var hasCustomSelection: Bool { didSet { store(hasCustomSelection, key: .hasCustomSelection) } }
   public var statusFormat: StatusFormat { didSet { store(statusFormat.rawValue, key: .statusFormat) } }
@@ -89,9 +83,7 @@ public final class Settings {
     refreshSeconds = Self.loadCodable([ProviderID: Int].self, defaults, .refreshSeconds) ?? [:]
     analyticsRefreshMinutes =
       defaults.object(forKey: Key.analyticsMinutes.rawValue) as? Int ?? Self.defaultAnalyticsMinutes
-    let storedProviders = Self.loadCodable(Set<ProviderID>.self, defaults, .enabledProviders)
-    enabledProvidersStored = storedProviders != nil
-    enabledProviders = storedProviders ?? Set(ProviderID.allCases)
+    enabledProviders = Self.loadCodable(Set<ProviderID>.self, defaults, .enabledProviders) ?? Set(ProviderID.allCases)
     selectedWindows = Self.loadCodable([WindowKey].self, defaults, .selectedWindows) ?? []
     hasCustomSelection = defaults.bool(forKey: Key.hasCustomSelection.rawValue)
     statusFormat =
@@ -121,6 +113,10 @@ public final class Settings {
     loading = false
   }
 
+  public func flush() {
+    defaults.synchronize()
+  }
+
   public func resetToDefaults() {
     for key in Key.allCases { defaults.removeObject(forKey: key.rawValue) }
     let fresh = Settings(defaults: defaults)
@@ -132,7 +128,6 @@ public final class Settings {
     refreshSeconds = fresh.refreshSeconds
     analyticsRefreshMinutes = fresh.analyticsRefreshMinutes
     enabledProviders = fresh.enabledProviders
-    enabledProvidersStored = false
     selectedWindows = fresh.selectedWindows
     hasCustomSelection = fresh.hasCustomSelection
     statusFormat = fresh.statusFormat

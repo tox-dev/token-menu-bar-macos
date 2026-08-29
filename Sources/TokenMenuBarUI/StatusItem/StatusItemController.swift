@@ -158,8 +158,13 @@ public final class StatusItemController {
     }
   }
 
+  /// macOS parks a status item that no longer fits beyond the screen edge, so an item whose frame no longer
+  /// overlaps any screen counts as hidden. Overlap rather than containment: a legitimate item at the very edge
+  /// can still report a frame that pokes a point or two past the screen.
   public static func onScreenFrame(of window: NSWindow?, screens: [NSScreen] = NSScreen.screens) -> CGRect? {
-    guard let window, window.isVisible, screens.contains(where: { $0.frame.contains(window.frame) }) else { return nil }
+    guard let window, window.isVisible, window.frame.width > 0,
+      screens.contains(where: { $0.frame.intersects(window.frame) })
+    else { return nil }
     return window.frame
   }
 

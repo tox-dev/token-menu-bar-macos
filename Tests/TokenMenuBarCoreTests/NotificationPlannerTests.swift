@@ -93,3 +93,15 @@ private func plan(
   #expect(settings.thresholds == [50, 90])
   #expect(NotificationSettings().thresholds == [75, 90, 100])
 }
+
+@Test func plannerStaysQuietForProvidersThatNeverSignedIn() {
+  let settings = NotificationSettings(enabled: true, thresholds: [], notifyOnReset: false, notifyOnAuthProblems: true)
+  let events = NotificationPlanner.events(
+    previous: nil, current: nil, previousAvailability: .loading, currentAvailability: .authenticationRequired,
+    provider: .gemini, settings: settings, credentialMissing: true, now: fixedNow)
+  #expect(events.isEmpty)
+  let signedOut = NotificationPlanner.events(
+    previous: nil, current: nil, previousAvailability: .loading, currentAvailability: .authenticationRequired,
+    provider: .gemini, settings: settings, now: fixedNow)
+  #expect(signedOut.map(\.kind) == [.authentication])
+}

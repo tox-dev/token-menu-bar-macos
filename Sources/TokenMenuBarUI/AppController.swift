@@ -32,6 +32,7 @@ public struct AppDependencies {
   public var terminate: () -> Void
   public var relaunch: () -> Void
   public var widgetStore: WidgetSnapshotStore?
+  public var snapshotCache: SnapshotCache
   public var reloadWidgets: () -> Void
   public var rebuildProviders: (TokenMenuBarCore.Settings) -> ProviderRegistry
   public var screenVisibleFrame: () -> CGRect?
@@ -59,6 +60,7 @@ public struct AppDependencies {
     terminate: @escaping () -> Void,
     relaunch: @escaping () -> Void = {},
     widgetStore: WidgetSnapshotStore? = nil,
+    snapshotCache: SnapshotCache = SnapshotCache(url: nil),
     reloadWidgets: @escaping () -> Void = {},
     rebuildProviders: @escaping (TokenMenuBarCore.Settings) -> ProviderRegistry,
     screenVisibleFrame: @escaping () -> CGRect?,
@@ -85,6 +87,7 @@ public struct AppDependencies {
     self.terminate = terminate
     self.relaunch = relaunch
     self.widgetStore = widgetStore
+    self.snapshotCache = snapshotCache
     self.reloadWidgets = reloadWidgets
     self.rebuildProviders = rebuildProviders
     self.screenVisibleFrame = screenVisibleFrame
@@ -114,7 +117,8 @@ public final class AppController {
       state: state,
       history: dependencies.history,
       log: dependencies.log,
-      clock: dependencies.clock
+      clock: dependencies.clock,
+      cache: dependencies.snapshotCache
     ) { events in Task { await notifier.deliver(events) } }
     environment = UIEnvironment(
       state: state,
@@ -374,6 +378,7 @@ public final class AppController {
 
   public func setDemoMode(_ enabled: Bool) {
     dependencies.settings.demoMode = enabled
+    dependencies.settings.flush()
     dependencies.log.log("demo mode \(enabled ? "on" : "off"); relaunching")
     dependencies.relaunch()
   }

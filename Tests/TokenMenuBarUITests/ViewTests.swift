@@ -55,10 +55,17 @@ import TokenMenuBarCore
   let empty = try makeEnvironment(populate: false)
   empty.state.update(.claude) {
     $0.availability = .authenticationRequired
-    $0.credentialState = .missing("none")
+    $0.credentialState = .expired(fixedNow)
   }
   empty.state.update(.codex) { $0.availability = .networkUnavailable }
   _ = host(UsageTab(environment: empty))
+  let stale = try makeEnvironment(populate: false)
+  stale.state.update(.claude) {
+    $0.snapshot = sampleSnapshot(.claude)
+    $0.availability = .stale
+    $0.lastError = "network down"
+  }
+  _ = host(UsageTab(environment: stale))
   let card = ProviderCardView(card: empty.cards[0], environment: empty)
   #expect(card.icon(for: .authenticationRequired) == "person.crop.circle.badge.exclamationmark")
   #expect(card.icon(for: .networkUnavailable) == "wifi.slash")

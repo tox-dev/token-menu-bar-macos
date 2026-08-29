@@ -55,7 +55,6 @@ public enum LiveDependencies {
     }
     let codexHome = paths.home.appendingPathComponent(".codex")
     let registry = build(settings)
-    applyInitialProviderSelection(settings, registry: registry)
     return AppDependencies(
       appInfo: appInfo,
       settings: settings,
@@ -76,6 +75,8 @@ public enum LiveDependencies {
       terminate: { NSApplication.shared.terminate(nil) },
       relaunch: { relaunch(bundle: .main, workspace: NSWorkspace.shared) { NSApplication.shared.terminate(nil) } },
       widgetStore: isDemo ? nil : widgetStore(supportDirectory: paths.supportDirectory),
+      snapshotCache: SnapshotCache(
+        url: paths.supportDirectory.appendingPathComponent(isDemo ? "snapshots-demo.json" : "snapshots.json")),
       reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() },
       rebuildProviders: build,
       screenVisibleFrame: { NSScreen.main?.visibleFrame },
@@ -134,15 +135,6 @@ public enum LiveDependencies {
       log: log
     )
     return ProviderRegistry([claude, codex, gemini, cursor, copilot])
-  }
-
-  @MainActor
-  public static func applyInitialProviderSelection(
-    _ settings: TokenMenuBarCore.Settings, registry: ProviderRegistry, now: Date = Date()
-  ) {
-    guard !settings.enabledProvidersStored else { return }
-    let detected = registry.providers.filter { !$0.credentialState(now: now).isMissing }.map(\.id)
-    settings.enabledProviders = detected.isEmpty ? Set(registry.ids) : Set(detected)
   }
 
   public static func widgetStore(

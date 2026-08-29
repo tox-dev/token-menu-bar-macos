@@ -36,6 +36,19 @@ public struct PopoverDismissalGate: Sendable, Equatable {
 public enum PopoverGeometry {
   public static let minimumWidth: CGFloat = 728
   public static let widestTabWidth: CGFloat = 1274
+  public static let contentPadding: CGFloat = 14
+
+  public static func contentWidth(for tab: PopoverTab) -> CGFloat {
+    switch tab {
+    case .usage: 708
+    case .settings: minimumWidth
+    case .history: widestTabWidth
+    }
+  }
+
+  public static func tabWidth(for tab: PopoverTab) -> CGFloat {
+    contentWidth(for: tab) + 2 * contentPadding
+  }
   public static let viewportWidthShare: CGFloat = 0.42
   public static let minimumHeight: CGFloat = 200
   public static let margin: CGFloat = 12

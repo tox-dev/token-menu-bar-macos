@@ -22,7 +22,7 @@ public struct SettingsTab: View {
         section("Notifications") { notifications }
         section("Log") { LogSection(environment: environment) }
       }
-      .frame(minWidth: 728, alignment: .leading)
+      .frame(minWidth: PopoverGeometry.contentWidth(for: .settings), alignment: .leading)
       .controlSize(.small)
     }
   }
@@ -326,7 +326,7 @@ public struct LogSection: View {
           "Detailed logging",
           isOn: Binding(get: { environment.settings.detailedLogging }, set: { setDetailedLogging($0) }))
       }
-      LogTextView(entries: environment.log.tail(200).reversed(), height: 120)
+      LogTextView(entries: environment.log.tail(200).reversed(), height: 240)
     }
   }
 
