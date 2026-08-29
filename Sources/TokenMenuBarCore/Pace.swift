@@ -18,7 +18,7 @@ public enum PaceStatus: String, Sendable, Equatable {
   }
 }
 
-public struct PaceEstimate: Sendable, Equatable {
+public struct PaceEstimate: Sendable, Hashable {
   public static let aheadRatio = 1.25
   public static let behindRatio = 0.75
   public static let minimumElapsedPercent = 5.0

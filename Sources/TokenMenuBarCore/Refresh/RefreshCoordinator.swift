@@ -23,7 +23,7 @@ public final class RefreshCoordinator {
   public static let rateLimitBackoff: TimeInterval = 300
   public static let networkBackoff: TimeInterval = 60
 
-  private let registry: ProviderRegistry
+  public var registry: ProviderRegistry
   private let settings: Settings
   private let state: AppState
   private let history: UsageHistoryStore
@@ -111,23 +111,18 @@ public final class RefreshCoordinator {
             ?? true
       }
     )
-    let results = await withTaskGroup(
-      of: (ProviderID, ProviderFetchResult, CredentialState).self,
-      returning: [(ProviderID, ProviderFetchResult, CredentialState)].self
-    ) { group in
+    var events: [NotificationEvent] = []
+    await withTaskGroup(of: (ProviderID, ProviderFetchResult, CredentialState).self) { group in
       for provider in due {
         let options = FetchOptions(includeAnalytics: analyticsDue.contains(provider.id))
         group.addTask {
           (provider.id, await provider.fetch(now: now, options: options), provider.credentialState(now: now))
         }
       }
-      var collected: [(ProviderID, ProviderFetchResult, CredentialState)] = []
-      for await item in group { collected.append(item) }
-      return collected
-    }
-    var events: [NotificationEvent] = []
-    for (id, result, credentialState) in results.sorted(by: { $0.0 < $1.0 }) {
-      events += await apply(id, result: result, credentialState: credentialState, now: now)
+      for await (id, result, credentialState) in group {
+        events += await apply(id, result: result, credentialState: credentialState, now: now)
+        rebuildStatus(now: now)
+      }
     }
     rebuildStatus(now: now)
     if !events.isEmpty { notify(events) }

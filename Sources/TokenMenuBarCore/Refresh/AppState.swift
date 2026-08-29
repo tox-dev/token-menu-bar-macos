@@ -66,17 +66,17 @@ public final class AppState {
     providers.keys.sorted()
   }
 
-  func update(_ provider: ProviderID, _ mutate: (inout ProviderState) -> Void) {
+  public func update(_ provider: ProviderID, _ mutate: (inout ProviderState) -> Void) {
     var state = providers[provider] ?? ProviderState()
     mutate(&state)
     providers[provider] = state
   }
 
-  func setStatusModel(_ model: StatusItemModel) {
+  public func setStatusModel(_ model: StatusItemModel) {
     if model != statusModel { statusModel = model }
   }
 
-  func setRefreshing(_ refreshing: Bool, at date: Date?) {
+  public func setRefreshing(_ refreshing: Bool, at date: Date?) {
     isRefreshing = refreshing
     if let date { lastRefresh = date }
   }
