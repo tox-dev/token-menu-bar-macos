@@ -17,6 +17,17 @@ from green to red. Four formats are available:
 Windows at 0% stay hidden by default. The icon turns grey when the network is unreachable and gets an orange badge when
 a sign-in is needed. A live countdown redraws once a second only when the template references `{reset}`.
 
+With **Fit to space** on, the app notices when macOS hides the item (typically behind the notch once a busy app menu
+takes the left half of the bar) and steps down through narrower layouts: the configured format, stacked, one cell per
+provider, mini bars, icon only. It remembers which layout fit for each frontmost app, so switching apps does not
+flicker.
+
+## Widgets
+
+Small, medium and large widgets show the windows selected for the menu bar with percent bars and reset countdowns. The
+app writes a snapshot to the shared app group after every refresh and asks WidgetKit to reload, so the widget is at most
+one poll behind the menu bar. Widgets ship in the signed builds; ad-hoc development bundles have no extension.
+
 ## Usage tab
 
 ![Usage tab](images/popover-usage-dark.png#only-dark){ .tab-shot }
@@ -33,6 +44,11 @@ One card per provider:
   today's totals, computed from Claude Code's own transcripts.
 - **Codex credits and reset credits**: balance, approximate messages left, limit resets available, spend controls.
 - **Notices**: promotions, limit-reached and spend-limit messages, stale-data and rate-limit banners.
+- **Gemini**: one row per model with the daily request bucket, the Code Assist tier and any Google One AI credits;
+  personal accounts that Google cut off in June 2026 get an explicit explanation instead of a sign-in loop.
+- **Cursor**: plan usage for the billing cycle, on-demand spend against its limit, team pools, and the membership tier.
+- **Copilot**: premium requests, chat and completion quotas for the month, overage counts and token-based billing
+  credits.
 
 ## History tab
 

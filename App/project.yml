@@ -18,6 +18,7 @@ settings:
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
     MACOSX_DEPLOYMENT_TARGET: "26.0"
+    APP_GROUP_ID: group.dev.tox.token-menu-bar
 packages:
   TokenMenuBarPackage:
     path: ..
@@ -41,6 +42,8 @@ targets:
       - package: Sparkle
         product: Sparkle
         embed: true
+      - target: TokenMenuBarWidget
+        embed: true
     info:
       path: Info.plist
       properties:
@@ -57,6 +60,7 @@ targets:
         SUFeedURL: https://github.com/tox-dev/token-menu-bar-macos/releases/latest/download/appcast.xml
         SUPublicEDKey: $(SPARKLE_PUBLIC_ED_KEY)
         SUEnableInstallerLauncherService: true
+        TokenMenuBarAppGroup: $(APP_GROUP_ID)
     settings:
       base:
         PRODUCT_NAME: Token Menu Bar
@@ -87,6 +91,47 @@ targets:
           if [ "$CONFIGURATION" = "AppStore" ]; then
             echo "App Store configuration: Sparkle is compiled out via APPSTORE and must not ship; the release workflow removes the framework after export."
           fi
+  TokenMenuBarWidget:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Widget/Sources
+        name: Widget
+    dependencies:
+      - package: TokenMenuBarPackage
+        product: TokenMenuBarWidgets
+      - package: TokenMenuBarPackage
+        product: TokenMenuBarCore
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+    info:
+      path: Widget/Info.plist
+      properties:
+        CFBundleName: Token Menu Bar Widget
+        CFBundleDisplayName: Token Menu Bar
+        CFBundleIdentifier: dev.tox.token-menu-bar.widget
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        TokenMenuBarAppGroup: $(APP_GROUP_ID)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_NAME: TokenMenuBarWidget
+        PRODUCT_BUNDLE_IDENTIFIER: dev.tox.token-menu-bar.widget
+        CODE_SIGN_ENTITLEMENTS: App/Widget/Widget.entitlements
+        ENABLE_APP_SANDBOX: YES
+        SKIP_INSTALL: YES
+      configs:
+        Debug:
+          CODE_SIGN_IDENTITY: "-"
+          CODE_SIGN_STYLE: Manual
+        Release:
+          CODE_SIGN_IDENTITY: "Developer ID Application"
+          CODE_SIGN_STYLE: Manual
+        AppStore:
+          CODE_SIGN_IDENTITY: "Apple Distribution"
+          CODE_SIGN_STYLE: Manual
 schemes:
   TokenMenuBar-Direct:
     build:

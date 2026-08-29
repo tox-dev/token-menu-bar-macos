@@ -18,9 +18,11 @@ cd App && xcodegen generate     # Xcode project with Direct and AppStore schemes
 
 ## Adding a provider
 
-Implement `UsageProvider` (credential state, polling policy, `fetch`) and register it in `LiveDependencies.providers`.
-Map the vendor's response to `QuotaWindow`s and, optionally, `ProviderAnalytics`; the menu bar, popover, history and
-notifications pick the new provider up without further changes.
+Add a case to `ProviderID` (name, tag, usage page, sign-in hint), a `PollingPolicy` default and a glyph, then implement
+`UsageProvider` (credential state, polling policy, `fetch`) and register it in `LiveDependencies.providers`. Map the
+vendor's response to `QuotaWindow`s and, optionally, `ProviderAnalytics`; the menu bar, popover, history, widgets and
+notifications pick the new provider up without further changes. `DemoData` needs a sample snapshot for the new case so
+demo mode and the screenshots stay complete.
 
 ## Refreshing the docs screenshots
 
@@ -28,9 +30,9 @@ notifications pick the new provider up without further changes.
 Scripts/screenshots.sh
 ```
 
-The script captures the installed app's popover tabs in light and dark mode, the menu bar strip, and builds the tour GIF
-into `docs/images/`. It needs screen-recording permission for the terminal and temporarily switches the system
-appearance.
+The script launches the installed app with `TOKEN_MENU_BAR_DEMO=1`, so the captures show generated data rather than your
+account, then grabs the popover tabs in light and dark mode and the menu bar strip, and builds the tour GIF into
+`docs/images/`. It needs screen-recording permission for the terminal and temporarily switches the system appearance.
 
 ## Releasing
 

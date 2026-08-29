@@ -10,7 +10,7 @@ bin_dir="$(swift build --show-bin-path)"
 profdata="$(ls "$bin_dir"/codecov/*.profdata | head -1)"
 bundle="$(find "$bin_dir" -name '*.xctest' -type d | head -1)"
 binary="$bundle/Contents/MacOS/$(basename "$bundle" .xctest)"
-ignore='(\.build|Tests|Sources/TokenMenuBar/)'
+ignore='(\.build|Tests|Sources/TokenMenuBar/|WidgetKitGlue\.swift)'
 
 xcrun llvm-cov report "$binary" -instr-profile "$profdata" -ignore-filename-regex="$ignore" -use-color=false
 

@@ -1,11 +1,16 @@
 # Install
 
-Token Menu Bar needs macOS 26 and at least one of the two CLIs signed in:
+Token Menu Bar needs macOS 26 and at least one supported client signed in:
 
 - `claude` (Claude Code) stores its OAuth token in the Keychain item `Claude Code-credentials`.
 - `codex login` writes `~/.codex/auth.json`.
+- `gemini` (Gemini CLI, Login with Google) writes `~/.gemini/oauth_creds.json`.
+- The Cursor app keeps its session in `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb`;
+  `cursor-agent login` writes `~/.cursor/auth.json`.
+- Copilot CLI, Neovim and JetBrains write `~/.config/github-copilot/hosts.json` or `apps.json`.
 
-The app never asks for your Anthropic or OpenAI password; it reuses those tokens read-only.
+The app never asks for a password; it reuses those tokens read-only. Providers without credentials start disabled and
+can be switched on under Settings > Providers.
 
 === "Direct download"
 

@@ -22,7 +22,7 @@ public struct SettingsTab: View {
         section("Notifications") { notifications }
         section("Log") { LogSection(environment: environment) }
       }
-      .frame(minWidth: 560, alignment: .leading)
+      .frame(minWidth: 728, alignment: .leading)
       .controlSize(.small)
     }
   }
@@ -127,6 +127,8 @@ public struct SettingsTab: View {
         }
         Stepper("Decimals: \(settings.percentDecimals)", value: menuBarSetting(\.percentDecimals), in: 0...2)
         Toggle("Hide 0%", isOn: menuBarSetting(\.hideZeroCells))
+        Toggle("Fit to space", isOn: menuBarSetting(\.adaptiveWidth))
+          .help("Switch to narrower layouts when the menu bar runs out of room, for example next to the notch.")
       }
       if settings.statusFormat == .custom {
         TextField("Template", text: menuBarSetting(\.customTemplate)).font(.body.monospaced())
@@ -149,8 +151,7 @@ public struct SettingsTab: View {
           Toggle(provider.displayName, isOn: self.provider(provider)).frame(width: 80, alignment: .leading)
           Text(environment.state.state(for: provider).credentialState?.description ?? "Not checked yet")
             .foregroundStyle(.secondary)
-            .lineLimit(1)
-            .truncationMode(.middle)
+            .fixedSize(horizontal: false, vertical: true)
             .help(environment.credentialDescriptions[provider] ?? provider.loginHint)
           Spacer()
           Stepper(
@@ -166,11 +167,11 @@ public struct SettingsTab: View {
       HStack(spacing: 10) {
         Toggle("Refresh expired tokens on my behalf", isOn: setting(\.allowTokenRefresh))
         Spacer()
-        Text("Floors: Claude 2 min, Codex 1 min; the popover polls at the floor while open.")
+        Text("Floors: Claude 2 min, others 1 min; the popover polls at the floor while open.")
           .font(.caption)
           .foregroundStyle(.secondary)
       }
-      Text("Token refresh rotates the CLI's refresh token and writes it back to the Keychain or ~/.codex/auth.json.")
+      Text("Token refresh rotates the CLI's refresh token and writes it back to its credential file or Keychain.")
         .font(.caption)
         .foregroundStyle(.secondary)
     }
@@ -262,7 +263,7 @@ public struct WindowSelectionList: View {
               HStack(spacing: 4) {
                 Image(systemName: ProviderGlyph.symbolName(row.key.provider)).foregroundStyle(
                   ProviderGlyph.color(row.key.provider))
-                Text("\(row.key.provider.displayName) \(row.window.label)").lineLimit(1)
+                Text("\(row.key.provider.displayName) \(row.window.label)")
               }
             }
             .disabled(selection == [row.key])
@@ -315,6 +316,11 @@ public struct LogSection: View {
         Button("Clear") { environment.log.clear() }
         Button("Show Full Log") { environment.actions.showFullLog() }
         Spacer()
+        Toggle(
+          "Demo data",
+          isOn: Binding(get: { environment.settings.demoMode }, set: { environment.actions.setDemoMode($0) })
+        )
+        .help("Replace real providers with generated data and a separate history file; relaunches the app.")
         Toggle(
           "Detailed logging",
           isOn: Binding(get: { environment.settings.detailedLogging }, set: { setDetailedLogging($0) }))

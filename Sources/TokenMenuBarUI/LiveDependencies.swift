@@ -1,6 +1,7 @@
 import AppKit
 import TokenMenuBarCore
 import UniformTypeIdentifiers
+import WidgetKit
 
 public enum LiveDependencies {
   public struct Paths: Sendable {
@@ -8,18 +9,25 @@ public enum LiveDependencies {
     public var supportDirectory: URL
     public var environment: [String: String]
     public var userName: String
+    public var arguments: [String]
 
     public init(
       home: URL = FileManager.default.homeDirectoryForCurrentUser,
       supportDirectory: URL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         .appendingPathComponent("Token Menu Bar"),
       environment: [String: String] = ProcessInfo.processInfo.environment,
-      userName: String = NSUserName()
+      userName: String = NSUserName(),
+      arguments: [String] = CommandLine.arguments
     ) {
       self.home = home
       self.supportDirectory = supportDirectory
       self.environment = environment
       self.userName = userName
+      self.arguments = arguments
+    }
+
+    public var demoRequested: Bool {
+      environment["TOKEN_MENU_BAR_DEMO"] != nil || arguments.contains("--demo")
     }
   }
 
@@ -35,29 +43,40 @@ public enum LiveDependencies {
   ) throws -> AppDependencies {
     let log = LogBuffer(fileURL: paths.supportDirectory.appendingPathComponent("log.json"))
     let settings = TokenMenuBarCore.Settings(defaults: defaults)
-    let history = try UsageHistoryStore(url: paths.supportDirectory.appendingPathComponent("usage.sqlite"))
+    let isDemo = paths.demoRequested || settings.demoMode
+    let history = try UsageHistoryStore(
+      url: paths.supportDirectory.appendingPathComponent(isDemo ? "usage-demo.sqlite" : "usage.sqlite"))
+    if isDemo { seedDemo(history, log: log) }
     let client = APIClient(transport: transport, log: log)
     let build: @MainActor (TokenMenuBarCore.Settings) -> ProviderRegistry = { settings in
-      providers(paths: paths, client: client, log: log, settings: settings, isSandboxed: isSandboxed)
+      isDemo
+        ? ProviderRegistry(ProviderID.allCases.map(DemoProvider.init))
+        : providers(paths: paths, client: client, log: log, settings: settings, isSandboxed: isSandboxed)
     }
     let codexHome = paths.home.appendingPathComponent(".codex")
+    let registry = build(settings)
+    applyInitialProviderSelection(settings, registry: registry)
     return AppDependencies(
       appInfo: appInfo,
       settings: settings,
       state: AppState(),
       history: history,
       log: log,
-      registry: build(settings),
+      registry: registry,
       notifier: Notifier(center: notificationCenter, log: log),
       launchAtLogin: LaunchAtLoginService.backend(),
       updater: updater,
       isSandboxed: isSandboxed,
+      isDemo: isDemo,
       openURL: { NSWorkspace.shared.open($0) },
       copyToPasteboard: { copy($0, to: .general) },
       revealInFinder: { NSWorkspace.shared.activateFileViewerSelecting([$0]) },
       chooseExportURL: { chosen(exportPanel()) { $0.runModal() } },
       chooseCodexHome: { chosen(codexHomePanel(default: codexHome)) { $0.runModal() } },
       terminate: { NSApplication.shared.terminate(nil) },
+      relaunch: { relaunch(bundle: .main, workspace: NSWorkspace.shared) { NSApplication.shared.terminate(nil) } },
+      widgetStore: isDemo ? nil : widgetStore(supportDirectory: paths.supportDirectory),
+      reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() },
       rebuildProviders: build,
       screenVisibleFrame: { NSScreen.main?.visibleFrame },
       openPopoverOnLaunch: paths.environment["TOKEN_MENU_BAR_OPEN_POPOVER"] != nil
@@ -92,7 +111,71 @@ public enum LiveDependencies {
       log: log,
       allowRefresh: allowRefresh
     )
-    return ProviderRegistry([claude, codex])
+    let gemini = GeminiProvider(
+      auth: FileGeminiAuthStore(url: FileGeminiAuthStore.defaultURL(environment: paths.environment, home: paths.home)),
+      client: client,
+      log: log,
+      allowRefresh: allowRefresh,
+      clientID: paths.environment["GEMINI_OAUTH_CLIENT_ID"] ?? GeminiAPI.defaultClientID,
+      clientSecret: paths.environment["GEMINI_OAUTH_CLIENT_SECRET"] ?? GeminiAPI.defaultClientSecret
+    )
+    let cursor = CursorProvider(
+      auth: ChainedCursorAuthStore([
+        CursorStateStore(url: CursorStateStore.defaultURL(home: paths.home)),
+        FileCursorAuthStore(url: FileCursorAuthStore.defaultURL(environment: paths.environment, home: paths.home)),
+      ]),
+      client: client,
+      log: log
+    )
+    let copilot = CopilotProvider(
+      auth: FileCopilotAuthStore(
+        urls: FileCopilotAuthStore.defaultURLs(environment: paths.environment, home: paths.home)),
+      client: client,
+      log: log
+    )
+    return ProviderRegistry([claude, codex, gemini, cursor, copilot])
+  }
+
+  @MainActor
+  public static func applyInitialProviderSelection(
+    _ settings: TokenMenuBarCore.Settings, registry: ProviderRegistry, now: Date = Date()
+  ) {
+    guard !settings.enabledProvidersStored else { return }
+    let detected = registry.providers.filter { !$0.credentialState(now: now).isMissing }.map(\.id)
+    settings.enabledProviders = detected.isEmpty ? Set(registry.ids) : Set(detected)
+  }
+
+  public static func widgetStore(
+    supportDirectory: URL,
+    containerURL: (String) -> URL? = { FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: $0) },
+    appGroup: String = WidgetSnapshot.appGroup(info: Bundle.main.infoDictionary)
+  ) -> WidgetSnapshotStore {
+    WidgetSnapshotStore(
+      url: WidgetSnapshotStore.sharedURL(
+        containerURL: containerURL, fallbackDirectory: supportDirectory, appGroup: appGroup))
+  }
+
+  public static func seedDemo(_ history: UsageHistoryStore, log: LogBuffer, now: Date = Date()) {
+    Task {
+      do {
+        guard try await history.stats().sampleCount == 0 else { return }
+        try await DemoData.seed(history, providers: ProviderID.allCases, now: now)
+        log.log("demo history seeded")
+      } catch {
+        log.logError("demo history seeding failed: \(error)")
+      }
+    }
+  }
+
+  @MainActor
+  public static func relaunch(
+    bundle: Bundle, workspace: NSWorkspace, then terminate: @escaping @MainActor @Sendable () -> Void
+  ) {
+    let configuration = NSWorkspace.OpenConfiguration()
+    configuration.createsNewApplicationInstance = true
+    workspace.openApplication(at: bundle.bundleURL, configuration: configuration) { _, _ in
+      Task { @MainActor in terminate() }
+    }
   }
 
   public static func codexHome(paths: Paths, bookmark: Data?, log: LogBuffer) -> URL {

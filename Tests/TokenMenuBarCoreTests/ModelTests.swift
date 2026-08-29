@@ -47,7 +47,7 @@ import Testing
   #expect(key.storageKey == "codex:additional:spark:session")
   #expect(WindowKey(storageKey: key.storageKey) == key)
   #expect(WindowKey(storageKey: "nope") == nil)
-  #expect(WindowKey(storageKey: "gemini:x") == nil)
+  #expect(WindowKey(storageKey: "unknown:x") == nil)
   #expect(WindowKey(provider: .claude, windowID: "b") < WindowKey(provider: .claude, windowID: "c"))
   #expect(WindowKey(provider: .claude, windowID: "z") < WindowKey(provider: .codex, windowID: "a"))
   let window = QuotaWindow(id: "session", label: "S", group: .session, usedPercent: 1, resetsAt: nil)

@@ -17,6 +17,7 @@ public struct UIActions {
   public var grantCodexAccess: () -> Void
   public var checkForUpdates: () -> Void
   public var quit: () -> Void
+  public var setDemoMode: (Bool) -> Void
   public var settingsChanged: () -> Void
 
   public init(
@@ -34,6 +35,7 @@ public struct UIActions {
     grantCodexAccess: @escaping () -> Void = {},
     checkForUpdates: @escaping () -> Void = {},
     quit: @escaping () -> Void = {},
+    setDemoMode: @escaping (Bool) -> Void = { _ in },
     settingsChanged: @escaping () -> Void = {}
   ) {
     self.refresh = refresh
@@ -50,6 +52,7 @@ public struct UIActions {
     self.grantCodexAccess = grantCodexAccess
     self.checkForUpdates = checkForUpdates
     self.quit = quit
+    self.setDemoMode = setDemoMode
     self.settingsChanged = settingsChanged
   }
 }
@@ -69,6 +72,7 @@ public final class UIEnvironment {
   public var credentialDescriptions: [ProviderID: String]
   public var canCheckForUpdates: Bool
   public var isSandboxed: Bool
+  public var isDemo: Bool
   public var samples: [WindowKey: [UsageSample]] = [:]
   public var now: Date
 
@@ -83,7 +87,8 @@ public final class UIEnvironment {
     launchAtLoginStatus: LaunchAtLoginBackend.Status = .unknown,
     credentialDescriptions: [ProviderID: String] = [:],
     canCheckForUpdates: Bool = false,
-    isSandboxed: Bool = false
+    isSandboxed: Bool = false,
+    isDemo: Bool = false
   ) {
     self.state = state
     self.settings = settings
@@ -96,6 +101,7 @@ public final class UIEnvironment {
     self.credentialDescriptions = credentialDescriptions
     self.canCheckForUpdates = canCheckForUpdates
     self.isSandboxed = isSandboxed
+    self.isDemo = isDemo
     historyPresenter = HistoryPresenter(history: history, settings: settings, clock: clock)
     now = clock.now()
   }

@@ -12,6 +12,11 @@ public enum CredentialState: Sendable, Equatable {
     return .valid(expiresAt: expiresAt)
   }
 
+  public var isMissing: Bool {
+    if case .missing = self { return true }
+    return false
+  }
+
   public var isUsable: Bool {
     if case .valid = self { return true }
     return false

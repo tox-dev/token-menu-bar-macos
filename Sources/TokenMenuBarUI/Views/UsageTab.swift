@@ -14,15 +14,15 @@ public struct UsageTab: View {
         header
         let cards = environment.cards
         if cards.isEmpty {
-          ContentUnavailableView(
-            "No providers enabled", systemImage: "slider.horizontal.3",
-            description: Text("Enable Claude or Codex under Settings > Providers."))
+          EmptyStateView(
+            title: "No providers enabled", systemImage: "slider.horizontal.3",
+            description: "Enable a provider under Settings > Providers.")
         }
         ForEach(cards) { card in
           ProviderCardView(card: card, environment: environment)
         }
       }
-      .frame(minWidth: 540, alignment: .leading)
+      .frame(minWidth: 708, alignment: .leading)
     }
   }
 
@@ -34,6 +34,14 @@ public struct UsageTab: View {
         Text("Updated \(Format.relativeAge(environment.state.lastRefresh, now: environment.now))")
           .font(.callout)
           .foregroundStyle(.secondary)
+      }
+      if environment.isDemo {
+        Text("Demo data")
+          .font(.caption.weight(.medium))
+          .padding(.horizontal, 6)
+          .padding(.vertical, 2)
+          .background(Color.orange.opacity(0.2), in: Capsule())
+          .help("Generated sample data; turn it off under Settings > Log.")
       }
       Spacer()
       if environment.state.isRefreshing {
@@ -90,10 +98,8 @@ public struct ProviderCardView: View {
         Banner(notice.text, tone: notice.kind == .promotion ? .info : .warning)
       }
       if card.rows.isEmpty {
-        ContentUnavailableView(
-          card.emptyTitle, systemImage: icon(for: card.availability), description: Text(card.emptyDescription)
-        )
-        .frame(maxWidth: .infinity)
+        EmptyStateView(
+          title: card.emptyTitle, systemImage: icon(for: card.availability), description: card.emptyDescription)
         if card.availability == .authenticationRequired, let description = card.credentialDescription {
           Text(description).font(.callout).foregroundStyle(.secondary)
         }
@@ -271,9 +277,10 @@ public struct LocalUsageView: View {
           title: "Burn rate", value: Self.money(usage.costPerHour) + "/hr",
           help: "API-equivalent spend per hour over the current block.")
         MetricCell(
-          title: "Today",
-          value: "\(Format.compactNumber(Double(usage.todayTokens))) tokens · \(usage.todayMessages) msgs",
-          help: "Tokens and assistant messages logged today.")
+          title: "Today", value: Format.compactNumber(Double(usage.todayTokens)) + " tokens",
+          help: "Tokens logged today, including cache reads.")
+        MetricCell(
+          title: "Messages today", value: "\(usage.todayMessages)", help: "Assistant messages logged today.")
         MetricCell(
           title: "Today cost", value: Self.money(usage.todayCost), help: "API-equivalent cost of today's traffic.")
       }

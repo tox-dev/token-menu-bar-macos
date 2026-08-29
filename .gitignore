@@ -5,3 +5,4 @@ DerivedData/
 dist/
 .DS_Store
 site/
+App/Widget/Info.plist

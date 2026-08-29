@@ -29,6 +29,8 @@ public struct PollingPolicy: Sendable, Equatable {
     switch provider {
     case .claude: PollingPolicy(minimumInterval: 120, activeInterval: 120, defaultInterval: 300)
     case .codex: PollingPolicy(minimumInterval: 60, activeInterval: 60, defaultInterval: 120)
+    case .gemini: PollingPolicy(minimumInterval: 60, activeInterval: 60, defaultInterval: 120)
+    case .cursor, .copilot: PollingPolicy(minimumInterval: 60, activeInterval: 60, defaultInterval: 300)
     }
   }
 }

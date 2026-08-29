@@ -13,6 +13,7 @@ let package = Package(
   products: [
     .library(name: "TokenMenuBarCore", targets: ["TokenMenuBarCore"]),
     .library(name: "TokenMenuBarUI", targets: ["TokenMenuBarUI"]),
+    .library(name: "TokenMenuBarWidgets", targets: ["TokenMenuBarWidgets"]),
     .executable(name: "TokenMenuBar", targets: ["TokenMenuBar"]),
   ],
   targets: [
@@ -22,6 +23,7 @@ let package = Package(
       dependencies: ["TokenMenuBarCore"],
       swiftSettings: strict
     ),
+    .target(name: "TokenMenuBarWidgets", dependencies: ["TokenMenuBarCore"], swiftSettings: strict),
     .executableTarget(name: "TokenMenuBar", dependencies: ["TokenMenuBarUI"], swiftSettings: strict),
     .testTarget(
       name: "TokenMenuBarCoreTests",
@@ -30,5 +32,6 @@ let package = Package(
       swiftSettings: strict
     ),
     .testTarget(name: "TokenMenuBarUITests", dependencies: ["TokenMenuBarUI"], swiftSettings: strict),
+    .testTarget(name: "TokenMenuBarWidgetsTests", dependencies: ["TokenMenuBarWidgets"], swiftSettings: strict),
   ]
 )

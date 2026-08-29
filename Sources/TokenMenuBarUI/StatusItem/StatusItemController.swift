@@ -49,6 +49,20 @@ public final class StatusItemController {
   private var countdownTask: Task<Void, Never>?
   private var probeTask: Task<Void, Never>?
   private var lastProbe: StatusItemProbe?
+  private var planner = AdaptiveWidthPlanner()
+  private var fitTask: Task<Void, Never>?
+  private(set) var ladder: [StatusItemModel] = [.empty]
+  public var adaptive = true
+  public var notchAreas: () -> (CGRect?, CGRect?) = {
+    (NSScreen.main?.auxiliaryTopLeftArea, NSScreen.main?.auxiliaryTopRightArea)
+  }
+  public var frontmostContext: () -> String = {
+    NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? ""
+  }
+  public var visibleItemFrame: (NSStatusItem) -> CGRect? = { item in
+    item.button?.window.flatMap { $0.isVisible ? $0.frame : nil }
+  }
+  public var fitCheckDelay: Duration = .milliseconds(250)
   private var observers: [Any] = []
   private var appearanceObservation: NSKeyValueObservation?
   private(set) var model: StatusItemModel = .empty
@@ -86,9 +100,17 @@ public final class StatusItemController {
         name == NSApplication.didChangeScreenParametersNotification ? center : NSWorkspace.shared.notificationCenter
       observers.append(
         sender.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-          Task { @MainActor [weak self] in self?.probe() }
+          Task { @MainActor [weak self] in
+            self?.layoutChanged(forgetting: name != NSWorkspace.didActivateApplicationNotification)
+          }
         })
     }
+  }
+
+  func layoutChanged(forgetting: Bool) {
+    probe()
+    if forgetting { planner.forget() }
+    restart()
   }
 
   nonisolated func appearanceChanged() {
@@ -105,9 +127,60 @@ public final class StatusItemController {
   }
 
   public func update(_ model: StatusItemModel) {
+    update(ladder: [model])
+  }
+
+  public func update(ladder: [StatusItemModel]) {
+    let widths = ladder.map {
+      Double(StatusItemRenderer.attributedTitle(for: $0, height: barHeight, dark: isDark).size().width)
+    }
+    self.ladder = AdaptiveWidthPlanner.ladder(ladder, widths: widths)
+    restart()
+  }
+
+  func restart() {
+    let count = adaptive ? self.ladder.count : 1
+    let index = planner.begin(context: frontmostContext(), ladderCount: count)
+    apply(self.ladder[min(index, self.ladder.count - 1)])
+    scheduleFitCheck()
+  }
+
+  func apply(_ model: StatusItemModel) {
     self.model = model
     render(force: false)
     updateCountdownTimer()
+  }
+
+  func scheduleFitCheck() {
+    fitTask?.cancel()
+    guard adaptive, ladder.count > 1 else { return }
+    fitTask = Task { @MainActor [weak self, fitCheckDelay] in
+      guard (try? await Task.sleep(for: fitCheckDelay)) != nil else { return }
+      self?.checkFit()
+    }
+  }
+
+  public func settleFitCheck() async {
+    await fitTask?.value
+  }
+
+  public func fits() -> Bool {
+    guard let frame = visibleItemFrame(item) else { return false }
+    let areas = notchAreas()
+    return !AdaptiveWidthPlanner.hiddenByNotch(itemFrame: frame, leftArea: areas.0, rightArea: areas.1)
+  }
+
+  @discardableResult
+  public func checkFit() -> Bool {
+    let fits = fits()
+    if fits {
+      planner.didFit(context: frontmostContext())
+    } else if let next = planner.didNotFit(ladderCount: ladder.count) {
+      log.logDebug("status item does not fit; stepping down to tier \(next)")
+      apply(ladder[next])
+      scheduleFitCheck()
+    }
+    return fits
   }
 
   func render(force: Bool) {
@@ -201,6 +274,8 @@ public final class StatusItemController {
   public func remove(from statusBar: NSStatusBar = .system) {
     countdownTask?.cancel()
     countdownTask = nil
+    fitTask?.cancel()
+    fitTask = nil
     probing = false
     for observer in observers { NotificationCenter.default.removeObserver(observer) }
     observers.removeAll()

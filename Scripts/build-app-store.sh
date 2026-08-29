@@ -35,6 +35,7 @@ cat > "$out/export.plist" <<PLIST
   <key>provisioningProfiles</key>
   <dict>
     <key>dev.tox.token-menu-bar</key><string>Token Menu Bar App Store</string>
+    <key>dev.tox.token-menu-bar.widget</key><string>Token Menu Bar Widget App Store</string>
   </dict>
 </dict>
 </plist>

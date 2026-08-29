@@ -23,12 +23,16 @@ public struct AppDependencies {
   public var updater: (any UpdaterHook)?
   public var statusBar: NSStatusBar
   public var isSandboxed: Bool
+  public var isDemo: Bool
   public var openURL: (URL) -> Void
   public var copyToPasteboard: (String) -> Void
   public var revealInFinder: (URL) -> Void
   public var chooseExportURL: () -> URL?
   public var chooseCodexHome: () -> URL?
   public var terminate: () -> Void
+  public var relaunch: () -> Void
+  public var widgetStore: WidgetSnapshotStore?
+  public var reloadWidgets: () -> Void
   public var rebuildProviders: (TokenMenuBarCore.Settings) -> ProviderRegistry
   public var screenVisibleFrame: () -> CGRect?
   public var openPopoverOnLaunch: Bool
@@ -46,12 +50,16 @@ public struct AppDependencies {
     updater: (any UpdaterHook)? = nil,
     statusBar: NSStatusBar = .system,
     isSandboxed: Bool = false,
+    isDemo: Bool = false,
     openURL: @escaping (URL) -> Void,
     copyToPasteboard: @escaping (String) -> Void,
     revealInFinder: @escaping (URL) -> Void,
     chooseExportURL: @escaping () -> URL?,
     chooseCodexHome: @escaping () -> URL?,
     terminate: @escaping () -> Void,
+    relaunch: @escaping () -> Void = {},
+    widgetStore: WidgetSnapshotStore? = nil,
+    reloadWidgets: @escaping () -> Void = {},
     rebuildProviders: @escaping (TokenMenuBarCore.Settings) -> ProviderRegistry,
     screenVisibleFrame: @escaping () -> CGRect?,
     openPopoverOnLaunch: Bool = false
@@ -68,12 +76,16 @@ public struct AppDependencies {
     self.updater = updater
     self.statusBar = statusBar
     self.isSandboxed = isSandboxed
+    self.isDemo = isDemo
     self.openURL = openURL
     self.copyToPasteboard = copyToPasteboard
     self.revealInFinder = revealInFinder
     self.chooseExportURL = chooseExportURL
     self.chooseCodexHome = chooseCodexHome
     self.terminate = terminate
+    self.relaunch = relaunch
+    self.widgetStore = widgetStore
+    self.reloadWidgets = reloadWidgets
     self.rebuildProviders = rebuildProviders
     self.screenVisibleFrame = screenVisibleFrame
     self.openPopoverOnLaunch = openPopoverOnLaunch
@@ -115,10 +127,22 @@ public final class AppController {
       credentialDescriptions: Dictionary(
         uniqueKeysWithValues: dependencies.registry.providers.map { ($0.id, $0.credentialDescription) }),
       canCheckForUpdates: dependencies.updater?.canCheck ?? false,
-      isSandboxed: dependencies.isSandboxed
+      isSandboxed: dependencies.isSandboxed,
+      isDemo: dependencies.isDemo
     )
     environment.actions = actions()
     dependencies.log.debugEnabled = dependencies.settings.detailedLogging
+    coordinator.widgetSink = { [weak self] in self?.publishWidget($0) }
+  }
+
+  public func publishWidget(_ snapshot: WidgetSnapshot) {
+    guard let store = dependencies.widgetStore else { return }
+    do {
+      try store.write(snapshot)
+      dependencies.reloadWidgets()
+    } catch {
+      dependencies.log.logError("widget snapshot write failed: \(error)")
+    }
   }
 
   func actions() -> UIActions {
@@ -137,6 +161,7 @@ public final class AppController {
       grantCodexAccess: { [weak self] in self?.grantCodexAccess() },
       checkForUpdates: { [weak self] in self?.dependencies.updater?.checkForUpdates() },
       quit: { [weak self] in self?.dependencies.terminate() },
+      setDemoMode: { [weak self] in self?.setDemoMode($0) },
       settingsChanged: { [weak self] in self?.settingsChanged() }
     )
   }
@@ -152,7 +177,8 @@ public final class AppController {
     item.onClick = { [weak self] in self?.togglePopover() }
     item.onCountdownTick = { [weak self] in self?.coordinator.rebuildStatus() }
     item.menuProvider = { [weak self] in self?.contextMenu() ?? NSMenu() }
-    item.update(dependencies.state.statusModel)
+    item.adaptive = dependencies.settings.adaptiveWidth
+    item.update(ladder: dependencies.state.statusLadder)
     statusItem = item
     let popover = PopoverController(content: AnyView(EmptyView()))
     popover.setContent(rootView(popover))
@@ -180,11 +206,11 @@ public final class AppController {
 
   func observeStatusModel() {
     withObservationTracking {
-      _ = dependencies.state.statusModel
+      _ = dependencies.state.statusLadder
     } onChange: {
       Task { @MainActor [weak self] in
         guard let self else { return }
-        statusItem?.update(dependencies.state.statusModel)
+        statusItem?.update(ladder: dependencies.state.statusLadder)
         observeStatusModel()
       }
     }
@@ -239,6 +265,7 @@ public final class AppController {
   public func settingsChanged() {
     dependencies.log.debugEnabled = dependencies.settings.detailedLogging
     dependencies.updater?.automaticallyChecks = dependencies.settings.automaticUpdates
+    statusItem?.adaptive = dependencies.settings.adaptiveWidth
     coordinator.rebuildStatus()
   }
 
@@ -247,7 +274,7 @@ public final class AppController {
     menu.addItem(withTitle: "Refresh Now", action: #selector(MenuTarget.refresh), keyEquivalent: "r").target =
       menuTarget
     menu.addItem(.separator())
-    for provider in ProviderID.allCases {
+    for provider in registry.ids where dependencies.settings.enabledProviders.contains(provider) {
       let item = NSMenuItem(
         title: "Open \(provider.displayName) usage page", action: #selector(MenuTarget.openProvider(_:)),
         keyEquivalent: "")
@@ -343,6 +370,12 @@ public final class AppController {
     } catch {
       dependencies.log.logError("bookmark failed: \(error)")
     }
+  }
+
+  public func setDemoMode(_ enabled: Bool) {
+    dependencies.settings.demoMode = enabled
+    dependencies.log.log("demo mode \(enabled ? "on" : "off"); relaunching")
+    dependencies.relaunch()
   }
 
   public func replaceProviders(_ registry: ProviderRegistry) {

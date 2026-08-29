@@ -8,6 +8,16 @@
 - **Codex** reads `~/.codex/auth.json` (`CODEX_HOME` honoured) and `~/.codex/sessions/**/rollout-*.jsonl`; it calls
   `chatgpt.com/backend-api/wham/usage`, `wham/rate-limit-reset-credits`, `wham/usage/daily-token-usage-breakdown` and
   `wham/analytics/*`.
+- **Gemini** reads `~/.gemini/oauth_creds.json` (`GEMINI_CLI_HOME` honoured); it calls
+  `cloudcode-pa.googleapis.com/v1internal:loadCodeAssist` and `:retrieveUserQuota`, and `oauth2.googleapis.com/token`
+  only when you opt into token refresh.
+- **Cursor** reads Cursor's `state.vscdb` (read-only, immutable open) or `~/.cursor/auth.json`; it calls
+  `cursor.com/api/usage-summary`, `cursor.com/api/auth/me` and, as a fallback,
+  `api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage`.
+- **Copilot** reads `~/.config/github-copilot/hosts.json` and `apps.json` (`XDG_CONFIG_HOME` honoured); it calls
+  `api.github.com/copilot_internal/user`.
+- **Widgets** read a JSON snapshot the app writes into the app group container; it holds window labels, percentages and
+  reset times, never tokens.
 
 Nothing is sent anywhere else. There is no telemetry, no crash reporting, and no account of ours. The history database
 and log live under `~/Library/Application Support/Token Menu Bar/`; the log never contains tokens, request headers or

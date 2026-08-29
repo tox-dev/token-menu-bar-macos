@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Refreshes the docs screenshots from the installed app: the menu bar cells, every popover tab in light and dark
+# Refreshes the docs screenshots from the installed app running on demo data: the menu bar cells, every popover tab in light and dark
 # mode, and a GIF cycling through the tabs. Requires the app in /Applications and screen-recording permission for
 # the terminal running it. Restores the system appearance when done.
 set -euo pipefail
@@ -37,7 +37,7 @@ capture_tab() {
   local tab="$1" suffix="$2"
   quit_app
   defaults write "$bundle" lastTab "$tab"
-  open "$app"
+  open --env TOKEN_MENU_BAR_DEMO=1 "$app"
   sleep 6
   open "$app"
   sleep 3

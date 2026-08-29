@@ -67,6 +67,19 @@ public struct APIClient: Sendable {
       request, headers: headers.merging(["Content-Type": "application/json"]) { $1 }, operation: operation)
   }
 
+  public func post(
+    _ url: URL, form fields: [String: String], headers: [String: String], operation: String
+  ) async throws(APIError) -> Data {
+    var request = URLRequest(url: url, timeoutInterval: Self.timeout)
+    request.httpMethod = "POST"
+    var components = URLComponents()
+    components.queryItems = fields.keys.sorted().map { URLQueryItem(name: $0, value: fields[$0]) }
+    request.httpBody = Data((components.percentEncodedQuery ?? "").utf8)
+    return try await send(
+      request, headers: headers.merging(["Content-Type": "application/x-www-form-urlencoded"]) { $1 },
+      operation: operation)
+  }
+
   public func getJSON<T: Decodable>(
     _ type: T.Type, _ url: URL, headers: [String: String], operation: String
   ) async throws(APIError) -> T {

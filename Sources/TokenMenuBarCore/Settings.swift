@@ -42,7 +42,13 @@ public final class Settings {
     }
   }
 
-  public var enabledProviders: Set<ProviderID> { didSet { storeCodable(enabledProviders, key: .enabledProviders) } }
+  public var enabledProviders: Set<ProviderID> {
+    didSet {
+      storeCodable(enabledProviders, key: .enabledProviders)
+      if !loading { enabledProvidersStored = true }
+    }
+  }
+  public private(set) var enabledProvidersStored: Bool
   public var selectedWindows: [WindowKey] { didSet { storeCodable(selectedWindows, key: .selectedWindows) } }
   public var hasCustomSelection: Bool { didSet { store(hasCustomSelection, key: .hasCustomSelection) } }
   public var statusFormat: StatusFormat { didSet { store(statusFormat.rawValue, key: .statusFormat) } }
@@ -58,6 +64,7 @@ public final class Settings {
     }
   }
   public var hideZeroCells: Bool { didSet { store(hideZeroCells, key: .hideZeroCells) } }
+  public var adaptiveWidth: Bool { didSet { store(adaptiveWidth, key: .adaptiveWidth) } }
   public var windowOrder: WindowOrder { didSet { store(windowOrder.rawValue, key: .windowOrder) } }
   public var shortLabels: [WindowKey: String] { didSet { storeCodable(shortLabels, key: .shortLabels) } }
   public var allowTokenRefresh: Bool { didSet { store(allowTokenRefresh, key: .allowTokenRefresh) } }
@@ -75,13 +82,16 @@ public final class Settings {
   public var automaticUpdates: Bool { didSet { store(automaticUpdates, key: .automaticUpdates) } }
   public var lastLaunchedVersion: String? { didSet { store(lastLaunchedVersion, key: .lastLaunchedVersion) } }
   public var codexHomeBookmark: Data? { didSet { store(codexHomeBookmark, key: .codexHomeBookmark) } }
+  public var demoMode: Bool { didSet { store(demoMode, key: .demoMode) } }
 
   public init(defaults: UserDefaults) {
     self.defaults = defaults
     refreshSeconds = Self.loadCodable([ProviderID: Int].self, defaults, .refreshSeconds) ?? [:]
     analyticsRefreshMinutes =
       defaults.object(forKey: Key.analyticsMinutes.rawValue) as? Int ?? Self.defaultAnalyticsMinutes
-    enabledProviders = Self.loadCodable(Set<ProviderID>.self, defaults, .enabledProviders) ?? Set(ProviderID.allCases)
+    let storedProviders = Self.loadCodable(Set<ProviderID>.self, defaults, .enabledProviders)
+    enabledProvidersStored = storedProviders != nil
+    enabledProviders = storedProviders ?? Set(ProviderID.allCases)
     selectedWindows = Self.loadCodable([WindowKey].self, defaults, .selectedWindows) ?? []
     hasCustomSelection = defaults.bool(forKey: Key.hasCustomSelection.rawValue)
     statusFormat =
@@ -89,6 +99,7 @@ public final class Settings {
     customTemplate = defaults.string(forKey: Key.customTemplate.rawValue) ?? "{provider} {window}\n{pct}"
     percentDecimals = defaults.object(forKey: Key.percentDecimals.rawValue) as? Int ?? 0
     hideZeroCells = defaults.object(forKey: Key.hideZeroCells.rawValue) as? Bool ?? true
+    adaptiveWidth = defaults.object(forKey: Key.adaptiveWidth.rawValue) as? Bool ?? true
     windowOrder = defaults.string(forKey: Key.windowOrder.rawValue).flatMap(WindowOrder.init(rawValue:)) ?? .provider
     shortLabels = Self.loadCodable([WindowKey: String].self, defaults, .shortLabels) ?? [:]
     allowTokenRefresh = defaults.bool(forKey: Key.allowTokenRefresh.rawValue)
@@ -106,6 +117,7 @@ public final class Settings {
     automaticUpdates = defaults.object(forKey: Key.automaticUpdates.rawValue) as? Bool ?? true
     lastLaunchedVersion = defaults.string(forKey: Key.lastLaunchedVersion.rawValue)
     codexHomeBookmark = defaults.data(forKey: Key.codexHomeBookmark.rawValue)
+    demoMode = defaults.bool(forKey: Key.demoMode.rawValue)
     loading = false
   }
 
@@ -120,12 +132,14 @@ public final class Settings {
     refreshSeconds = fresh.refreshSeconds
     analyticsRefreshMinutes = fresh.analyticsRefreshMinutes
     enabledProviders = fresh.enabledProviders
+    enabledProvidersStored = false
     selectedWindows = fresh.selectedWindows
     hasCustomSelection = fresh.hasCustomSelection
     statusFormat = fresh.statusFormat
     customTemplate = fresh.customTemplate
     percentDecimals = fresh.percentDecimals
     hideZeroCells = fresh.hideZeroCells
+    adaptiveWidth = fresh.adaptiveWidth
     windowOrder = fresh.windowOrder
     shortLabels = fresh.shortLabels
     allowTokenRefresh = fresh.allowTokenRefresh
@@ -141,6 +155,7 @@ public final class Settings {
     automaticUpdates = fresh.automaticUpdates
     lastLaunchedVersion = fresh.lastLaunchedVersion
     codexHomeBookmark = fresh.codexHomeBookmark
+    demoMode = fresh.demoMode
   }
 
   public var activeTemplate: String {
@@ -150,9 +165,10 @@ public final class Settings {
   enum Key: String, CaseIterable {
     case refreshSeconds, analyticsMinutes, enabledProviders, selectedWindows, hasCustomSelection, statusFormat,
       customTemplate
-    case percentDecimals, hideZeroCells, windowOrder, shortLabels, allowTokenRefresh, notifications, lastTab
+    case percentDecimals, hideZeroCells, adaptiveWidth, windowOrder, shortLabels, allowTokenRefresh, notifications,
+      lastTab
     case historyRange, historyRollup, historyStacked, historyUseUTC, historyHiddenKeys, historyAnalyticsMetric
-    case detailedLogging, automaticUpdates, lastLaunchedVersion, codexHomeBookmark
+    case detailedLogging, automaticUpdates, lastLaunchedVersion, codexHomeBookmark, demoMode
   }
 
   private func store(_ value: (any Sendable)?, key: Key) {

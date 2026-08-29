@@ -52,3 +52,5 @@ final class DateBox: @unchecked Sendable {
     Clock(now: { self.date }, sleep: { _ in })
   }
 }
+
+struct TestError: Error {}

@@ -40,6 +40,8 @@ public final class RefreshCoordinator {
   private var lastAnalytics: [ProviderID: Date] = [:]
   private var lastAttempt: [ProviderID: Date] = [:]
   private var rateLimitStrikes: [ProviderID: Int] = [:]
+  private var lastWidgetRows: [WidgetRow]?
+  public var widgetSink: ((WidgetSnapshot) -> Void)?
 
   public init(
     registry: ProviderRegistry,
@@ -243,20 +245,25 @@ public final class RefreshCoordinator {
     let snapshots = state.snapshots
     let selection =
       settings.hasCustomSelection ? settings.selectedWindows : StatusItemBuilder.defaultSelection(snapshots)
-    let model = StatusItemBuilder.build(
-      StatusItemInput(
-        snapshots: snapshots,
-        availability: state.availability,
-        selectedKeys: selection,
-        format: settings.statusFormat,
-        customTemplate: settings.customTemplate,
-        decimals: settings.percentDecimals,
-        hideZeroCells: settings.hideZeroCells,
-        order: settings.windowOrder,
-        labels: settings.shortLabels,
-        now: now ?? clock.now()
-      )
+    let input = StatusItemInput(
+      snapshots: snapshots,
+      availability: state.availability,
+      selectedKeys: selection,
+      format: settings.statusFormat,
+      customTemplate: settings.customTemplate,
+      decimals: settings.percentDecimals,
+      hideZeroCells: settings.hideZeroCells,
+      order: settings.windowOrder,
+      labels: settings.shortLabels,
+      now: now ?? clock.now()
     )
-    state.setStatusModel(model)
+    state.setStatusLadder(
+      settings.adaptiveWidth ? StatusItemBuilder.candidates(input) : [StatusItemBuilder.build(input)])
+    let widget = WidgetSnapshot.build(
+      snapshots: snapshots, availability: state.availability, selectedKeys: selection, now: input.now)
+    if widget.rows != lastWidgetRows {
+      lastWidgetRows = widget.rows
+      widgetSink?(widget)
+    }
   }
 }

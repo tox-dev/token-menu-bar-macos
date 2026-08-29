@@ -44,6 +44,7 @@ public struct ProviderState: Sendable, Equatable {
 public final class AppState {
   public private(set) var providers: [ProviderID: ProviderState] = [:]
   public private(set) var statusModel: StatusItemModel = .empty
+  public private(set) var statusLadder: [StatusItemModel] = [.empty]
   public private(set) var lastRefresh: Date?
   public private(set) var isRefreshing = false
   public var popoverVisible = false
@@ -72,8 +73,10 @@ public final class AppState {
     providers[provider] = state
   }
 
-  public func setStatusModel(_ model: StatusItemModel) {
-    if model != statusModel { statusModel = model }
+  public func setStatusLadder(_ ladder: [StatusItemModel]) {
+    let models = ladder.isEmpty ? [.empty] : ladder
+    if models != statusLadder { statusLadder = models }
+    if models[0] != statusModel { statusModel = models[0] }
   }
 
   public func setRefreshing(_ refreshing: Bool, at date: Date?) {

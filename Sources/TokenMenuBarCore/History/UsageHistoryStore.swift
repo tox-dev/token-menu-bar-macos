@@ -95,6 +95,22 @@ public actor UsageHistoryStore {
     return written
   }
 
+  public func seed(_ snapshots: [(ProviderSnapshot, Date)]) throws {
+    try database.execute("BEGIN")
+    defer { try? database.execute("COMMIT") }
+    for (snapshot, stamp) in snapshots {
+      for window in snapshot.windows {
+        try database.execute(
+          "INSERT OR REPLACE INTO samples (ts, key, label, used, resets_at) VALUES (?, ?, ?, ?, ?)",
+          [
+            .real(stamp.timeIntervalSince1970), .text(WindowKey(snapshot.provider, window).storageKey),
+            .text(window.label), .real(window.usedPercent), SQLiteValue(window.resetsAt),
+          ]
+        )
+      }
+    }
+  }
+
   static func shouldRecord(_ sample: UsageSample, after previous: UsageSample?) -> Bool {
     guard let previous else { return true }
     if sample.timestamp.timeIntervalSince(previous.timestamp) >= sampleInterval { return true }

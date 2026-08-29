@@ -93,6 +93,9 @@ public enum ProviderGlyph {
     switch provider {
     case .claude: "sparkle"
     case .codex: "chevron.left.forwardslash.chevron.right"
+    case .gemini: "sparkles"
+    case .cursor: "cursorarrow.rays"
+    case .copilot: "circle.hexagongrid"
     }
   }
 
@@ -100,6 +103,9 @@ public enum ProviderGlyph {
     switch provider {
     case .claude: Color(red: 0.85, green: 0.47, blue: 0.34)
     case .codex: Color(red: 0.06, green: 0.64, blue: 0.55)
+    case .gemini: Color(red: 0.26, green: 0.52, blue: 0.96)
+    case .cursor: Color(red: 0.45, green: 0.45, blue: 0.5)
+    case .copilot: Color(red: 0.42, green: 0.35, blue: 0.8)
     }
   }
 }

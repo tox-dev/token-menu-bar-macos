@@ -49,9 +49,12 @@ public struct SQLiteRow {
 public final class SQLiteDatabase {
   private var handle: OpaquePointer?
 
-  public init(path: String) throws {
+  public init(path: String, readOnly: Bool = false) throws {
     var handle: OpaquePointer?
-    let flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX
+    let flags =
+      readOnly
+      ? SQLITE_OPEN_READONLY | SQLITE_OPEN_URI | SQLITE_OPEN_FULLMUTEX
+      : SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX
     guard sqlite3_open_v2(path, &handle, flags, nil) == SQLITE_OK, let handle else {
       let message = handle.map { String(cString: sqlite3_errmsg($0)) } ?? "cannot open \(path)"
       sqlite3_close(handle)

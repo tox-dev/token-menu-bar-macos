@@ -9,10 +9,11 @@ hide:
 <div class="hero-text" markdown="1">
 <h1 class="hero-title">Your Claude and Codex limits, one glance away</h1>
 
-Token Menu Bar puts the plan usage that Claude Code and OpenAI Codex meter for you into the macOS menu bar: session and
-weekly windows per model, usage credits, reset countdowns, pace projections, notifications, 60 days of history and the
-analytics the vendor dashboards show. It reads the tokens the `claude` and `codex` CLIs already store on your Mac, so
-there is nothing to sign into and nothing leaves your machine except the calls to `api.anthropic.com` and `chatgpt.com`.
+Token Menu Bar puts the plan usage that Claude Code, OpenAI Codex, Gemini CLI, Cursor and GitHub Copilot meter for you
+into the macOS menu bar: session, weekly and monthly windows per model, usage credits, reset countdowns, pace
+projections, notifications, desktop widgets, 60 days of history and the analytics the vendor dashboards show. It reads
+the tokens those clients already store on your Mac, so there is nothing to sign into and nothing leaves your machine
+except the calls to the vendors' own endpoints.
 
 <p class="hero-actions">
 <a class="md-button md-button--primary" href="https://github.com/tox-dev/token-menu-bar-macos/releases/latest">Download for macOS 26</a>
@@ -33,8 +34,9 @@ there is nothing to sign into and nothing leaves your machine except the calls t
 
 <hr>
 
-Claude's 5-hour session and weekly per-model limits, Codex's weekly and model-specific windows, code review quota,
-extra-usage credits and spend caps, with the same numbers the claude.ai and chatgpt.com usage pages display.
+Claude's 5-hour session and weekly per-model limits, Codex's weekly and model-specific windows, Gemini's per-model daily
+buckets, Cursor's plan and on-demand spend, Copilot's premium requests, plus credits and spend caps, with the same
+numbers the vendor usage pages display.
 
 </li>
 <li markdown="1">
@@ -79,7 +81,8 @@ reads `~/.codex`; the direct build is notarized and updates through Sparkle.
 
 The status item shows one compact cell per window (`CC 5h 36%`, `CX 7d 62%`) and hides windows sitting at 0%. Cells are
 drawn as images, so they keep two lines of text and per-value colour at any menu bar height, and they only redraw when a
-value changes. Click for the popover, right-click for a quick menu.
+value changes. When the bar runs out of room next to the notch the cells step down to narrower layouts on their own.
+Click for the popover, right-click for a quick menu, or put the same windows on the desktop as a widget.
 
 ## Made to stay out of the way
 

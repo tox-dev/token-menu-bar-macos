@@ -72,6 +72,7 @@ public struct StatusItemInput: Sendable {
   public let order: WindowOrder
   public let labels: [WindowKey: String]
   public let now: Date
+  public let tier: StatusTier
 
   public init(
     snapshots: [ProviderID: ProviderSnapshot],
@@ -83,7 +84,8 @@ public struct StatusItemInput: Sendable {
     hideZeroCells: Bool,
     order: WindowOrder,
     labels: [WindowKey: String],
-    now: Date
+    now: Date,
+    tier: StatusTier = .configured
   ) {
     self.snapshots = snapshots
     self.availability = availability
@@ -95,6 +97,22 @@ public struct StatusItemInput: Sendable {
     self.order = order
     self.labels = labels
     self.now = now
+    self.tier = tier
+  }
+
+  public func with(tier: StatusTier) -> StatusItemInput {
+    StatusItemInput(
+      snapshots: snapshots, availability: availability, selectedKeys: selectedKeys, format: format,
+      customTemplate: customTemplate, decimals: decimals, hideZeroCells: hideZeroCells, order: order, labels: labels,
+      now: now, tier: tier)
+  }
+
+  var effectiveFormat: StatusFormat {
+    switch tier {
+    case .configured, .iconOnly: format
+    case .stacked, .worstPerProvider: .stacked
+    case .miniBars: .miniBars
+    }
   }
 }
 
@@ -107,20 +125,34 @@ public enum StatusItemBuilder {
     }
   }
 
+  public static func candidates(_ input: StatusItemInput) -> [StatusItemModel] {
+    var models: [StatusItemModel] = []
+    for tier in StatusTier.allCases {
+      let model = build(input.with(tier: tier))
+      if !models.contains(model) { models.append(model) }
+    }
+    return models
+  }
+
   public static func build(_ input: StatusItemInput) -> StatusItemModel {
     let tone: StatusIconTone =
       input.availability.values.contains(.authenticationRequired)
       ? .attention : input.availability.values.contains(.networkUnavailable) ? .offline : .normal
-    let template = input.format.template ?? input.customTemplate
-    let countdown = input.format != .miniBars && StatusTemplate.referencesCountdown(template)
+    if input.tier == .iconOnly {
+      return StatusItemModel(cells: [], iconTone: tone, showsIcon: true, countdownActive: false)
+    }
+    let format = input.effectiveFormat
+    let template = format.template ?? input.customTemplate
+    let countdown = format != .miniBars && StatusTemplate.referencesCountdown(template)
     var entries = input.selectedKeys.compactMap { key -> (WindowKey, ProviderSnapshot, QuotaWindow)? in
       guard let snapshot = input.snapshots[key.provider], let window = snapshot.window(key.windowID) else { return nil }
       return (key, snapshot, window)
     }
     if input.hideZeroCells { entries = entries.filter { $0.2.usedPercent > 0 } }
+    if input.tier == .worstPerProvider { entries = worstPerProvider(entries) }
     if input.order == .percent { entries.sort { $0.2.usedPercent > $1.2.usedPercent } }
     let cells: [StatusCell]
-    if input.format == .miniBars {
+    if format == .miniBars {
       let providers = input.order == .percent ? orderedProviders(entries) : entries.map(\.0.provider).uniqued()
       cells = providers.map { provider in
         let own = entries.filter { $0.0.provider == provider }
@@ -155,6 +187,18 @@ public enum StatusItemBuilder {
     return StatusItemModel(
       cells: cells, iconTone: tone, showsIcon: cells.isEmpty || tone != .normal,
       countdownActive: countdown && !cells.isEmpty)
+  }
+
+  static func worstPerProvider(
+    _ entries: [(WindowKey, ProviderSnapshot, QuotaWindow)]
+  ) -> [(
+    WindowKey, ProviderSnapshot, QuotaWindow
+  )] {
+    var worst: [ProviderID: (WindowKey, ProviderSnapshot, QuotaWindow)] = [:]
+    for entry in entries where (worst[entry.0.provider]?.2.usedPercent ?? -1) < entry.2.usedPercent {
+      worst[entry.0.provider] = entry
+    }
+    return entries.map(\.0.provider).uniqued().compactMap { worst[$0] }
   }
 
   static func orderedProviders(_ entries: [(WindowKey, ProviderSnapshot, QuotaWindow)]) -> [ProviderID] {

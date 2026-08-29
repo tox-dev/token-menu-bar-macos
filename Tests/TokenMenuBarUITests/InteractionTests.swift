@@ -82,7 +82,7 @@ import TokenMenuBarCore
   #expect(tab.menuBarSetting(\.windowOrder).wrappedValue == .percent)
   #expect(changes == 1)
   tab.setProvider(.codex, enabled: false)
-  #expect(environment.settings.enabledProviders == [.claude])
+  #expect(environment.settings.enabledProviders == Set(ProviderID.allCases).subtracting([.codex]))
   tab.provider(.codex).wrappedValue = true
   #expect(tab.provider(.codex).wrappedValue)
   #expect(environment.settings.enabledProviders == Set(ProviderID.allCases))

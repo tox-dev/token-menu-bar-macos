@@ -14,7 +14,8 @@ private func context(
   _ window: QuotaWindow = session, decimals: Int = 0, plan: String? = "Max 20x", credits: String? = "$5.00"
 ) -> StatusCellContext {
   StatusCellContext(
-    provider: .claude, window: window, cellLabel: "CC·5h", shortLabel: "CC 5h", decimals: decimals, planName: plan, credits: credits,
+    provider: .claude, window: window, cellLabel: "CC·5h", shortLabel: "CC 5h", decimals: decimals, planName: plan,
+    credits: credits,
     now: fixedNow)
 }
 

@@ -14,6 +14,8 @@ Defaults**, **Copy Diagnostics** (a report with versions, provider state and the
 - **Format**: Stacked, Inline, Mini bars, or Custom.
 - **Decimals**: 0 to 2 decimals on the percent.
 - **Hide 0%**: drop cells whose window is at 0%.
+- **Fit to space**: step down to narrower layouts when macOS hides the item for lack of room, and remember what fit per
+  frontmost app.
 - **Template**: the custom format string, built from the tokens below.
 - **Windows shown**: tick the windows that get a cell; at least one stays selected, and labels are editable per window.
 
@@ -37,10 +39,10 @@ The preview under the controls is rendered by the same code that draws the menu 
 
 ## Providers
 
-Enable or disable each provider, see the credential state, and set the refresh interval per provider. The floors are 2
-minutes for Claude and 1 minute for Codex; while the popover is open the app polls at the floor. **Refresh expired
-tokens on my behalf** is off by default because refreshing rotates the CLI's refresh token and writes it back to the
-Keychain or `~/.codex/auth.json`.
+Enable or disable each provider (Claude, Codex, Gemini, Cursor, Copilot), see the credential state, and set the refresh
+interval per provider. The floors are 2 minutes for Claude and 1 minute for the others; while the popover is open the
+app polls at the floor. **Refresh expired tokens on my behalf** is off by default because refreshing rotates the CLI's
+refresh token and writes it back to the Keychain or `~/.codex/auth.json`.
 
 ## Data
 
@@ -52,5 +54,6 @@ Threshold notifications at 50/75/90/100%, window-reset notifications, and sign-i
 
 ## Log
 
-The last 200 log lines, a full-log window, copy and clear, and a detailed-logging switch that also enables the status
-item probe (useful when the cell disappears behind the notch).
+The last 200 log lines, a full-log window, copy and clear, a detailed-logging switch that also enables the status item
+probe (useful when the cell disappears behind the notch), and **Demo data**, which relaunches the app on generated
+numbers with a separate history file so you can try every screen, or take screenshots, without exposing your account.
