@@ -9,6 +9,8 @@ public final class PopoverController: NSObject, NSPopoverDelegate {
   private var gate = PopoverDismissalGate()
   private var monitors: [Any] = []
   private var lastTopCenter: CGPoint?
+  private(set) var stableCenterX: CGFloat?
+  private var visibleFrame: CGRect?
   public var onVisibilityChange: ((Bool) -> Void)?
   public var excludedFrame: (() -> CGRect?)?
   private(set) var measured: [String: CGSize] = [:]
@@ -46,10 +48,15 @@ public final class PopoverController: NSObject, NSPopoverDelegate {
     if let anchorFrame, let visibleFrame {
       maximum = PopoverGeometry.maxSize(anchor: anchorFrame, visibleFrame: visibleFrame)
       lastTopCenter = CGPoint(x: anchorFrame.midX, y: anchorFrame.minY)
+      self.visibleFrame = visibleFrame
+      stableCenterX = PopoverGeometry.stableCenterX(
+        anchorMidX: anchorFrame.midX, visibleFrame: visibleFrame,
+        widestWidth: PopoverGeometry.widestTabWidth)
     }
     applySize()
     gate = PopoverDismissalGate()
     popover.show(relativeTo: view.bounds, of: view, preferredEdge: .minY)
+    realign()
     installMonitors()
     onVisibilityChange?(popover.isShown)
   }
@@ -70,6 +77,7 @@ public final class PopoverController: NSObject, NSPopoverDelegate {
 
   public func measure(tab: String, size: CGSize) {
     measured[tab] = size
+    activeTab = tab
     applySize()
   }
 
@@ -81,11 +89,22 @@ public final class PopoverController: NSObject, NSPopoverDelegate {
   public func applySize() {
     hosting.view.layoutSubtreeIfNeeded()
     let fitting = hosting.view.fittingSize
-    let content = measured[activeTab].map { CGSize(width: fitting.width, height: $0.height) } ?? fitting
+    let width = max(fitting.width, PopoverGeometry.preferredWidth(visibleFrame: visibleFrame))
+    let content = CGSize(width: width, height: measured[activeTab]?.height ?? fitting.height)
     let size = PopoverGeometry.clamp(content, maximum: maximum)
     if abs(popover.contentSize.width - size.width) > 1 || abs(popover.contentSize.height - size.height) > 1 {
       popover.contentSize = size
+      realign()
     }
+  }
+
+  public func realign() {
+    guard popover.isShown, let window = popover.contentViewController?.view.window, let stableCenterX,
+      let visibleFrame
+    else { return }
+    let x = PopoverGeometry.alignedOriginX(
+      centerX: stableCenterX, width: window.frame.width, visibleFrame: visibleFrame)
+    if abs(window.frame.origin.x - x) > 0.5 { window.setFrameOrigin(CGPoint(x: x, y: window.frame.origin.y)) }
   }
 
   func installMonitors() {

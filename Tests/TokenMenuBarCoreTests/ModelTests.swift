@@ -148,14 +148,16 @@ extension QuotaAvailability {
 
 @Test func usageColorInterpolatesGreenToRed() {
   #expect(
-    UsageColor.color(percent: 0)
-      == HSBColor(hue: UsageColor.greenHue, saturation: UsageColor.saturation, brightness: UsageColor.brightness))
-  #expect(UsageColor.color(percent: 100).hue == UsageColor.redHue)
-  #expect(UsageColor.color(percent: 150).hue == UsageColor.redHue)
-  let mid = UsageColor.color(percent: 50).hue
-  #expect(mid > 0 && mid < UsageColor.greenHue)
-  #expect(UsageColor.color(pace: .ahead, percent: 10).hue == 0.08)
-  #expect(UsageColor.color(pace: .exhausted, percent: 10).hue == 0)
+    UsageColor.color(percent: 0) == UsageColor.green)
+  #expect(UsageColor.color(percent: 100) == UsageColor.red)
+  #expect(UsageColor.color(percent: 150) == UsageColor.red)
+  #expect(UsageColor.color(percent: 60) == UsageColor.orange)
+  let mid = UsageColor.color(percent: 30)
+  #expect(mid.hue > UsageColor.orange.hue && mid.hue < UsageColor.green.hue)
+  #expect(mid.brightness > UsageColor.green.brightness && mid.brightness < UsageColor.orange.brightness)
+  #expect(UsageColor.color(percent: 80).hue < UsageColor.orange.hue)
+  #expect(UsageColor.color(pace: .ahead, percent: 10) == UsageColor.orange)
+  #expect(UsageColor.color(pace: .exhausted, percent: 10) == UsageColor.red)
   #expect(UsageColor.color(pace: .onTrack, percent: 10) == UsageColor.color(percent: 10))
 }
 
@@ -185,7 +187,7 @@ extension QuotaAvailability {
   let screen = CGRect(x: 0, y: 0, width: 1440, height: 900)
   let centered = PopoverGeometry.maxSize(anchor: CGRect(x: 700, y: 880, width: 40, height: 20), visibleFrame: screen)
   #expect(centered.height == 880 - PopoverGeometry.margin)
-  #expect(centered.width == 2 * 720 - 2 * PopoverGeometry.margin)
+  #expect(centered.width == 1440 - 2 * PopoverGeometry.margin)
   let edge = PopoverGeometry.maxSize(anchor: CGRect(x: 1400, y: 880, width: 40, height: 20), visibleFrame: screen)
   #expect(edge.width == 1440 - 2 * PopoverGeometry.margin)
   let tiny = PopoverGeometry.maxSize(
@@ -193,6 +195,21 @@ extension QuotaAvailability {
   #expect(tiny == CGSize(width: PopoverGeometry.minimumWidth, height: PopoverGeometry.minimumHeight))
   let clamped = PopoverGeometry.clamp(CGSize(width: 200, height: 5000), maximum: CGSize(width: 480, height: 400))
   #expect(clamped == CGSize(width: PopoverGeometry.minimumWidth, height: 400))
+  #expect(PopoverGeometry.preferredWidth(visibleFrame: nil) == PopoverGeometry.minimumWidth)
+  #expect(PopoverGeometry.preferredWidth(visibleFrame: screen) == PopoverGeometry.minimumWidth)
+  let wide = CGRect(x: 0, y: 0, width: 3008, height: 1662)
+  #expect(PopoverGeometry.preferredWidth(visibleFrame: wide) == 3008 * PopoverGeometry.viewportWidthShare)
+  let narrow = CGRect(x: 0, y: 0, width: 600, height: 400)
+  #expect(PopoverGeometry.preferredWidth(visibleFrame: narrow) == 600 - 2 * PopoverGeometry.margin)
+  #expect(PopoverGeometry.stableCenterX(anchorMidX: 1500, visibleFrame: wide, widestWidth: 1274) == 1500)
+  #expect(
+    PopoverGeometry.stableCenterX(anchorMidX: 2900, visibleFrame: wide, widestWidth: 1274) == CGFloat(3008 - 12 - 637))
+  #expect(PopoverGeometry.stableCenterX(anchorMidX: 10, visibleFrame: wide, widestWidth: 1274) == CGFloat(12 + 637))
+  #expect(PopoverGeometry.stableCenterX(anchorMidX: 300, visibleFrame: narrow, widestWidth: 1274) == 300)
+  #expect(PopoverGeometry.alignedOriginX(centerX: 1500, width: 1000, visibleFrame: wide) == 1000)
+  #expect(PopoverGeometry.alignedOriginX(centerX: 100, width: 1000, visibleFrame: wide) == 0)
+  #expect(PopoverGeometry.alignedOriginX(centerX: 2900, width: 1000, visibleFrame: wide) == 2008)
+  #expect(PopoverGeometry.alignedOriginX(centerX: 300, width: 1000, visibleFrame: narrow) == 0)
   #expect(
     PopoverGeometry.clamp(CGSize(width: 900, height: 300), maximum: CGSize(width: 800, height: 900))
       == CGSize(width: 800, height: 300))

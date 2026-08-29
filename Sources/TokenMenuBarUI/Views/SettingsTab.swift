@@ -318,7 +318,8 @@ public struct LogSection: View {
         Spacer()
         Toggle(
           "Demo data",
-          isOn: Binding(get: { environment.settings.demoMode }, set: { environment.actions.setDemoMode($0) })
+          isOn: Binding(
+            get: { environment.isDemo || environment.settings.demoMode }, set: { environment.actions.setDemoMode($0) })
         )
         .help("Replace real providers with generated data and a separate history file; relaunches the app.")
         Toggle(

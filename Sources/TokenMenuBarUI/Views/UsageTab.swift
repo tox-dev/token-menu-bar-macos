@@ -230,7 +230,7 @@ public struct SpendView: View {
       if spend.enabled, let percent = spend.percent {
         UsageBar(percent: percent, color: Color(UsageColor.color(percent: percent)))
       }
-      LazyVGrid(columns: [GridItem(.adaptive(minimum: 112, maximum: 160), alignment: .leading)], spacing: 8) {
+      LazyVGrid(columns: [GridItem(.adaptive(minimum: 112, maximum: 200), alignment: .leading)], spacing: 8) {
         if let limit = spend.limit {
           MetricCell(title: "Monthly limit", value: limit.formatted, help: "Spend cap for credits beyond plan limits.")
         }
@@ -266,7 +266,7 @@ public struct LocalUsageView: View {
   public var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       Text("Local session logs").font(.body.weight(.medium))
-      LazyVGrid(columns: [GridItem(.adaptive(minimum: 112, maximum: 160), alignment: .leading)], spacing: 8) {
+      LazyVGrid(columns: [GridItem(.adaptive(minimum: 112, maximum: 200), alignment: .leading)], spacing: 8) {
         MetricCell(
           title: "5-hour block", value: Format.compactNumber(Double(usage.windowTokens)) + " tokens",
           help: "Tokens the CLI logged since the current session window started, including cache reads.")
@@ -302,7 +302,7 @@ public struct CreditsView: View {
   }
 
   public var body: some View {
-    LazyVGrid(columns: [GridItem(.adaptive(minimum: 112, maximum: 160), alignment: .leading)], spacing: 8) {
+    LazyVGrid(columns: [GridItem(.adaptive(minimum: 112, maximum: 200), alignment: .leading)], spacing: 8) {
       if let credits {
         MetricCell(
           title: "Credits", value: UsagePresenter.creditsSummary(credits),

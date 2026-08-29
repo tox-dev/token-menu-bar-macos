@@ -35,6 +35,8 @@ public struct PopoverDismissalGate: Sendable, Equatable {
 
 public enum PopoverGeometry {
   public static let minimumWidth: CGFloat = 728
+  public static let widestTabWidth: CGFloat = 1274
+  public static let viewportWidthShare: CGFloat = 0.42
   public static let minimumHeight: CGFloat = 200
   public static let margin: CGFloat = 12
   public static let chromeHeight: CGFloat = 58
@@ -42,15 +44,27 @@ public enum PopoverGeometry {
   public static func maxSize(anchor: CGRect, visibleFrame: CGRect) -> CGSize {
     let heightBelow = anchor.minY - visibleFrame.minY - margin
     let height = max(minimumHeight, heightBelow)
-    let centered = 2 * min(anchor.midX - visibleFrame.minX, visibleFrame.maxX - anchor.midX) - 2 * margin
-    let width = centered >= minimumWidth ? centered : visibleFrame.width - 2 * margin
-    return CGSize(width: max(minimumWidth, width), height: height)
+    return CGSize(width: max(minimumWidth, visibleFrame.width - 2 * margin), height: height)
+  }
+
+  public static func preferredWidth(visibleFrame: CGRect?) -> CGFloat {
+    guard let visibleFrame else { return minimumWidth }
+    return min(max(visibleFrame.width * viewportWidthShare, minimumWidth), visibleFrame.width - 2 * margin)
   }
 
   public static func clamp(_ size: CGSize, maximum: CGSize) -> CGSize {
     CGSize(
       width: min(max(size.width, minimumWidth), max(maximum.width, minimumWidth)),
       height: min(max(size.height, minimumHeight), max(maximum.height, minimumHeight)))
+  }
+
+  public static func stableCenterX(anchorMidX: CGFloat, visibleFrame: CGRect, widestWidth: CGFloat) -> CGFloat {
+    let half = min(widestWidth, visibleFrame.width - 2 * margin) / 2
+    return min(max(anchorMidX, visibleFrame.minX + margin + half), visibleFrame.maxX - margin - half)
+  }
+
+  public static func alignedOriginX(centerX: CGFloat, width: CGFloat, visibleFrame: CGRect) -> CGFloat {
+    min(max(centerX - width / 2, visibleFrame.minX), max(visibleFrame.maxX - width, visibleFrame.minX))
   }
 
   public static func pinnedOrigin(lastTopCenter: CGPoint, size: CGSize, visibleFrame: CGRect) -> CGPoint {

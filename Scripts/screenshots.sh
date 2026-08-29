@@ -14,8 +14,9 @@ frames() {
   swift Scripts/window-frames.swift "Token Menu Bar"
 }
 
-largest_window_id() {
-  frames | python3 -c 'import json,sys; w=json.load(sys.stdin); print(max(w,key=lambda x:x["width"]*x["height"])["id"] if w else "")'
+# screencapture -l cannot grab windows on some secondary displays, so capture the popover's frame as a region instead.
+largest_window_region() {
+  frames | python3 -c 'import json,sys; w=json.load(sys.stdin); w=max(w,key=lambda x:x["width"]*x["height"]) if w else None; print("%d,%d,%d,%d" % (w["x"],w["y"],w["width"],w["height"]) if w else "")'
 }
 
 # The status item sits centred above the popover; capture a strip of the menu bar around that point.
@@ -41,13 +42,13 @@ capture_tab() {
   sleep 6
   open "$app"
   sleep 3
-  local id
-  id="$(largest_window_id)"
-  if [[ -z "$id" ]]; then
+  local region
+  region="$(largest_window_region)"
+  if [[ -z "$region" ]]; then
     echo "popover window not found for $tab" >&2
     return 1
   fi
-  screencapture -x -o -l "$id" "$out/popover-$(tr '[:upper:]' '[:lower:]' <<<"$tab")-$suffix.png"
+  screencapture -x -R "$region" "$out/popover-$(tr '[:upper:]' '[:lower:]' <<<"$tab")-$suffix.png"
 }
 
 original_dark="$(osascript -e 'tell application "System Events" to tell appearance preferences to get dark mode')"
