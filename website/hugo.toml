@@ -1,0 +1,80 @@
+baseURL = "https://tox-dev.github.io/token-menu-bar-macos/"
+locale = "en-US"
+defaultContentLanguage = "en"
+title = "Token Menu Bar"
+enableRobotsTXT = true
+disableHugoGeneratorInject = true
+disableKinds = ["taxonomy", "term", "rss"]
+timeout = "60s"
+
+[params]
+description = "Claude, Codex, Gemini, Cursor and GitHub Copilot plan usage in the macOS menu bar: session and weekly windows, reset countdowns, pace projections, history and widgets."
+keywords = "claude usage,codex usage,menu bar,macos,claude code limits,copilot quota,cursor usage,gemini quota,token usage monitor"
+tagline = "Your AI coding plan limits, one glance away"
+repository = "https://github.com/tox-dev/token-menu-bar-macos"
+latestRelease = "https://github.com/tox-dev/token-menu-bar-macos/releases/latest"
+minimumOS = "macOS 26"
+license = "MIT"
+author = "Bernát Gábor"
+brandGradientStart = "#4C3BE0"
+brandGradientEnd = "#9A6BFF"
+themeColor = "#5A46E8"
+
+[[menu.main]]
+name = "Install"
+url = "/install/"
+weight = 1
+
+[[menu.main]]
+name = "What you see"
+url = "/features/"
+weight = 2
+
+[[menu.main]]
+name = "Settings"
+url = "/settings/"
+weight = 3
+
+[[menu.main]]
+name = "Privacy"
+url = "/privacy/"
+weight = 4
+
+[[menu.main]]
+name = "Contributing"
+url = "/contributing/"
+weight = 5
+
+[outputs]
+home = ["HTML", "llms"]
+page = ["HTML", "md"]
+section = ["HTML"]
+
+# llms.txt (llmstxt.org): a plain-text index for LLM crawlers; every page also gets a raw-markdown twin.
+[outputFormats.llms]
+mediaType = "text/plain"
+baseName = "llms"
+isPlainText = true
+rel = "alternate"
+
+[outputFormats.md]
+mediaType = "text/markdown"
+isPlainText = true
+rel = "alternate"
+
+[markup.goldmark.renderer]
+unsafe = true
+
+[markup.tableOfContents]
+startLevel = 2
+endLevel = 3
+
+[imaging]
+quality = 90
+
+[imaging.webp]
+quality = 90
+hint = "picture"
+
+[minify]
+minifyOutput = true

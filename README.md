@@ -22,9 +22,9 @@ with `Scripts/screenshots.sh`.
 
 Requires macOS 26. Sign in once with each client you use (`claude`, `codex login`, `gemini`, the Cursor app, Copilot
 CLI/Neovim/JetBrains); the app picks the tokens up from the Keychain (`Claude Code-credentials`), `~/.codex/auth.json`,
-`~/.gemini/oauth_creds.json`, Cursor's `state.vscdb` and `~/.config/github-copilot`. Providers without credentials are
-disabled on first launch; enable them under Settings > Providers. The App Store build asks you to point it at `~/.codex`
-because the sandbox cannot read it on its own.
+`~/.gemini/oauth_creds.json`, Cursor's `state.vscdb` and `~/.config/github-copilot`. Providers you never signed into
+stay hidden until a sign-in appears; toggle them under Settings > Providers. The App Store build asks you to point it at
+`~/.codex` because the sandbox cannot read it on its own.
 
 ## What you see
 

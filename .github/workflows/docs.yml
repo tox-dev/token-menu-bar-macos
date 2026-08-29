@@ -1,41 +1,72 @@
-name: Docs
+name: Website
 
 on:
   push:
     branches: [main]
-    paths: ["docs/**", "mkdocs.yml", ".github/workflows/docs.yml"]
+    paths: ["website/**", ".github/workflows/docs.yml"]
+  pull_request:
+    paths: ["website/**", ".github/workflows/docs.yml"]
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
-      - name: Build site
-        run: uvx --with mkdocs-material mkdocs build --strict
+        with:
+          persist-credentials: false
+      - name: Read Hugo version
+        run: echo "HUGO_VERSION=$(cat .hugo-version)" >> "$GITHUB_ENV"
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: ${{ env.HUGO_VERSION }}
+          extended: true
       - uses: actions/configure-pages@v5
+        id: pages
+        if: github.ref == 'refs/heads/main'
         with:
           enablement: true
+      - name: Build
+        # The site is plain CSS and templates, so the Hugo binary is the entire toolchain.
+        env:
+          BASE_URL: ${{ steps.pages.outputs.base_url || 'https://tox-dev.github.io/token-menu-bar-macos/' }}
+        run: hugo --gc --minify --baseURL "$BASE_URL"
+      - name: Check the generated pages
+        run: |
+          test -s public/index.html
+          test -s public/llms.txt
+          test -s public/sitemap.xml
+          test -s public/robots.txt
+          test -s public/install/index.md
       - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
         with:
-          path: site
+          path: website/public
 
   deploy:
     needs: build
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4

@@ -6,7 +6,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 app="${APP_PATH:-/Applications/Token Menu Bar.app}"
-out="${OUT_DIR:-docs/images}"
+out="${OUT_DIR:-website/assets/images}"
 bundle="dev.tox.token-menu-bar"
 mkdir -p "$out"
 
@@ -19,10 +19,6 @@ largest_window_region() {
   frames | python3 -c 'import json,sys; w=json.load(sys.stdin); w=max(w,key=lambda x:x["width"]*x["height"]) if w else None; print("%d,%d,%d,%d" % (w["x"],w["y"],w["width"],w["height"]) if w else "")'
 }
 
-# The status item sits centred above the popover; capture a strip of the menu bar around that point.
-menu_bar_region() {
-  frames | python3 -c 'import json,sys; w=max(json.load(sys.stdin),key=lambda x:x["width"]*x["height"]); mid=w["x"]+w["width"]/2; print(f"{int(mid-200)},0,400,25")'
-}
 
 quit_app() {
   pkill -x TokenMenuBar 2>/dev/null || true
@@ -38,6 +34,8 @@ capture_tab() {
   local tab="$1" suffix="$2"
   quit_app
   defaults write "$bundle" lastTab "$tab"
+  defaults write "$bundle" historyRange Today
+  defaults write "$bundle" historyRollup Minute
   open --env TOKEN_MENU_BAR_DEMO=1 "$app"
   sleep 6
   open "$app"
@@ -59,8 +57,10 @@ for mode in light dark; do
   for tab in Usage History Settings; do
     capture_tab "$tab" "$mode"
   done
-  screencapture -x -R "$(menu_bar_region)" "$out/menubar-$mode.png"
 done
+
+# The menu bar strip is rendered by the app itself, so it never depends on how crowded this machine's bar is.
+"$(dirname "$0")/../dist/Token Menu Bar.app/Contents/MacOS/TokenMenuBar" --export-menubar "$out" >/dev/null
 
 magick -delay 250 -loop 0 "$out/popover-usage-dark.png" "$out/popover-history-dark.png" "$out/popover-settings-dark.png" \
   -resize 1200x "$out/popover-tour.gif"

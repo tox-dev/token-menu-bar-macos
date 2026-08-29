@@ -1,0 +1,21 @@
+<header class="masthead">
+  <div class="wrap">
+    <a class="brand" href="{{ "/" | relURL }}">
+      <img src="{{ "brand/mark.svg" | relURL }}" alt="" width="28" height="28">
+      <span>{{ .Site.Title }}</span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      {{- $current := .RelPermalink -}}
+      {{ range .Site.Menus.main }}
+        {{- $url := .URL | relLangURL -}}
+        <a href="{{ $url }}"{{ if eq $current $url }} aria-current="page"{{ end }}>{{ .Name }}</a>
+      {{ end }}
+      <a href="{{ .Site.Params.repository }}">GitHub</a>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch between light and dark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path id="theme-icon" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+        </svg>
+      </button>
+    </nav>
+  </div>
+</header>

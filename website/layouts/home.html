@@ -1,0 +1,98 @@
+{{ define "main" }}
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">{{ .Site.Params.minimumOS }} · {{ .Site.Params.license }}</span>
+      <h1>{{ .Site.Params.tagline }}</h1>
+      <p class="lede">{{ .Site.Params.description }}</p>
+      <div class="hero-actions">
+        <a class="button button-primary" href="{{ .Site.Params.latestRelease }}">Download for {{ .Site.Params.minimumOS }}</a>
+        <a class="button button-secondary" href="{{ "install/" | relURL }}">Install options</a>
+      </div>
+      <p class="hero-note">
+        Reads the tokens the CLIs already store on your Mac. No account, no telemetry, nothing leaves your machine
+        except the calls to the vendors' own endpoints.
+      </p>
+    </div>
+    <div class="hero-media">
+      {{ with resources.Get "images/menubar-dark.png" }}
+        <img class="shot shot-bar" src="{{ .RelPermalink }}" width="{{ .Width }}" height="{{ .Height }}"
+             alt="Menu bar showing Claude and Codex usage cells" fetchpriority="high" decoding="async">
+      {{ end }}
+      {{ with resources.Get "images/popover-tour.gif" }}
+        <img class="shot" src="{{ .RelPermalink }}" width="{{ .Width }}" height="{{ .Height }}"
+             alt="The popover cycling through the Usage, History and Settings tabs" decoding="async">
+      {{ end }}
+    </div>
+  </div>
+</section>
+
+<div class="providers">
+  <div class="wrap">
+    <span>Tracks</span>
+    <strong>Claude</strong>
+    <strong>Codex</strong>
+    <strong>Gemini CLI</strong>
+    <strong>Cursor</strong>
+    <strong>GitHub Copilot</strong>
+    <span class="legend">
+      <span><i class="g"></i> under pace</span>
+      <span><i class="o"></i> ahead</span>
+      <span><i class="r"></i> spent</span>
+    </span>
+  </div>
+</div>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Everything the vendor dashboards show, without opening them</h2>
+      <p>One cell per window in the menu bar, the full picture a click away.</p>
+    </div>
+    <div class="cards">
+      {{ range hugo.Data.features }}
+        <div class="card">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="{{ .icon }}" />
+            </svg>
+          </div>
+          <h3>{{ .title }}</h3>
+          <p>{{ .body }}</p>
+        </div>
+      {{ end }}
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Three tabs, no ceremony</h2>
+      <p>The popover sizes itself to the screen and keeps its position when you switch tabs.</p>
+    </div>
+    <div class="shots">
+      <figure>
+        {{ with resources.Get "images/popover-usage-dark.png" }}
+          <img class="shot" src="{{ (.Resize "900x webp").RelPermalink }}" width="900"
+               height="{{ mul (div .Height .Width) 900 }}" alt="Usage tab with Claude and Codex cards" loading="lazy" decoding="async">
+        {{ end }}
+        <figcaption>Usage — every window with percent, reset countdown and pace.</figcaption>
+      </figure>
+      <figure>
+        {{ with resources.Get "images/popover-history-dark.png" }}
+          <img class="shot" src="{{ (.Resize "900x webp").RelPermalink }}" width="900"
+               height="{{ mul (div .Height .Width) 900 }}" alt="History tab with usage charts" loading="lazy" decoding="async">
+        {{ end }}
+        <figcaption>History — 60 days of samples, reset cliffs and vendor analytics.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+{{ with .Content }}
+<section class="page">
+  <div class="wrap prose">{{ . }}</div>
+</section>
+{{ end }}
+{{ end }}

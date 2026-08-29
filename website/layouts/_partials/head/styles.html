@@ -1,0 +1,11 @@
+{{- /* Dev serves the raw stylesheet for fast rebuilds; production minifies, fingerprints and pins it
+       with a subresource-integrity hash. Plain CSS on purpose: the build needs only the Hugo binary. */ -}}
+{{ if hugo.IsServer }}
+  {{ with resources.Get "css/site.css" }}
+    <link rel="stylesheet" href="{{ .RelPermalink }}">
+  {{ end }}
+{{ else }}
+  {{ with resources.Get "css/site.css" | resources.Minify | resources.Fingerprint }}
+    <link rel="stylesheet" href="{{ .RelPermalink }}" integrity="{{ .Data.Integrity }}" crossorigin="anonymous">
+  {{ end }}
+{{ end }}
