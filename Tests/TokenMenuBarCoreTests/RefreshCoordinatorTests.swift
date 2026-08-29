@@ -1,0 +1,271 @@
+import Foundation
+import Testing
+
+@testable import TokenMenuBarCore
+
+@MainActor
+private func makeSettings() -> Settings {
+  let defaults = UserDefaults(suiteName: "tests-\(UUID().uuidString)")!
+  return Settings(defaults: defaults)
+}
+
+private func snapshot(_ provider: ProviderID, _ percent: Double, resets: TimeInterval = 3600) -> ProviderSnapshot {
+  ProviderSnapshot(
+    provider: provider,
+    windows: [
+      QuotaWindow(
+        id: "session", label: "Session", group: .session, usedPercent: percent,
+        resetsAt: fixedNow.addingTimeInterval(resets), duration: 18000)
+    ],
+    fetchedAt: fixedNow
+  )
+}
+
+final class ScriptedProvider: UsageProvider, @unchecked Sendable {
+  let id: ProviderID
+  private let lock = NSLock()
+  private var queue: [ProviderFetchResult]
+  private(set) var calls: [FetchOptions] = []
+  var credentials: CredentialState = .valid(expiresAt: nil)
+
+  init(id: ProviderID, results: [ProviderFetchResult]) {
+    self.id = id
+    queue = results
+  }
+
+  var credentialDescription: String { "scripted" }
+
+  func credentialState(now: Date) -> CredentialState { credentials }
+
+  func fetch(now: Date, options: FetchOptions) async -> ProviderFetchResult {
+    lock.withLock {
+      calls.append(options)
+      return queue.count > 1 ? queue.removeFirst() : queue[0]
+    }
+  }
+}
+
+@MainActor
+private func makeCoordinator(
+  _ providers: [any UsageProvider], settings: Settings? = nil, clock: Clock = testClock,
+  history: UsageHistoryStore? = nil
+) throws -> (RefreshCoordinator, AppState, Settings, UsageHistoryStore, NotificationSink) {
+  let settings = settings ?? makeSettings()
+  let state = AppState()
+  let history = try history ?? UsageHistoryStore(url: nil)
+  let sink = NotificationSink()
+  let coordinator = RefreshCoordinator(
+    registry: ProviderRegistry(providers), settings: settings, state: state, history: history, log: makeLog(),
+    clock: clock
+  ) { sink.events += $0 }
+  return (coordinator, state, settings, history, sink)
+}
+
+@MainActor
+final class NotificationSink {
+  var events: [NotificationEvent] = []
+}
+
+@Test @MainActor func coordinatorAppliesSuccessAndRecordsHistory() async throws {
+  let claude = ScriptedProvider(
+    id: .claude, results: [ProviderFetchResult(outcome: .success(snapshot(.claude, 20)), warnings: ["w"])])
+  let codex = ScriptedProvider(
+    id: .codex,
+    results: [
+      ProviderFetchResult(
+        outcome: .success(snapshot(.codex, 50)),
+        analytics: ProviderAnalytics(
+          provider: .codex, points: [AnalyticsPoint(day: "2026-08-29", metric: .turns, series: "m", value: 1)],
+          fetchedAt: fixedNow))
+    ])
+  let (coordinator, state, _, history, sink) = try makeCoordinator([claude, codex])
+  await coordinator.refresh(RefreshRequest())
+  #expect(state.state(for: .claude).availability == .current)
+  #expect(state.state(for: .claude).warnings == ["w"])
+  #expect(state.state(for: .claude).lastSuccess == fixedNow)
+  #expect(state.state(for: .claude).credentialState == .valid(expiresAt: nil))
+  #expect(state.state(for: .codex).analytics?.points.count == 1)
+  #expect(state.lastRefresh == fixedNow)
+  #expect(!state.isRefreshing)
+  #expect(state.statusModel.cells.map(\.id) == ["claude:session", "codex:session"])
+  #expect(try await history.samples(from: .distantPast, to: .distantFuture).count == 2)
+  #expect(try await history.analytics(provider: .codex, from: "2026-01-01", to: "2026-12-31").count == 1)
+  #expect(sink.events.isEmpty)
+  #expect(codex.calls.first?.includeAnalytics == true)
+  #expect(state.orderedProviders == [.claude, .codex])
+  #expect(!state.state(for: .claude).isStale)
+}
+
+@Test @MainActor func coordinatorHandlesFailuresStaleAndBackoff() async throws {
+  let claude = ScriptedProvider(
+    id: .claude,
+    results: [
+      ProviderFetchResult(outcome: .success(snapshot(.claude, 20))),
+      ProviderFetchResult(outcome: .networkUnavailable("down")),
+      ProviderFetchResult(outcome: .success(snapshot(.claude, 25))),
+    ])
+  let codex = ScriptedProvider(
+    id: .codex,
+    results: [
+      ProviderFetchResult(outcome: .failed("HTTP 429: busy")),
+      ProviderFetchResult(outcome: .notAuthenticated("expired")),
+      ProviderFetchResult(outcome: .partial(snapshot(.codex, 5), "stale reason")),
+    ])
+  let box = DateBox(fixedNow)
+  let (coordinator, state, _, _, sink) = try makeCoordinator([claude, codex], clock: box.clock)
+  await coordinator.refresh(RefreshRequest())
+  #expect(state.state(for: .codex).availability == .unavailable)
+  #expect(state.state(for: .codex).lastError == "HTTP 429: busy")
+  box.date = fixedNow.addingTimeInterval(120)
+  await coordinator.refresh(RefreshRequest())
+  #expect(claude.calls.count == 2)
+  #expect(codex.calls.count == 1)
+  #expect(state.state(for: .claude).availability == .networkUnavailable)
+  #expect(state.state(for: .claude).snapshot?.windows.first?.usedPercent == 20)
+  #expect(state.state(for: .claude).isStale)
+  #expect(state.statusModel.iconTone == .offline)
+  await coordinator.refresh(RefreshRequest(force: true))
+  #expect(codex.calls.count == 2)
+  #expect(state.state(for: .codex).availability == .authenticationRequired)
+  #expect(sink.events.map(\.kind) == [.authentication])
+  box.date = fixedNow.addingTimeInterval(400)
+  await coordinator.refresh(RefreshRequest())
+  #expect(state.state(for: .codex).availability == .stale)
+  #expect(state.state(for: .codex).snapshot?.windows.first?.usedPercent == 5)
+  #expect(state.state(for: .codex).lastError == "stale reason")
+  #expect(state.state(for: .claude).availability == .current)
+}
+
+@Test @MainActor func coordinatorKeepsNewerSnapshotOverPartial() async throws {
+  let newer = ProviderSnapshot(provider: .codex, windows: [], fetchedAt: fixedNow.addingTimeInterval(100))
+  let older = ProviderSnapshot(
+    provider: .codex, windows: [], source: .localLog, fetchedAt: fixedNow.addingTimeInterval(-100))
+  let codex = ScriptedProvider(
+    id: .codex,
+    results: [ProviderFetchResult(outcome: .success(newer)), ProviderFetchResult(outcome: .partial(older, "old"))])
+  let (coordinator, state, _, _, _) = try makeCoordinator([codex])
+  await coordinator.refresh(RefreshRequest())
+  await coordinator.refresh(RefreshRequest(force: true))
+  #expect(state.state(for: .codex).snapshot == newer)
+  #expect(state.state(for: .codex).availability == .stale)
+}
+
+@Test @MainActor func coordinatorSkipsDisabledProvidersAndCoalesces() async throws {
+  let claude = ScriptedProvider(id: .claude, results: [ProviderFetchResult(outcome: .success(snapshot(.claude, 10)))])
+  let codex = ScriptedProvider(id: .codex, results: [ProviderFetchResult(outcome: .success(snapshot(.codex, 10)))])
+  let settings = makeSettings()
+  settings.enabledProviders = [.claude]
+  let (coordinator, state, _, _, _) = try makeCoordinator([claude, codex], settings: settings)
+  async let first: Void = coordinator.refresh(RefreshRequest())
+  async let second: Void = coordinator.refresh(RefreshRequest(analytics: true))
+  async let third: Void = coordinator.refresh(RefreshRequest(interactive: true))
+  _ = await (first, second, third)
+  #expect(state.state(for: .codex).availability == .disabled)
+  #expect(codex.calls.isEmpty)
+  #expect(claude.calls.count <= 2)
+  #expect(claude.calls.count >= 1)
+  #expect(
+    RefreshRequest(interactive: true).merged(with: RefreshRequest(force: true, analytics: true))
+      == RefreshRequest(interactive: true, force: true, analytics: true))
+}
+
+@Test @MainActor func coordinatorLoopRunsUntilStopped() async throws {
+  let claude = ScriptedProvider(id: .claude, results: [ProviderFetchResult(outcome: .success(snapshot(.claude, 10)))])
+  let ticks = Ticks()
+  let clock = Clock(
+    now: { fixedNow },
+    sleep: { _ in
+      await ticks.increment()
+      if await ticks.count >= 3 { throw CancellationError() }
+    })
+  let (coordinator, state, _, _, _) = try makeCoordinator([claude], clock: clock)
+  #expect(!coordinator.isRunning)
+  coordinator.start()
+  coordinator.start()
+  #expect(coordinator.isRunning)
+  while await ticks.count < 3 { await Task.yield() }
+  try await Task.sleep(for: .milliseconds(50))
+  #expect(claude.calls.count == 3)
+  #expect(state.state(for: .claude).availability == .current)
+  coordinator.stop()
+  #expect(!coordinator.isRunning)
+  coordinator.stop()
+}
+
+actor Ticks {
+  var count = 0
+  func increment() { count += 1 }
+}
+
+@Test @MainActor func coordinatorAnalyticsCadenceAndStoredFallback() async throws {
+  let analytics = ProviderAnalytics(
+    provider: .codex, points: [AnalyticsPoint(day: "2026-08-29", metric: .turns, series: "m", value: 4)],
+    fetchedAt: fixedNow)
+  let codex = ScriptedProvider(
+    id: .codex,
+    results: [
+      ProviderFetchResult(outcome: .success(snapshot(.codex, 1)), analytics: analytics),
+      ProviderFetchResult(outcome: .success(snapshot(.codex, 2))),
+    ])
+  let box = DateBox(fixedNow)
+  let history = try UsageHistoryStore(url: nil)
+  let (coordinator, state, settings, _, _) = try makeCoordinator([codex], clock: box.clock, history: history)
+  await coordinator.refresh(RefreshRequest())
+  #expect(codex.calls[0].includeAnalytics)
+  box.date = fixedNow.addingTimeInterval(60)
+  await coordinator.refresh(RefreshRequest())
+  #expect(!codex.calls[1].includeAnalytics)
+  #expect(state.state(for: .codex).analytics == analytics)
+  box.date = fixedNow.addingTimeInterval(TimeInterval(settings.analyticsRefreshMinutes * 60 + 1))
+  await coordinator.refresh(RefreshRequest())
+  #expect(codex.calls[2].includeAnalytics)
+  let fresh = ScriptedProvider(id: .codex, results: [ProviderFetchResult(outcome: .success(snapshot(.codex, 3)))])
+  let (second, secondState, _, _, _) = try makeCoordinator([fresh], history: history)
+  await second.refresh(RefreshRequest())
+  #expect(secondState.state(for: .codex).analytics?.points.map(\.value) == [4])
+  let empty = ScriptedProvider(id: .claude, results: [ProviderFetchResult(outcome: .success(snapshot(.claude, 3)))])
+  let (third, thirdState, _, _, _) = try makeCoordinator([empty])
+  await third.refresh(RefreshRequest())
+  #expect(thirdState.state(for: .claude).analytics == nil)
+}
+
+@Test @MainActor func coordinatorRebuildsStatusFromCustomSelection() async throws {
+  let claude = ScriptedProvider(id: .claude, results: [ProviderFetchResult(outcome: .success(snapshot(.claude, 10)))])
+  let (coordinator, state, settings, _, _) = try makeCoordinator([claude])
+  await coordinator.refresh(RefreshRequest())
+  settings.hasCustomSelection = true
+  settings.selectedWindows = []
+  coordinator.rebuildStatus()
+  #expect(state.statusModel.cells.isEmpty)
+  settings.selectedWindows = [WindowKey(provider: .claude, windowID: "session")]
+  coordinator.rebuildStatus(now: fixedNow)
+  #expect(state.statusModel.cells.count == 1)
+  state.remove(.claude)
+  #expect(state.providers.isEmpty)
+  state.popoverVisible = true
+  #expect(state.popoverVisible)
+}
+
+@Test @MainActor func coordinatorSurvivesHistoryErrors() async throws {
+  let claude = ScriptedProvider(
+    id: .claude,
+    results: [
+      ProviderFetchResult(
+        outcome: .success(snapshot(.claude, 10)),
+        analytics: ProviderAnalytics(
+          provider: .claude, points: [AnalyticsPoint(day: "d", metric: .turns, series: "s", value: 1)],
+          fetchedAt: fixedNow))
+    ])
+  let history = try UsageHistoryStore(url: nil)
+  try await history.breakDatabase()
+  let (coordinator, state, _, _, _) = try makeCoordinator([claude], history: history)
+  await coordinator.refresh(RefreshRequest())
+  #expect(state.state(for: .claude).availability == .current)
+}
+
+extension UsageHistoryStore {
+  func breakDatabase() throws {
+    try database.execute("DROP TABLE samples")
+    try database.execute("DROP TABLE analytics")
+  }
+}

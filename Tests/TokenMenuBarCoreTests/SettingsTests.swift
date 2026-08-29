@@ -1,0 +1,131 @@
+import Foundation
+import Testing
+
+@testable import TokenMenuBarCore
+
+@MainActor
+private func freshDefaults() -> UserDefaults {
+  let suite = "tests-settings-\(UUID().uuidString)"
+  let defaults = UserDefaults(suiteName: suite)!
+  defaults.removePersistentDomain(forName: suite)
+  return defaults
+}
+
+@Test @MainActor func settingsDefaultsAndClamping() {
+  let defaults = freshDefaults()
+  let settings = Settings(defaults: defaults)
+  #expect(settings.refreshSeconds == Settings.defaultRefreshSeconds)
+  #expect(settings.enabledProviders == Set(ProviderID.allCases))
+  #expect(settings.statusFormat == .stacked)
+  #expect(settings.activeTemplate == "{provider}\n{pct}")
+  #expect(settings.hideZeroCells)
+  #expect(settings.automaticUpdates)
+  #expect(settings.lastLaunchedVersion == nil)
+  settings.refreshSeconds = 5
+  #expect(settings.refreshSeconds == Settings.minimumRefreshSeconds)
+  settings.refreshSeconds = 5000
+  #expect(settings.refreshSeconds == Settings.maximumRefreshSeconds)
+  #expect(defaults.integer(forKey: "refreshSeconds") == Settings.maximumRefreshSeconds)
+  settings.analyticsRefreshMinutes = 1
+  #expect(settings.analyticsRefreshMinutes == 5)
+  settings.percentDecimals = 9
+  #expect(settings.percentDecimals == 2)
+  settings.percentDecimals = -1
+  #expect(settings.percentDecimals == 0)
+  settings.statusFormat = .custom
+  settings.customTemplate = "{pct}"
+  #expect(settings.activeTemplate == "{pct}")
+}
+
+@Test @MainActor func settingsPersistAndReload() {
+  let defaults = freshDefaults()
+  let settings = Settings(defaults: defaults)
+  let key = WindowKey(provider: .codex, windowID: "weekly")
+  settings.enabledProviders = [.codex]
+  settings.selectedWindows = [key]
+  settings.hasCustomSelection = true
+  settings.statusFormat = .miniBars
+  settings.customTemplate = "x"
+  settings.percentDecimals = 1
+  settings.hideZeroCells = false
+  settings.windowOrder = .percent
+  settings.shortLabels = [key: "W"]
+  settings.allowTokenRefresh = true
+  settings.notifications = NotificationSettings(
+    enabled: false, thresholds: [50], notifyOnReset: false, notifyOnAuthProblems: false)
+  settings.lastTab = .history
+  settings.historyRange = .month
+  settings.historyRollup = .day
+  settings.historyStacked = true
+  settings.historyUseUTC = true
+  settings.historyHiddenKeys = [key]
+  settings.historyAnalyticsMetric = .turns
+  settings.detailedLogging = true
+  settings.automaticUpdates = false
+  settings.lastLaunchedVersion = "1.2.3"
+  settings.codexHomeBookmark = Data([1, 2])
+  let reloaded = Settings(defaults: defaults)
+  #expect(reloaded.enabledProviders == [.codex])
+  #expect(reloaded.selectedWindows == [key])
+  #expect(reloaded.hasCustomSelection)
+  #expect(reloaded.statusFormat == .miniBars)
+  #expect(reloaded.customTemplate == "x")
+  #expect(reloaded.percentDecimals == 1)
+  #expect(!reloaded.hideZeroCells)
+  #expect(reloaded.windowOrder == .percent)
+  #expect(reloaded.shortLabels == [key: "W"])
+  #expect(reloaded.allowTokenRefresh)
+  #expect(reloaded.notifications.thresholds == [50])
+  #expect(reloaded.lastTab == .history)
+  #expect(reloaded.historyRange == .month)
+  #expect(reloaded.historyRollup == .day)
+  #expect(reloaded.historyStacked)
+  #expect(reloaded.historyUseUTC)
+  #expect(reloaded.historyHiddenKeys == [key])
+  #expect(reloaded.historyAnalyticsMetric == .turns)
+  #expect(reloaded.detailedLogging)
+  #expect(!reloaded.automaticUpdates)
+  #expect(reloaded.lastLaunchedVersion == "1.2.3")
+  #expect(reloaded.codexHomeBookmark == Data([1, 2]))
+  reloaded.lastLaunchedVersion = nil
+  reloaded.codexHomeBookmark = nil
+  #expect(defaults.object(forKey: "lastLaunchedVersion") == nil)
+  #expect(defaults.data(forKey: "codexHomeBookmark") == nil)
+}
+
+@Test @MainActor func settingsResetRestoresDefaults() {
+  let defaults = freshDefaults()
+  let settings = Settings(defaults: defaults)
+  settings.refreshSeconds = 300
+  settings.statusFormat = .inline
+  settings.enabledProviders = []
+  settings.lastTab = .settings
+  settings.lastLaunchedVersion = "9"
+  settings.resetToDefaults()
+  #expect(settings.refreshSeconds == Settings.defaultRefreshSeconds)
+  #expect(settings.statusFormat == .stacked)
+  #expect(settings.enabledProviders == Set(ProviderID.allCases))
+  #expect(settings.lastTab == .usage)
+  #expect(settings.lastLaunchedVersion == nil)
+  #expect(defaults.object(forKey: "refreshSeconds") == nil)
+}
+
+@Test @MainActor func settingsIgnoreCorruptStoredValues() {
+  let defaults = freshDefaults()
+  defaults.set(Data("junk".utf8), forKey: "enabledProviders")
+  defaults.set("Nope", forKey: "statusFormat")
+  defaults.set("Nope", forKey: "windowOrder")
+  defaults.set("Nope", forKey: "lastTab")
+  defaults.set("Nope", forKey: "historyRange")
+  defaults.set("Nope", forKey: "historyRollup")
+  defaults.set("Nope", forKey: "historyAnalyticsMetric")
+  let settings = Settings(defaults: defaults)
+  #expect(settings.enabledProviders == Set(ProviderID.allCases))
+  #expect(settings.statusFormat == .stacked)
+  #expect(settings.windowOrder == .provider)
+  #expect(settings.lastTab == .usage)
+  #expect(settings.historyRange == .today)
+  #expect(settings.historyRollup == .minute)
+  #expect(settings.historyAnalyticsMetric == .surfaceUsagePercent)
+  #expect(PopoverTab.allCases.count == 3)
+}

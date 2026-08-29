@@ -1,0 +1,17 @@
+{
+  "claudeAiOauth": {
+    "accessToken": "sk-ant-oat01-EXAMPLE",
+    "refreshToken": "sk-ant-ort01-EXAMPLE",
+    "expiresAt": 1788039901877,
+    "refreshTokenExpiresAt": 1788977546877,
+    "scopes": [
+      "user:file_upload",
+      "user:inference",
+      "user:mcp_servers",
+      "user:profile",
+      "user:sessions:claude_code"
+    ],
+    "subscriptionType": "max",
+    "rateLimitTier": "default_claude_max_20x"
+  }
+}
