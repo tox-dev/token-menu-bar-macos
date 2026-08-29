@@ -2,6 +2,7 @@ import Foundation
 
 public actor CodexProvider: UsageProvider {
   public nonisolated let id: ProviderID = .codex
+  public nonisolated let pollingPolicy = PollingPolicy(idleInterval: 120, activeInterval: 60)
   private let auth: any CodexAuthStore
   private let rollouts: CodexRolloutReader?
   private let client: APIClient
@@ -64,7 +65,10 @@ public actor CodexProvider: UsageProvider {
         CodexAPI.UsageResponse.self, CodexAPI.usageURL, headers: headers, operation: "codex.usage")
     } catch {
       let outcome = ProviderOutcomeBuilder.outcome(for: error, hint: id.loginHint)
-      if case .failed = outcome { return ProviderFetchResult(outcome: outcome) }
+      switch outcome {
+      case .failed, .rateLimited: return ProviderFetchResult(outcome: outcome)
+      default: break
+      }
       return fallback(
         reason: outcome.errorDescription ?? error.message, auth: active, now: now,
         notAuthenticated: error.isAuthenticationFailure)

@@ -26,20 +26,21 @@ public struct RootView: View {
       content
     }
     .frame(minWidth: PopoverGeometry.minimumWidth)
+    .font(.body)
     .background(.regularMaterial)
     .onReceive(timer) { _ in environment.tick() }
     .task { await environment.loadRecentSamples() }
     .onChange(of: environment.state.lastRefresh) { Task { await environment.loadRecentSamples() } }
+    .onPreferenceChange(SizeKey.self) { size in
+      Task { @MainActor in onMeasure(environment.settings.lastTab.rawValue, size) }
+    }
   }
 
   @ViewBuilder private var content: some View {
     switch environment.settings.lastTab {
-    case .usage:
-      UsageTab(environment: environment).measureSize { onMeasure(PopoverTab.usage.rawValue, $0) }
-    case .history:
-      HistoryTab(environment: environment).measureSize { onMeasure(PopoverTab.history.rawValue, $0) }
-    case .settings:
-      SettingsTab(environment: environment).measureSize { onMeasure(PopoverTab.settings.rawValue, $0) }
+    case .usage: UsageTab(environment: environment)
+    case .history: HistoryTab(environment: environment)
+    case .settings: SettingsTab(environment: environment)
     }
   }
 
@@ -133,8 +134,8 @@ public struct ScrollingTab<Content: View>: View {
 
   public var body: some View {
     ScrollView(.vertical) {
-      content.padding(12).background(ScrollerStyler())
+      content.padding(14).background(ScrollerStyler()).measureSize { _ in }
     }
-    .frame(maxHeight: 640)
+    .frame(minHeight: 200)
   }
 }

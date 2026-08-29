@@ -23,6 +23,7 @@ private func snapshot(_ provider: ProviderID, _ percent: Double, resets: TimeInt
 
 final class ScriptedProvider: UsageProvider, @unchecked Sendable {
   let id: ProviderID
+  var pollingPolicy = PollingPolicy(idleInterval: 0, activeInterval: 0)
   private let lock = NSLock()
   private var queue: [ProviderFetchResult]
   private(set) var calls: [FetchOptions] = []
@@ -51,6 +52,7 @@ private func makeCoordinator(
   history: UsageHistoryStore? = nil
 ) throws -> (RefreshCoordinator, AppState, Settings, UsageHistoryStore, NotificationSink) {
   let settings = settings ?? makeSettings()
+  settings.refreshSeconds = 60
   let state = AppState()
   let history = try history ?? UsageHistoryStore(url: nil)
   let sink = NotificationSink()
@@ -107,15 +109,16 @@ final class NotificationSink {
   let codex = ScriptedProvider(
     id: .codex,
     results: [
-      ProviderFetchResult(outcome: .failed("HTTP 429: busy")),
+      ProviderFetchResult(outcome: .rateLimited("HTTP 429: busy", retryAfter: nil)),
       ProviderFetchResult(outcome: .notAuthenticated("expired")),
       ProviderFetchResult(outcome: .partial(snapshot(.codex, 5), "stale reason")),
     ])
   let box = DateBox(fixedNow)
   let (coordinator, state, _, _, sink) = try makeCoordinator([claude, codex], clock: box.clock)
   await coordinator.refresh(RefreshRequest())
-  #expect(state.state(for: .codex).availability == .unavailable)
-  #expect(state.state(for: .codex).lastError == "HTTP 429: busy")
+  #expect(state.state(for: .codex).availability == .rateLimited)
+  #expect(state.state(for: .codex).lastError?.hasPrefix("HTTP 429: busy. Next attempt") == true)
+  #expect(coordinator.nextAttempt(for: .codex) == fixedNow.addingTimeInterval(300))
   box.date = fixedNow.addingTimeInterval(120)
   await coordinator.refresh(RefreshRequest())
   #expect(claude.calls.count == 2)
@@ -172,9 +175,11 @@ final class NotificationSink {
 @Test @MainActor func coordinatorLoopRunsUntilStopped() async throws {
   let claude = ScriptedProvider(id: .claude, results: [ProviderFetchResult(outcome: .success(snapshot(.claude, 10)))])
   let ticks = Ticks()
+  let box = DateBox(fixedNow)
   let clock = Clock(
-    now: { fixedNow },
+    now: { box.date },
     sleep: { _ in
+      box.date = box.date.addingTimeInterval(60)
       await ticks.increment()
       if await ticks.count >= 3 { throw CancellationError() }
     })
@@ -268,4 +273,42 @@ extension UsageHistoryStore {
     try database.execute("DROP TABLE samples")
     try database.execute("DROP TABLE analytics")
   }
+}
+
+@Test @MainActor func coordinatorDoublesRateLimitBackoffAndRespectsPolicies() async throws {
+  let codex = ScriptedProvider(
+    id: .codex,
+    results: [
+      ProviderFetchResult(outcome: .rateLimited("HTTP 429", retryAfter: 30)),
+      ProviderFetchResult(outcome: .rateLimited("HTTP 429", retryAfter: nil)),
+      ProviderFetchResult(outcome: .rateLimited("HTTP 429", retryAfter: 5000)),
+      ProviderFetchResult(outcome: .success(snapshot(.codex, 5))),
+      ProviderFetchResult(outcome: .failed("HTTP 500")),
+    ])
+  codex.pollingPolicy = PollingPolicy(idleInterval: 300, activeInterval: 90)
+  let box = DateBox(fixedNow)
+  let (coordinator, state, _, _, _) = try makeCoordinator([codex], clock: box.clock)
+  await coordinator.refresh(RefreshRequest())
+  #expect(coordinator.nextAttempt(for: .codex) == fixedNow.addingTimeInterval(60))
+  await coordinator.refresh(RefreshRequest(force: true))
+  #expect(coordinator.nextAttempt(for: .codex) == fixedNow.addingTimeInterval(600))
+  await coordinator.refresh(RefreshRequest(force: true))
+  #expect(coordinator.nextAttempt(for: .codex) == fixedNow.addingTimeInterval(1800))
+  #expect(codex.calls.count == 3)
+  box.date = fixedNow.addingTimeInterval(1700)
+  await coordinator.refresh(RefreshRequest())
+  #expect(codex.calls.count == 3)
+  box.date = fixedNow.addingTimeInterval(1800)
+  await coordinator.refresh(RefreshRequest())
+  #expect(codex.calls.count == 4)
+  #expect(state.state(for: .codex).availability == .current)
+  #expect(coordinator.nextAttempt(for: .codex) == nil)
+  box.date = fixedNow.addingTimeInterval(1800 + 100)
+  await coordinator.refresh(RefreshRequest())
+  #expect(codex.calls.count == 4)
+  state.popoverVisible = true
+  await coordinator.refresh(RefreshRequest())
+  #expect(codex.calls.count == 5)
+  #expect(state.state(for: .codex).availability == .unavailable)
+  #expect(coordinator.nextAttempt(for: .codex) == box.date.addingTimeInterval(RefreshCoordinator.networkBackoff))
 }

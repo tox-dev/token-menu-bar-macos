@@ -49,6 +49,7 @@ private func snapshot(source: DataSource = .network) -> ProviderSnapshot {
   #expect(!claude.isStale)
   #expect(claude.credentialDescription == "Token present")
   #expect(claude.warnings == ["w"])
+  #expect(!claude.isRefreshing)
   #expect(claude.notices.count == 1)
   #expect(claude.id == .claude)
   let codex = cards[1]
@@ -80,7 +81,8 @@ private func snapshot(source: DataSource = .network) -> ProviderSnapshot {
   let states: [(QuotaAvailability, String)] = [
     (.loading, "Loading Claude"), (.authenticationRequired, "Sign in to Claude"),
     (.networkUnavailable, "Claude is offline"),
-    (.disabled, "Claude disabled"), (.unavailable, "Claude unavailable"), (.current, "No usage yet"),
+    (.disabled, "Claude disabled"), (.unavailable, "Claude unavailable"), (.rateLimited, "Claude rate limited"),
+    (.current, "No usage yet"),
     (.stale, "No usage yet"),
   ]
   for (availability, title) in states {

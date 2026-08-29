@@ -29,6 +29,19 @@ public struct StatusItemProbe: Equatable, Sendable {
 }
 
 @MainActor
+final class MenuCloseObserver: NSObject, NSMenuDelegate {
+  private let onClose: () -> Void
+
+  init(onClose: @escaping () -> Void) {
+    self.onClose = onClose
+  }
+
+  func menuDidClose(_ menu: NSMenu) {
+    onClose()
+  }
+}
+
+@MainActor
 public final class StatusItemController {
   public let item: NSStatusItem
   private let log: LogBuffer
@@ -46,9 +59,16 @@ public final class StatusItemController {
   public var probing = false {
     didSet { updateProbeTimer() }
   }
+  private let presentMenu: (NSStatusBarButton) -> Void
+  private let tickInterval: TimeInterval
 
-  public init(statusBar: NSStatusBar = .system, log: LogBuffer) {
+  public init(
+    statusBar: NSStatusBar = .system, log: LogBuffer, tickInterval: TimeInterval = 1,
+    presentMenu: @escaping (NSStatusBarButton) -> Void
+  ) {
     self.log = log
+    self.tickInterval = tickInterval
+    self.presentMenu = presentMenu
     item = statusBar.statusItem(withLength: NSStatusItem.variableLength)
     item.autosaveName = "dev.tox.token-menu-bar.status"
     item.button?.target = self
@@ -94,7 +114,7 @@ public final class StatusItemController {
     let signature = StatusRenderSignature(model: model, dark: isDark, height: Double(barHeight))
     guard force || signature != lastSignature, let button = item.button else { return }
     lastSignature = signature
-    let height = barHeight - 4
+    let height = barHeight
     if model.showsIcon {
       button.image = AppIcon.image(height: height, tone: model.iconTone, dark: isDark)
       button.imagePosition = model.cells.isEmpty ? .imageOnly : .imageLeading
@@ -109,7 +129,7 @@ public final class StatusItemController {
 
   func updateCountdownTimer() {
     if model.countdownActive, countdownTask == nil {
-      countdownTask = Self.ticker { [weak self] in self?.onCountdownTick?() }
+      countdownTask = Self.ticker(every: tickInterval) { [weak self] in self?.onCountdownTick?() }
     } else if !model.countdownActive {
       countdownTask?.cancel()
       countdownTask = nil
@@ -124,12 +144,12 @@ public final class StatusItemController {
     probeTask?.cancel()
     probeTask = nil
     guard probing else { return }
-    probeTask = Self.ticker { [weak self] in self?.probe() }
+    probeTask = Self.ticker(every: tickInterval) { [weak self] in self?.probe() }
   }
 
-  static func ticker(_ tick: @escaping @MainActor () -> Void) -> Task<Void, Never> {
+  static func ticker(every interval: TimeInterval, _ tick: @escaping @MainActor () -> Void) -> Task<Void, Never> {
     Task { @MainActor in
-      while (try? await Task.sleep(for: .seconds(1))) != nil {
+      while (try? await Task.sleep(for: .seconds(interval))) != nil {
         tick()
       }
     }
@@ -171,10 +191,12 @@ public final class StatusItemController {
   }
 
   public func show(_ menu: NSMenu) {
+    menu.delegate = menuDelegate
     item.menu = menu
-    item.button?.performClick(nil)
-    item.menu = nil
+    if let button = item.button { presentMenu(button) }
   }
+
+  private lazy var menuDelegate = MenuCloseObserver { [weak self] in self?.item.menu = nil }
 
   public func remove(from statusBar: NSStatusBar = .system) {
     countdownTask?.cancel()

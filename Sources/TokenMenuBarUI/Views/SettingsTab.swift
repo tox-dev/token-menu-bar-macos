@@ -22,7 +22,7 @@ public struct SettingsTab: View {
         section("Notifications") { notifications }
         section("Log") { LogSection(environment: environment) }
       }
-      .frame(minWidth: 440, alignment: .leading)
+      .frame(minWidth: 540, alignment: .leading)
     }
   }
 
@@ -135,7 +135,7 @@ public struct SettingsTab: View {
       Stepper("Percent decimals: \(settings.percentDecimals)", value: menuBarSetting(\.percentDecimals), in: 0...2)
       Toggle("Hide windows at 0%", isOn: menuBarSetting(\.hideZeroCells))
       StatusPreview(model: environment.state.statusModel)
-      Text("Windows shown in the menu bar").font(.subheadline)
+      Text("Windows shown in the menu bar").font(.body.weight(.medium))
       WindowSelectionList(environment: environment)
     }
   }
@@ -222,8 +222,8 @@ public struct StatusPreview: View {
 
   public var body: some View {
     HStack {
-      Text("Preview").font(.caption).foregroundStyle(.secondary)
-      Image(nsImage: StatusItemRenderer.previewImage(for: model, height: 18, dark: colorScheme == .dark))
+      Text("Preview").font(.callout).foregroundStyle(.secondary)
+      Image(nsImage: StatusItemRenderer.previewImage(for: model, height: 24, dark: colorScheme == .dark))
         .padding(.horizontal, 6)
         .padding(.vertical, 2)
         .background(
@@ -262,14 +262,16 @@ public struct WindowSelectionList: View {
       ForEach(rows, id: \.key) { row in
         HStack {
           Toggle(isOn: Binding(get: { selection.contains(row.key) }, set: { toggle(row.key, on: $0) })) {
-            Image(systemName: ProviderGlyph.symbolName(row.key.provider)).foregroundStyle(
-              ProviderGlyph.color(row.key.provider))
-            Text("\(row.key.provider.displayName) \(row.window.label)")
+            HStack(spacing: 6) {
+              Image(systemName: ProviderGlyph.symbolName(row.key.provider))
+                .foregroundStyle(ProviderGlyph.color(row.key.provider))
+              Text("\(row.key.provider.displayName) \(row.window.label)")
+            }
           }
           .toggleStyle(.checkbox)
           .disabled(selection == [row.key])
           Spacer()
-          Text(Format.percent(row.window.usedPercent)).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+          Text(Format.percent(row.window.usedPercent)).font(.callout.monospacedDigit()).foregroundStyle(.secondary)
           if settings.activeTemplate.contains("{label}") {
             TextField(
               "Label", text: Binding(get: { settings.shortLabels[row.key] ?? "" }, set: { setLabel(row.key, $0) })

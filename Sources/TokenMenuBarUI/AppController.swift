@@ -31,6 +31,7 @@ public struct AppDependencies {
   public var terminate: () -> Void
   public var rebuildProviders: (TokenMenuBarCore.Settings) -> ProviderRegistry
   public var screenVisibleFrame: () -> CGRect?
+  public var openPopoverOnLaunch: Bool
 
   public init(
     appInfo: AppInfo,
@@ -52,7 +53,8 @@ public struct AppDependencies {
     chooseCodexHome: @escaping () -> URL?,
     terminate: @escaping () -> Void,
     rebuildProviders: @escaping (TokenMenuBarCore.Settings) -> ProviderRegistry,
-    screenVisibleFrame: @escaping () -> CGRect?
+    screenVisibleFrame: @escaping () -> CGRect?,
+    openPopoverOnLaunch: Bool = false
   ) {
     self.appInfo = appInfo
     self.settings = settings
@@ -74,6 +76,7 @@ public struct AppDependencies {
     self.terminate = terminate
     self.rebuildProviders = rebuildProviders
     self.screenVisibleFrame = screenVisibleFrame
+    self.openPopoverOnLaunch = openPopoverOnLaunch
   }
 }
 
@@ -145,7 +148,7 @@ public final class AppController {
     }
     dependencies.settings.lastLaunchedVersion = dependencies.appInfo.version
     log.log("launch \(dependencies.appInfo.name) \(dependencies.appInfo.version) (\(dependencies.appInfo.build))")
-    let item = StatusItemController(statusBar: dependencies.statusBar, log: log)
+    let item = StatusItemController(statusBar: dependencies.statusBar, log: log) { $0.performClick(nil) }
     item.onClick = { [weak self] in self?.togglePopover() }
     item.onCountdownTick = { [weak self] in self?.coordinator.rebuildStatus() }
     item.menuProvider = { [weak self] in self?.contextMenu() ?? NSMenu() }
@@ -157,7 +160,7 @@ public final class AppController {
     popover.onVisibilityChange = { [weak self] visible in
       self?.dependencies.state.popoverVisible = visible
       self?.statusItem?.probing = visible || self?.dependencies.settings.detailedLogging == true
-      if visible { self?.refreshNow() }
+      if visible { self?.refreshIfStale() }
     }
     self.popover = popover
     installObservers()
@@ -165,6 +168,7 @@ public final class AppController {
     coordinator.start()
     Task { await dependencies.notifier.requestAuthorization() }
     observeStatusModel()
+    if dependencies.openPopoverOnLaunch { togglePopover() }
   }
 
   func rootView(_ popover: PopoverController) -> AnyView {
@@ -226,6 +230,10 @@ public final class AppController {
 
   public func refreshNow() {
     Task { await coordinator.refresh(RefreshRequest(interactive: true, force: true)) }
+  }
+
+  public func refreshIfStale() {
+    Task { await coordinator.refresh(RefreshRequest(interactive: true)) }
   }
 
   public func settingsChanged() {

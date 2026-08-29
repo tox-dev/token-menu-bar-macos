@@ -5,6 +5,7 @@ public enum ProviderFetchOutcome: Sendable, Equatable {
   case partial(ProviderSnapshot, String)
   case notAuthenticated(String)
   case networkUnavailable(String)
+  case rateLimited(String, retryAfter: TimeInterval?)
   case failed(String)
 
   public var snapshot: ProviderSnapshot? {
@@ -17,7 +18,9 @@ public enum ProviderFetchOutcome: Sendable, Equatable {
   public var errorDescription: String? {
     switch self {
     case .success: nil
-    case .partial(_, let e), .notAuthenticated(let e), .networkUnavailable(let e), .failed(let e): e
+    case .partial(_, let e), .notAuthenticated(let e), .networkUnavailable(let e), .failed(let e),
+      .rateLimited(let e, _):
+      e
     }
   }
 }
@@ -28,6 +31,7 @@ public enum QuotaAvailability: String, Sendable, Equatable {
   case stale
   case authenticationRequired
   case networkUnavailable
+  case rateLimited
   case unavailable
   case disabled
 
@@ -38,6 +42,7 @@ public enum QuotaAvailability: String, Sendable, Equatable {
     case .stale: "Showing last known values"
     case .authenticationRequired: "Sign-in required"
     case .networkUnavailable: "Offline"
+    case .rateLimited: "Rate limited"
     case .unavailable: "Unavailable"
     case .disabled: "Disabled"
     }

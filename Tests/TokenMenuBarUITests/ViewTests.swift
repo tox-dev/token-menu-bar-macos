@@ -131,6 +131,9 @@ import TokenMenuBarCore
   presenter.hoveredKey = data.series[0].key
   #expect(chart.opacity(WindowKey(provider: .codex, windowID: "x")) == 0.18)
   #expect(UsageChart.color(index: 9) == UsageChart.palette[1])
+  #expect(
+    UsageChart.axisFormat(for: fixedNow...fixedNow.addingTimeInterval(3600))
+      != UsageChart.axisFormat(for: fixedNow...fixedNow.addingTimeInterval(5 * 86400)))
   presenter.select(x: fixedNow)
   _ = host(UsageChart(data: data, presenter: presenter, stacked: true, timeZone: .current), width: 400, height: 240)
   _ = host(HistoryInspector(environment: environment), width: 240, height: 300)

@@ -55,6 +55,7 @@ public struct ProviderCard: Sendable, Hashable, Identifiable {
   public let credentialDescription: String?
   public let emptyTitle: String
   public let emptyDescription: String
+  public let isRefreshing: Bool
 
   public var id: ProviderID { provider }
 
@@ -103,7 +104,8 @@ public enum UsagePresenter {
       source: snapshot?.source,
       credentialDescription: state.credentialState?.description,
       emptyTitle: title,
-      emptyDescription: description
+      emptyDescription: description,
+      isRefreshing: state.isRefreshing
     )
   }
 
@@ -132,6 +134,8 @@ public enum UsagePresenter {
     case .disabled: ("\(provider.displayName) disabled", "Enable it under Settings > Providers.")
     case .unavailable:
       ("\(provider.displayName) unavailable", state.lastError ?? "The usage endpoint returned an error.")
+    case .rateLimited:
+      ("\(provider.displayName) rate limited", state.lastError ?? "The usage endpoint asked us to slow down.")
     case .current, .stale: ("No usage yet", "\(provider.displayName) reports no active limits.")
     }
   }

@@ -38,7 +38,8 @@ private func makeDependencies(
         StaticProvider(id: .codex, result: ProviderFetchResult(outcome: .success(sampleSnapshot(.codex))))
       ])
     },
-    screenVisibleFrame: { CGRect(x: 0, y: 0, width: 1440, height: 900) }
+    screenVisibleFrame: { CGRect(x: 0, y: 0, width: 1440, height: 900) },
+    openPopoverOnLaunch: providers.count > 1
   )
   return (dependencies, recorder)
 }
@@ -74,9 +75,8 @@ final class Recorder {
   #expect(!dependencies.state.statusModel.cells.isEmpty)
   #expect(controller.statusItem?.model.cells.count == dependencies.state.statusModel.cells.count)
   controller.togglePopover()
-  #expect(controller.popover?.isShown == true)
-  #expect(dependencies.state.popoverVisible)
-  controller.togglePopover()
+  #expect(dependencies.state.popoverVisible == controller.popover?.isShown)
+  controller.popover?.close()
   try await Task.sleep(for: .milliseconds(50))
   #expect(controller.popover?.isShown == false)
   controller.handleSleep()

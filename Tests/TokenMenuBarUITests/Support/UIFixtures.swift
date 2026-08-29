@@ -63,6 +63,7 @@ func makeEnvironment(settings: TokenMenuBarCore.Settings? = nil, populate: Bool 
       $0.lastError = "network down https://example.com/help"
       $0.warnings = ["Profile unavailable"]
       $0.credentialState = .valid(expiresAt: nil)
+      $0.isRefreshing = true
     }
     state.update(.codex) {
       $0.snapshot = sampleSnapshot(.codex, percent: 80)
@@ -79,13 +80,18 @@ func makeEnvironment(settings: TokenMenuBarCore.Settings? = nil, populate: Bool 
 }
 
 @MainActor
+private var hostingWindows: [NSWindow] = []
+
+@MainActor
 func host<V: View>(_ view: V, width: CGFloat = 520, height: CGFloat = 700) -> NSHostingView<V> {
   let hosting = NSHostingView(rootView: view)
   hosting.frame = NSRect(x: 0, y: 0, width: width, height: height)
   let window = NSWindow(contentRect: hosting.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+  window.isReleasedWhenClosed = false
   window.contentView = hosting
   hosting.layoutSubtreeIfNeeded()
   hosting.displayIfNeeded()
+  hostingWindows.append(window)
   return hosting
 }
 
@@ -156,6 +162,7 @@ final class FakeUpdater: UpdaterHook {
 struct StaticProvider: UsageProvider {
   let id: ProviderID
   let result: ProviderFetchResult
+  let pollingPolicy = PollingPolicy(idleInterval: 0, activeInterval: 0)
 
   var credentialDescription: String { "static \(id.rawValue)" }
   func credentialState(now: Date) -> CredentialState { .valid(expiresAt: nil) }

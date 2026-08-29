@@ -51,7 +51,7 @@ public final class PopoverController: NSObject, NSPopoverDelegate {
     gate = PopoverDismissalGate()
     popover.show(relativeTo: view.bounds, of: view, preferredEdge: .minY)
     installMonitors()
-    onVisibilityChange?(true)
+    onVisibilityChange?(popover.isShown)
   }
 
   public func close() {
@@ -75,18 +75,15 @@ public final class PopoverController: NSObject, NSPopoverDelegate {
 
   public func select(tab: String) {
     activeTab = tab
-    applySize()
+    Task { @MainActor [weak self] in self?.applySize() }
   }
 
-  func applySize() {
-    let size = PopoverGeometry.contentSize(
-      measured: measured,
-      activeTab: activeTab,
-      minimumWidths: [PopoverTab.history.rawValue: 560],
-      fallbackHeight: 320,
-      maximum: maximum
-    )
-    if popover.contentSize != size { popover.contentSize = size }
+  public func applySize() {
+    hosting.view.layoutSubtreeIfNeeded()
+    let size = PopoverGeometry.clamp(hosting.view.fittingSize, maximum: maximum)
+    if abs(popover.contentSize.width - size.width) > 1 || abs(popover.contentSize.height - size.height) > 1 {
+      popover.contentSize = size
+    }
   }
 
   func installMonitors() {

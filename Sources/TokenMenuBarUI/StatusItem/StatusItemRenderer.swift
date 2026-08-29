@@ -16,14 +16,18 @@ public struct StatusRenderSignature: Hashable, Sendable {
 @MainActor
 public enum StatusItemRenderer {
   public static let maxFontSize: CGFloat = 13
-  public static let minFontSize: CGFloat = 7
-  public static let cellPadding: CGFloat = 3
-  public static let separatorWidth: CGFloat = 6
-  public static let barWidth: CGFloat = 26
-  public static let barHeight: CGFloat = 3
+  public static let minFontSize: CGFloat = 8
+  public static let cellPadding: CGFloat = 6
+  public static let separatorWidth: CGFloat = 8
+  public static let barWidth: CGFloat = 30
+  public static let barHeight: CGFloat = 4
 
-  public static func fontSize(height: CGFloat, lineCount: Int) -> CGFloat {
-    min(maxFontSize, max(minFontSize, (height / CGFloat(max(lineCount, 1))) * 0.78))
+  public static func fontSizes(height: CGFloat, lineCount: Int) -> [CGFloat] {
+    switch lineCount {
+    case ...1: return [maxFontSize]
+    case 2: return [9, 11.5]
+    default: return Array(repeating: max(minFontSize, min(9, height / CGFloat(lineCount) * 0.8)), count: lineCount)
+    }
   }
 
   public static func color(for kind: StatusRun.Kind, dark: Bool) -> NSColor {
@@ -51,8 +55,9 @@ public enum StatusItemRenderer {
   static func attachment(_ image: NSImage) -> NSAttributedString {
     let attachment = NSTextAttachment()
     attachment.image = image
+    let font = NSFont.menuBarFont(ofSize: 0)
     attachment.bounds = CGRect(
-      x: 0, y: -(image.size.height - 12) / 2 - 3, width: image.size.width, height: image.size.height)
+      x: 0, y: (font.capHeight - image.size.height) / 2, width: image.size.width, height: image.size.height)
     return NSAttributedString(attachment: attachment)
   }
 
@@ -69,14 +74,14 @@ public enum StatusItemRenderer {
   }
 
   static func lineStrings(_ cell: StatusCell, height: CGFloat, dark: Bool) -> [NSAttributedString] {
-    let size = fontSize(height: height, lineCount: cell.lines.count)
-    return cell.lines.map { runs in
+    let sizes = fontSizes(height: height, lineCount: cell.lines.count)
+    return zip(cell.lines, sizes).map { runs, size in
       let line = NSMutableAttributedString()
       for run in runs {
         let font: NSFont =
           switch run.kind {
-          case .label: NSFont.systemFont(ofSize: size, weight: .medium)
-          default: NSFont.monospacedDigitSystemFont(ofSize: size, weight: .semibold)
+          case .label: NSFont.systemFont(ofSize: size, weight: .regular)
+          default: NSFont.monospacedDigitSystemFont(ofSize: size, weight: .medium)
           }
         line.append(
           NSAttributedString(
@@ -90,12 +95,14 @@ public enum StatusItemRenderer {
     let lines = lineStrings(cell, height: height, dark: dark)
     let widest = lines.map { $0.size().width }.max() ?? 0
     let width = ceil(widest) + cellPadding * 2
+    let heights = lines.map { $0.size().height }
+    let total = heights.reduce(0, +)
     return NSImage(size: CGSize(width: width, height: height), flipped: true) { rect in
-      let lineHeight = rect.height / CGFloat(max(lines.count, 1))
-      for (index, line) in lines.enumerated() {
+      var y = (rect.height - total) / 2
+      for line in lines {
         let size = line.size()
-        let y = lineHeight * CGFloat(index) + (lineHeight - size.height) / 2
         line.draw(at: CGPoint(x: (rect.width - size.width) / 2, y: y))
+        y += size.height
       }
       return true
     }
@@ -103,7 +110,7 @@ public enum StatusItemRenderer {
 
   static func miniBarImage(_ cell: StatusCell, height: CGFloat, dark: Bool) -> NSImage {
     let glyph = ProviderGlyph.image(cell.provider, pointSize: min(height * 0.55, 12))
-    let labelFont = NSFont.systemFont(ofSize: 6.5, weight: .bold)
+    let labelFont = NSFont.systemFont(ofSize: 8, weight: .bold)
     let labelWidth =
       cell.bars.map { NSAttributedString(string: $0.label, attributes: [.font: labelFont]).size().width }.max() ?? 0
     let width = cellPadding + glyph.size.width + 4 + ceil(labelWidth) + 3 + barWidth + cellPadding

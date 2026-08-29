@@ -34,7 +34,7 @@ public struct PopoverDismissalGate: Sendable, Equatable {
 }
 
 public enum PopoverGeometry {
-  public static let minimumWidth: CGFloat = 360
+  public static let minimumWidth: CGFloat = 560
   public static let minimumHeight: CGFloat = 200
   public static let margin: CGFloat = 12
   public static let chromeHeight: CGFloat = 58
@@ -47,14 +47,10 @@ public enum PopoverGeometry {
     return CGSize(width: max(minimumWidth, width), height: height)
   }
 
-  public static func contentSize(
-    measured: [String: CGSize], activeTab: String, minimumWidths: [String: CGFloat], fallbackHeight: CGFloat,
-    maximum: CGSize
-  ) -> CGSize {
-    let widths = measured.values.map(\.width) + Array(minimumWidths.values)
-    let width = min(max(widths.max() ?? minimumWidth, minimumWidth), maximum.width)
-    let height = min((measured[activeTab]?.height ?? fallbackHeight) + chromeHeight, maximum.height)
-    return CGSize(width: width, height: max(height, minimumHeight))
+  public static func clamp(_ size: CGSize, maximum: CGSize) -> CGSize {
+    CGSize(
+      width: min(max(size.width, minimumWidth), max(maximum.width, minimumWidth)),
+      height: min(max(size.height, minimumHeight), max(maximum.height, minimumHeight)))
   }
 
   public static func pinnedOrigin(lastTopCenter: CGPoint, size: CGSize, visibleFrame: CGRect) -> CGPoint {

@@ -17,7 +17,7 @@ public struct HistoryTab: View {
       VStack(alignment: .leading, spacing: 10) {
         controls
         HStack(alignment: .top, spacing: 12) {
-          chart.frame(minWidth: 320, minHeight: 220)
+          chart.frame(minWidth: 520, minHeight: 300)
           HistoryInspector(environment: environment).frame(width: 220)
         }
         if settings.historyRange == .custom {
@@ -29,7 +29,7 @@ public struct HistoryTab: View {
           }
         }
       }
-      .frame(minWidth: 560, alignment: .leading)
+      .frame(minWidth: 820, alignment: .leading)
     }
     .task { presenter.reload() }
   }
@@ -185,12 +185,17 @@ public struct UsageChart: View {
     .chartXAxis {
       AxisMarks(values: .automatic(desiredCount: 4)) { _ in
         AxisGridLine()
-        AxisValueLabel(format: .dateTime.hour().minute(), centered: false)
+        AxisValueLabel(format: Self.axisFormat(for: data.domain), centered: false)
       }
     }
     .chartLegend(.hidden)
     .chartOverlay { proxy in ChartOverlay(chart: self, proxy: proxy) }
     .environment(\.timeZone, timeZone)
+  }
+
+  static func axisFormat(for domain: ClosedRange<Date>) -> Date.FormatStyle {
+    domain.upperBound.timeIntervalSince(domain.lowerBound) > 2 * 86400
+      ? .dateTime.month(.abbreviated).day() : .dateTime.hour().minute()
   }
 
   static func percentLabel(_ value: AxisValue) -> String {

@@ -97,7 +97,7 @@ private func claudeProvider(
   #expect(usageRequest.value(forHTTPHeaderField: "User-Agent") == ClaudeAPI.userAgent)
   _ = await provider.fetch(now: fixedNow.addingTimeInterval(60), options: FetchOptions())
   #expect(transport.requests(matching: "/api/oauth/profile").count == 1)
-  _ = await provider.fetch(now: fixedNow.addingTimeInterval(4000), options: FetchOptions())
+  _ = await provider.fetch(now: fixedNow.addingTimeInterval(7 * 3600), options: FetchOptions())
   #expect(transport.requests(matching: "/api/oauth/profile").count == 2)
 }
 
@@ -176,8 +176,8 @@ private func claudeProvider(
   transport.on(path: "/api/oauth/profile", .json("claude_profile"))
   let limited = await claudeProvider(MemoryClaudeStore(validClaude), transport: transport).fetch(
     now: fixedNow, options: FetchOptions())
-  #expect(limited.outcome == .failed("HTTP 429: busy"))
-  #expect(limited.warnings == ["Usage endpoint rate limited; retry after 90s."])
+  #expect(limited.outcome == .rateLimited("HTTP 429: busy", retryAfter: 90))
+  #expect(limited.warnings.isEmpty)
   let unauthorized = StubTransport()
   unauthorized.on(path: "/api/oauth/usage", .text("", status: 403))
   unauthorized.on(path: "/api/oauth/profile", .json("claude_profile"))

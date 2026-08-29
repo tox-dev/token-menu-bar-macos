@@ -6,7 +6,7 @@ public enum ClaudeAPI {
   public static let tokenURL = URL(string: "https://platform.claude.com/v1/oauth/token")!
   public static let clientID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
   public static let betaHeader = "oauth-2025-04-20"
-  public static let userAgent = "claude-cli/2.1.205 (external, cli)"
+  public static let userAgent = "claude-code/2.1.251"
 
   public static func headers(token: String) -> [String: String] {
     ["Authorization": "Bearer \(token)", "anthropic-beta": betaHeader, "User-Agent": userAgent]

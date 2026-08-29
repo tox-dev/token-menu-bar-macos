@@ -21,7 +21,10 @@ public struct RefreshRequest: Sendable, Equatable {
 @MainActor
 public final class RefreshCoordinator {
   public static let rateLimitBackoff: TimeInterval = 300
+  public static let minimumBackoff: TimeInterval = 60
+  public static let maximumBackoff: TimeInterval = 1800
   public static let networkBackoff: TimeInterval = 60
+  public static let tickInterval: TimeInterval = 60
 
   public var registry: ProviderRegistry
   private let settings: Settings
@@ -35,6 +38,8 @@ public final class RefreshCoordinator {
   private var pending: RefreshRequest?
   private var retryNotBefore: [ProviderID: Date] = [:]
   private var lastAnalytics: [ProviderID: Date] = [:]
+  private var lastAttempt: [ProviderID: Date] = [:]
+  private var rateLimitStrikes: [ProviderID: Int] = [:]
 
   public init(
     registry: ProviderRegistry,
@@ -64,7 +69,7 @@ public final class RefreshCoordinator {
       var keepGoing = true
       while keepGoing {
         await refresh(RefreshRequest())
-        keepGoing = (try? await clock.sleep(TimeInterval(settings.refreshSeconds))) != nil
+        keepGoing = (try? await clock.sleep(min(Self.tickInterval, TimeInterval(settings.refreshSeconds)))) != nil
       }
     }
   }
@@ -98,11 +103,7 @@ public final class RefreshCoordinator {
     for provider in registry.ids where !enabled.contains(provider) {
       state.update(provider) { $0 = ProviderState(availability: .disabled) }
     }
-    let due = registry.providers.filter { provider in
-      guard enabled.contains(provider.id) else { return false }
-      if request.force { return true }
-      return retryNotBefore[provider.id].map { $0 <= now } ?? true
-    }
+    let due = registry.providers.filter { isDue($0, request: request, now: now) }
     for provider in due { state.update(provider.id) { $0.isRefreshing = true } }
     let analyticsDue = Set(
       due.map(\.id).filter { id in
@@ -128,6 +129,26 @@ public final class RefreshCoordinator {
     if !events.isEmpty { notify(events) }
   }
 
+  func isDue(_ provider: any UsageProvider, request: RefreshRequest, now: Date) -> Bool {
+    guard settings.enabledProviders.contains(provider.id) else { return false }
+    if request.force { return true }
+    if let blocked = retryNotBefore[provider.id], blocked > now { return false }
+    let interval = provider.pollingPolicy.interval(
+      active: state.popoverVisible, requested: TimeInterval(settings.refreshSeconds))
+    return lastAttempt[provider.id].map { now.timeIntervalSince($0) >= interval - 1 } ?? true
+  }
+
+  public func nextAttempt(for id: ProviderID) -> Date? {
+    retryNotBefore[id]
+  }
+
+  func rateLimitBlock(for id: ProviderID, retryAfter: TimeInterval?) -> TimeInterval {
+    let strikes = (rateLimitStrikes[id] ?? 0) + 1
+    rateLimitStrikes[id] = strikes
+    let base = max(retryAfter ?? Self.rateLimitBackoff, Self.minimumBackoff)
+    return min(base * pow(2, Double(strikes - 1)), Self.maximumBackoff)
+  }
+
   private func apply(
     _ id: ProviderID, result: ProviderFetchResult, credentialState: CredentialState, now: Date
   ) async -> [NotificationEvent] {
@@ -135,6 +156,7 @@ public final class RefreshCoordinator {
     var next = previous
     next.isRefreshing = false
     next.lastAttempt = now
+    lastAttempt[id] = now
     next.warnings = result.warnings
     next.credentialState = credentialState
     switch result.outcome {
@@ -144,6 +166,7 @@ public final class RefreshCoordinator {
       next.lastError = nil
       next.lastSuccess = now
       retryNotBefore[id] = nil
+      rateLimitStrikes[id] = nil
       await record(snapshot, now: now)
     case .partial(let snapshot, let reason):
       if previous.snapshot == nil || snapshot.fetchedAt >= (previous.snapshot?.fetchedAt ?? .distantPast) {
@@ -160,11 +183,16 @@ public final class RefreshCoordinator {
       next.availability = .networkUnavailable
       next.lastError = reason
       retryNotBefore[id] = now.addingTimeInterval(Self.networkBackoff)
+    case .rateLimited(let reason, let retryAfter):
+      let block = rateLimitBlock(for: id, retryAfter: retryAfter)
+      let until = now.addingTimeInterval(block)
+      next.availability = .rateLimited
+      next.lastError = "\(reason). Next attempt \(Format.resetClock(until, now: now))."
+      retryNotBefore[id] = until
     case .failed(let reason):
       next.availability = .unavailable
       next.lastError = reason
-      let backoff = reason.contains("429") ? Self.rateLimitBackoff : Self.networkBackoff
-      retryNotBefore[id] = now.addingTimeInterval(backoff)
+      retryNotBefore[id] = now.addingTimeInterval(Self.networkBackoff)
     }
     if let analytics = result.analytics {
       next.analytics = analytics

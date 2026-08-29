@@ -13,10 +13,10 @@ import TokenMenuBarCore
   controller.excludedFrame = { CGRect(x: 0, y: 0, width: 10, height: 10) }
   controller.show(relativeTo: nil, anchorFrame: nil, visibleFrame: nil)
   #expect(!controller.isShown)
-  let window = NSWindow(
-    contentRect: NSRect(x: 100, y: 100, width: 400, height: 300), styleMask: [.titled], backing: .buffered, defer: false
-  )
-  let anchor = NSView(frame: NSRect(x: 10, y: 10, width: 40, height: 20))
+  let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+  let window = NSWindow(contentRect: screen, styleMask: [.titled], backing: .buffered, defer: false)
+  window.isReleasedWhenClosed = false
+  let anchor = NSView(frame: NSRect(x: screen.width / 2, y: screen.height - 60, width: 40, height: 20))
   window.contentView?.addSubview(anchor)
   window.orderFrontRegardless()
   controller.measure(tab: PopoverTab.usage.rawValue, size: CGSize(width: 480, height: 320))
@@ -26,9 +26,14 @@ import TokenMenuBarCore
     visibleFrame: CGRect(x: 0, y: 0, width: 1440, height: 900))
   #expect(controller.isShown)
   #expect(visibility == [true])
-  #expect(controller.popover.contentSize.width >= 560)
+  #expect(controller.popover.contentSize.width >= PopoverGeometry.minimumWidth)
   controller.show(relativeTo: anchor, anchorFrame: nil, visibleFrame: nil)
   controller.setContent(AnyView(Text("changed")))
+  controller.toggle(relativeTo: anchor, anchorFrame: nil, visibleFrame: nil)
+  try await Task.sleep(for: .milliseconds(100))
+  #expect(!controller.isShown)
+  controller.toggle(relativeTo: anchor, anchorFrame: nil, visibleFrame: nil)
+  #expect(controller.isShown)
   #expect(controller.evaluate(trigger: .mouseMoved, mouseLocation: CGPoint(x: -1000, y: -1000)) == false)
   #expect(controller.evaluate(trigger: .mouseDown, mouseLocation: CGPoint(x: 5, y: 5)) == false)
   controller.repositionIfAnchorHidden(anchorVisible: true, visibleFrame: nil)
@@ -65,5 +70,6 @@ import TokenMenuBarCore
   try await Task.sleep(for: .milliseconds(100))
   #expect(!controller.isShown)
   #expect(controller.popoverShouldClose(controller.popover))
-  window.close()
+  try await Task.sleep(for: .milliseconds(300))
+  window.orderOut(nil)
 }

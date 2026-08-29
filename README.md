@@ -34,6 +34,10 @@ sandbox cannot read it on its own.
 - **Settings tab**: menu bar format with live preview, window selection and short labels, providers and credential
   status, refresh cadence, history export/clear, notification thresholds, and the log.
 
+Polling is deliberately slow: the Anthropic usage endpoint allows only a handful of calls per token before it answers
+429 for a long time, so Claude is polled every 5 minutes (2 minutes while the popover is open) and Codex every 2 minutes
+(1 minute while open); a 429 backs off from 5 to 30 minutes and the last good values stay on screen.
+
 Token refresh is off by default: refreshing rotates the CLI's refresh token, so the app only does it when you opt in
 under Settings > Providers.
 

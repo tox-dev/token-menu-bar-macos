@@ -10,10 +10,12 @@ extension Color {
 public struct UsageBar: View {
   public let percent: Double
   public let color: Color
+  public let height: CGFloat
 
-  public init(percent: Double, color: Color) {
+  public init(percent: Double, color: Color, height: CGFloat = 6) {
     self.percent = percent
     self.color = color
+    self.height = height
   }
 
   public var body: some View {
@@ -23,7 +25,7 @@ public struct UsageBar: View {
         Capsule().fill(color).frame(width: max(proxy.size.width * min(max(percent, 0), 100) / 100, 4))
       }
     }
-    .frame(height: 6)
+    .frame(height: height)
     .accessibilityLabel(Format.percent(percent))
   }
 }
@@ -47,7 +49,7 @@ public struct Banner: View {
       Image(systemName: tone == .warning ? "exclamationmark.triangle.fill" : "info.circle.fill")
         .foregroundStyle(tone == .warning ? Color.orange : Color.accentColor)
       LinkifiedText(text)
-        .font(.callout)
+        .font(.body)
         .textSelection(.enabled)
       Spacer(minLength: 0)
     }
@@ -105,7 +107,7 @@ public struct ChipView: View {
         .padding(.horizontal, 6)
         .accessibilityLabel("Copy \(chip.text)")
     }
-    .font(.caption)
+    .font(.callout)
     .background(Color.primary.opacity(0.08), in: Capsule())
     .contextMenu {
       if let link = chip.link { Button("Open") { onOpen(link) } }
@@ -208,8 +210,8 @@ public struct MetricCell: View {
 
   public var body: some View {
     VStack(alignment: .leading, spacing: 2) {
-      Text(title).font(.caption).foregroundStyle(.secondary)
-      Text(value).font(.callout.monospacedDigit()).lineLimit(1)
+      Text(title).font(.callout).foregroundStyle(.secondary)
+      Text(value).font(.body.monospacedDigit()).lineLimit(1)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .hoverHelp { Text(help).font(.callout).frame(maxWidth: 260) }

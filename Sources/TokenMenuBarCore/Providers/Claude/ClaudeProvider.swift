@@ -1,9 +1,10 @@
 import Foundation
 
 public actor ClaudeProvider: UsageProvider {
-  public static let profileCacheInterval: TimeInterval = 3600
+  public static let profileCacheInterval: TimeInterval = 6 * 3600
 
   public nonisolated let id: ProviderID = .claude
+  public nonisolated let pollingPolicy = PollingPolicy(idleInterval: 300, activeInterval: 120)
   private let credentials: any ClaudeCredentialStore
   private let localAccountURL: URL?
   private let client: APIClient
@@ -86,9 +87,6 @@ public actor ClaudeProvider: UsageProvider {
       )
       return ProviderFetchResult(outcome: .success(snapshot), warnings: warnings)
     case .failure(let error):
-      if error.isRateLimited {
-        warnings.append("Usage endpoint rate limited; retry after \(Int(error.retryAfter ?? 300))s.")
-      }
       return ProviderFetchResult(
         outcome: ProviderOutcomeBuilder.outcome(for: error, hint: id.loginHint), warnings: warnings)
     }

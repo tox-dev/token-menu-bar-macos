@@ -22,7 +22,7 @@ public struct UsageTab: View {
           ProviderCardView(card: card, environment: environment)
         }
       }
-      .frame(minWidth: 400, alignment: .leading)
+      .frame(minWidth: 540, alignment: .leading)
     }
   }
 
@@ -32,7 +32,7 @@ public struct UsageTab: View {
       VStack(alignment: .leading, spacing: 1) {
         Text(environment.appInfo.name).font(.headline)
         Text("Updated \(Format.relativeAge(environment.state.lastRefresh, now: environment.now))")
-          .font(.caption)
+          .font(.callout)
           .foregroundStyle(.secondary)
       }
       Spacer()
@@ -62,10 +62,11 @@ public struct ProviderCardView: View {
         Image(systemName: ProviderGlyph.symbolName(card.provider))
           .foregroundStyle(ProviderGlyph.color(card.provider))
           .font(.title3)
-        Text(card.provider.displayName).font(.title3.weight(.semibold))
+        Text(card.provider.displayName).font(.title2.weight(.semibold))
         Spacer()
+        if card.isRefreshing { ProgressView().controlSize(.small) }
         Text(card.availability == .current ? "fetched \(card.fetchedAge)" : card.availability.title)
-          .font(.caption)
+          .font(.callout)
           .foregroundStyle(card.availability == .current ? Color.secondary : Color.orange)
         Button(action: openUsagePage) { Image(systemName: "safari") }
           .buttonStyle(.borderless)
@@ -94,7 +95,7 @@ public struct ProviderCardView: View {
         )
         .frame(maxWidth: .infinity)
         if card.availability == .authenticationRequired, let description = card.credentialDescription {
-          Text(description).font(.caption).foregroundStyle(.secondary)
+          Text(description).font(.callout).foregroundStyle(.secondary)
         }
       }
       ForEach(card.rows) { row in
@@ -139,22 +140,22 @@ public struct WindowRowView: View {
   public var body: some View {
     VStack(alignment: .leading, spacing: 4) {
       HStack(alignment: .firstTextBaseline) {
-        Text(row.window.label).font(.callout.weight(.medium))
+        Text(row.window.label).font(.body.weight(.medium))
         if !row.window.isActive {
-          Text("inactive").font(.caption2).foregroundStyle(.secondary)
+          Text("inactive").font(.caption).foregroundStyle(.secondary)
         }
         Spacer()
         Text(row.percentText + " used")
-          .font(.callout.monospacedDigit().weight(.semibold))
+          .font(.body.monospacedDigit().weight(.semibold))
           .foregroundStyle(Color(row.color))
       }
-      UsageBar(percent: row.window.usedPercent, color: Color(row.color))
+      UsageBar(percent: row.window.usedPercent, color: Color(row.color), height: 8)
       HStack {
         Text(row.window.resetsAt == nil ? "No reset scheduled" : "Resets in \(row.countdown) · \(row.resetClock)")
-          .font(.caption)
+          .font(.callout)
           .foregroundStyle(.secondary)
         Spacer()
-        Text(row.pace.summary(now: now)).font(.caption).foregroundStyle(paceColor)
+        Text(row.pace.summary(now: now)).font(.callout).foregroundStyle(paceColor)
       }
     }
     .hoverHelp { WindowHelpView(row: row) }
@@ -206,10 +207,10 @@ public struct SpendView: View {
   public var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       HStack {
-        Text(provider == .claude ? "Usage credits" : "Spend control").font(.callout.weight(.medium))
+        Text(provider == .claude ? "Usage credits" : "Spend control").font(.body.weight(.medium))
         Spacer()
         Text(UsagePresenter.spendSummary(spend))
-          .font(.callout.monospacedDigit())
+          .font(.body.monospacedDigit())
           .foregroundStyle(spend.limitReached ? Color.red : Color.primary)
       }
       if spend.enabled, let percent = spend.percent {

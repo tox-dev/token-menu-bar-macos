@@ -29,9 +29,10 @@ import TokenMenuBarCore
 }
 
 @Test @MainActor func rendererFontSizeAndColors() {
-  #expect(StatusItemRenderer.fontSize(height: 18, lineCount: 1) == 13)
-  #expect(StatusItemRenderer.fontSize(height: 18, lineCount: 2) == 18 / 2 * 0.78)
-  #expect(StatusItemRenderer.fontSize(height: 18, lineCount: 3) == 7)
+  #expect(StatusItemRenderer.fontSizes(height: 18, lineCount: 1) == [13])
+  #expect(StatusItemRenderer.fontSizes(height: 24, lineCount: 2) == [9, 11.5])
+  #expect(StatusItemRenderer.fontSizes(height: 30, lineCount: 3) == [8, 8, 8])
+  #expect(StatusItemRenderer.fontSizes(height: 60, lineCount: 4) == [9, 9, 9, 9])
   #expect(StatusItemRenderer.color(for: .label, dark: true) == .white)
   #expect(StatusItemRenderer.color(for: .label, dark: false) == .black)
   #expect(StatusItemRenderer.color(for: .number, dark: false).alphaComponent < 1)
@@ -65,7 +66,8 @@ import TokenMenuBarCore
 @Test @MainActor func statusItemControllerRendersAndTracksTimers() async throws {
   let log = makeLog()
   log.debugEnabled = true
-  let controller = StatusItemController(log: log)
+  var presented = 0
+  let controller = StatusItemController(log: log, tickInterval: 0.05) { _ in presented += 1 }
   defer { controller.remove() }
   #expect(controller.item.button != nil)
   #expect(controller.barHeight >= 22)
@@ -85,7 +87,7 @@ import TokenMenuBarCore
   var ticks = 0
   controller.onCountdownTick = { ticks += 1 }
   controller.update(statusModel(format: .custom))
-  try await Task.sleep(for: .milliseconds(2300))
+  for _ in 0..<200 where ticks == 0 { try await Task.sleep(for: .milliseconds(25)) }
   #expect(ticks >= 1)
   var probes: [StatusItemProbe] = []
   controller.onProbeChange = { probes.append($0) }
@@ -94,7 +96,7 @@ import TokenMenuBarCore
   #expect(first.summary.contains("visible="))
   #expect(controller.probe() == first)
   #expect(probes.count <= 1)
-  try await Task.sleep(for: .milliseconds(1100))
+  try await Task.sleep(for: .milliseconds(200))
   controller.probing = false
   _ = controller.buttonFrameOnScreen
   var clicks = 0
@@ -110,6 +112,9 @@ import TokenMenuBarCore
     clickCount: 1, pressure: 1)!
   controller.handleClick(rightClick)
   #expect(clicks == 2)
+  #expect(presented == 1)
+  #expect(controller.item.menu != nil)
+  controller.item.menu?.delegate?.menuDidClose?(controller.item.menu!)
   #expect(controller.item.menu == nil)
   NotificationCenter.default.post(name: NSApplication.didChangeScreenParametersNotification, object: nil)
   controller.item.button?.appearance = NSAppearance(named: .darkAqua)

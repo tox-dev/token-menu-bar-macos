@@ -59,7 +59,8 @@ public enum LiveDependencies {
       chooseCodexHome: { chosen(codexHomePanel(default: codexHome)) { $0.runModal() } },
       terminate: { NSApplication.shared.terminate(nil) },
       rebuildProviders: build,
-      screenVisibleFrame: { NSScreen.main?.visibleFrame }
+      screenVisibleFrame: { NSScreen.main?.visibleFrame },
+      openPopoverOnLaunch: paths.environment["TOKEN_MENU_BAR_OPEN_POPOVER"] != nil
     )
   }
 

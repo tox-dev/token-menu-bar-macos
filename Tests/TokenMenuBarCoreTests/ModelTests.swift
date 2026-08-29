@@ -79,14 +79,14 @@ import Testing
   #expect(ProviderFetchOutcome.success(snapshot).errorDescription == nil)
   #expect(ProviderFetchOutcome.networkUnavailable("down").errorDescription == "down")
   #expect(ProviderFetchOutcome.failed("boom").errorDescription == "boom")
-  #expect(QuotaAvailability.allTitles.count == 7)
+  #expect(QuotaAvailability.allTitles.count == 8)
 }
 
 extension QuotaAvailability {
   static var allTitles: [String] {
     [
-      QuotaAvailability.loading, .current, .stale, .authenticationRequired, .networkUnavailable, .unavailable,
-      .disabled,
+      QuotaAvailability.loading, .current, .stale, .authenticationRequired, .networkUnavailable, .rateLimited,
+      .unavailable, .disabled,
     ].map(\.title)
   }
 }
@@ -119,6 +119,12 @@ extension QuotaAvailability {
     ProviderOutcomeBuilder.outcome(for: .http(status: 500, body: "", retryAfter: nil), hint: "h") == .failed("HTTP 500")
   )
   #expect(ProviderOutcomeBuilder.outcome(for: .decoding("bad"), hint: "h") == .failed("Unexpected response: bad"))
+  #expect(
+    ProviderOutcomeBuilder.outcome(for: .http(status: 429, body: "slow", retryAfter: 42), hint: "h")
+      == .rateLimited("HTTP 429: slow", retryAfter: 42))
+  #expect(ProviderFetchOutcome.rateLimited("x", retryAfter: nil).errorDescription == "x")
+  #expect(PollingPolicy(idleInterval: 300, activeInterval: 120).interval(active: true, requested: 60) == 120)
+  #expect(PollingPolicy(idleInterval: 300, activeInterval: 120).interval(active: false, requested: 600) == 600)
 }
 
 @Test func registryOrdersAndLooksUpProviders() {
@@ -181,14 +187,14 @@ extension QuotaAvailability {
   let tiny = PopoverGeometry.maxSize(
     anchor: CGRect(x: 10, y: 50, width: 40, height: 20), visibleFrame: CGRect(x: 0, y: 0, width: 300, height: 100))
   #expect(tiny == CGSize(width: PopoverGeometry.minimumWidth, height: PopoverGeometry.minimumHeight))
-  let content = PopoverGeometry.contentSize(
-    measured: ["Usage": CGSize(width: 500, height: 300)], activeTab: "History", minimumWidths: ["History": 420],
-    fallbackHeight: 250, maximum: CGSize(width: 480, height: 400))
-  #expect(content == CGSize(width: 480, height: 308))
-  let small = PopoverGeometry.contentSize(
-    measured: [:], activeTab: "Usage", minimumWidths: [:], fallbackHeight: 10,
-    maximum: CGSize(width: 1000, height: 1000))
-  #expect(small == CGSize(width: PopoverGeometry.minimumWidth, height: PopoverGeometry.minimumHeight))
+  let clamped = PopoverGeometry.clamp(CGSize(width: 200, height: 5000), maximum: CGSize(width: 480, height: 400))
+  #expect(clamped == CGSize(width: PopoverGeometry.minimumWidth, height: 400))
+  #expect(
+    PopoverGeometry.clamp(CGSize(width: 900, height: 300), maximum: CGSize(width: 800, height: 900))
+      == CGSize(width: 800, height: 300))
+  #expect(
+    PopoverGeometry.clamp(.zero, maximum: .zero)
+      == CGSize(width: PopoverGeometry.minimumWidth, height: PopoverGeometry.minimumHeight))
   let origin = PopoverGeometry.pinnedOrigin(
     lastTopCenter: CGPoint(x: 1430, y: 890), size: CGSize(width: 400, height: 300), visibleFrame: screen)
   #expect(origin == CGPoint(x: 1040, y: 590))
@@ -217,6 +223,7 @@ extension QuotaAvailability {
 
 struct FakeProvider: UsageProvider {
   let id: ProviderID
+  let pollingPolicy = PollingPolicy(idleInterval: 0, activeInterval: 0)
   var result: ProviderFetchResult = ProviderFetchResult(outcome: .failed("unset"))
   var credentials: CredentialState = .valid(expiresAt: nil)
   var credentialDescription: String { "fake" }

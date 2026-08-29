@@ -10,9 +10,24 @@ public struct FetchOptions: Sendable, Equatable {
   }
 }
 
+public struct PollingPolicy: Sendable, Equatable {
+  public let idleInterval: TimeInterval
+  public let activeInterval: TimeInterval
+
+  public init(idleInterval: TimeInterval, activeInterval: TimeInterval) {
+    self.idleInterval = idleInterval
+    self.activeInterval = activeInterval
+  }
+
+  public func interval(active: Bool, requested: TimeInterval) -> TimeInterval {
+    max(requested, active ? activeInterval : idleInterval)
+  }
+}
+
 public protocol UsageProvider: Sendable {
   var id: ProviderID { get }
   var credentialDescription: String { get }
+  var pollingPolicy: PollingPolicy { get }
   func credentialState(now: Date) -> CredentialState
   func fetch(now: Date, options: FetchOptions) async -> ProviderFetchResult
 }
@@ -38,6 +53,7 @@ public enum ProviderOutcomeBuilder {
     switch error {
     case .network(let text): .networkUnavailable(text)
     case .http where error.isAuthenticationFailure: .notAuthenticated("\(error.message). \(hint)")
+    case .http where error.isRateLimited: .rateLimited(error.message, retryAfter: error.retryAfter)
     default: .failed(error.message)
     }
   }
