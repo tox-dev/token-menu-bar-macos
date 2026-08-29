@@ -7,8 +7,7 @@ public actor GeminiProvider: UsageProvider {
   private let client: APIClient
   private let log: LogBuffer
   private let allowRefresh: @Sendable () -> Bool
-  private let clientID: String
-  private let clientSecret: String
+  private let oauthClient: @Sendable () -> GeminiOAuthClient?
   private var cachedAssist: (GeminiAPI.LoadCodeAssistResponse, Date)?
 
   public init(
@@ -16,15 +15,13 @@ public actor GeminiProvider: UsageProvider {
     client: APIClient,
     log: LogBuffer,
     allowRefresh: @escaping @Sendable () -> Bool,
-    clientID: String = GeminiAPI.defaultClientID,
-    clientSecret: String = GeminiAPI.defaultClientSecret
+    oauthClient: @escaping @Sendable () -> GeminiOAuthClient? = { GeminiOAuthConfig.resolve() }
   ) {
     self.auth = auth
     self.client = client
     self.log = log
     self.allowRefresh = allowRefresh
-    self.clientID = clientID
-    self.clientSecret = clientSecret
+    self.oauthClient = oauthClient
   }
 
   public nonisolated var credentialDescription: String {
@@ -117,10 +114,14 @@ public actor GeminiProvider: UsageProvider {
     guard let refreshToken = stored.refreshToken else {
       throw APIError.http(status: 401, body: "no refresh token", retryAfter: nil)
     }
+    guard let oauth = oauthClient() else {
+      throw APIError.http(
+        status: 401, body: "the Gemini CLI OAuth client could not be read from the installed CLI", retryAfter: nil)
+    }
     let data = try await client.post(
       GeminiAPI.tokenURL,
       form: [
-        "client_id": clientID, "client_secret": clientSecret, "grant_type": "refresh_token",
+        "client_id": oauth.id, "client_secret": oauth.secret, "grant_type": "refresh_token",
         "refresh_token": refreshToken,
       ], headers: [:], operation: "gemini.refresh")
     let token = try client.decode(GeminiAPI.TokenResponse.self, data, operation: "gemini.refresh")

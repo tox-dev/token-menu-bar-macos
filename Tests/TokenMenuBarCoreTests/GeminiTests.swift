@@ -42,14 +42,17 @@ private let validGemini = GeminiAuth(
   accessToken: "ya29.valid", refreshToken: "1//refresh", idToken: idToken(email: "you@example.com"),
   expiresAt: fixedNow.addingTimeInterval(3600))
 
+private let testOAuth = GeminiOAuthClient(id: "test-client.apps.googleusercontent.com", secret: "test-secret")
+
 private func makeProvider(
-  _ auth: GeminiAuth?, allowRefresh: Bool = false, store: MemoryGeminiStore? = nil
+  _ auth: GeminiAuth?, allowRefresh: Bool = false, store: MemoryGeminiStore? = nil,
+  oauth: GeminiOAuthClient? = testOAuth
 ) -> (GeminiProvider, StubTransport, MemoryGeminiStore) {
   let transport = StubTransport()
   let store = store ?? MemoryGeminiStore(auth)
   let provider = GeminiProvider(
     auth: store, client: APIClient(transport: transport, log: makeLog(), clock: testClock), log: makeLog(),
-    allowRefresh: { allowRefresh })
+    allowRefresh: { allowRefresh }, oauthClient: { oauth })
   return (provider, transport, store)
 }
 
@@ -239,6 +242,7 @@ func geminiPlanNames(tier: String, hosted: String?, expected: String) {
   #expect(store.saved.first?.accessToken == "fresh")
   let body = String(decoding: transport.requests(matching: "/token").first!.httpBody!, as: UTF8.self)
   #expect(body.contains("grant_type=refresh_token") && body.contains("refresh_token=1//refresh"))
+  #expect(body.contains("client_id=test-client.apps.googleusercontent.com"))
   #expect(
     transport.requests(matching: "/token").first?.value(forHTTPHeaderField: "Content-Type")
       == "application/x-www-form-urlencoded")
@@ -270,4 +274,44 @@ func geminiPlanNames(tier: String, hosted: String?, expected: String) {
   transport2.on(path: ":retrieveUserQuota", .json("gemini_quota"))
   #expect(await unsaved.fetch(now: fixedNow, options: FetchOptions()).outcome.snapshot != nil)
   #expect(store.saved.isEmpty)
+}
+
+@Test func geminiOAuthClientComesFromTheEnvironmentOrTheInstalledCLI() {
+  let home = URL(fileURLWithPath: "/Users/tester")
+  let fromEnvironment = GeminiOAuthConfig.resolve(
+    environment: ["GEMINI_OAUTH_CLIENT_ID": "env-id", "GEMINI_OAUTH_CLIENT_SECRET": "env-secret"], home: home,
+    read: { _ in nil })
+  #expect(fromEnvironment == GeminiOAuthClient(id: "env-id", secret: "env-secret"))
+  let source = """
+    const OAUTH_CLIENT_ID = '123-abc.apps.googleusercontent.com';
+    const OAUTH_CLIENT_SECRET = 'SECRET-value';
+    """
+  #expect(
+    GeminiOAuthConfig.extract(from: source)
+      == GeminiOAuthClient(id: "123-abc.apps.googleusercontent.com", secret: "SECRET-value"))
+  #expect(GeminiOAuthConfig.extract(from: "const OAUTH_CLIENT_ID = 'only-id';") == nil)
+  #expect(GeminiOAuthConfig.value(of: "MISSING", in: source) == nil)
+  var probed: [String] = []
+  let found = GeminiOAuthConfig.resolve(
+    environment: [:], home: home,
+    read: { url in
+      probed.append(url.path)
+      return url.path.hasSuffix(GeminiOAuthConfig.relativePaths[1]) ? source : nil
+    })
+  #expect(found?.id == "123-abc.apps.googleusercontent.com")
+  #expect(probed.contains { $0.hasPrefix("/Users/tester/.npm-global") })
+  #expect(GeminiOAuthConfig.resolve(environment: [:], home: home, read: { _ in nil }) == nil)
+  #expect(
+    GeminiOAuthConfig.searchRoots(environment: ["NPM_CONFIG_PREFIX": "/custom"], home: home).first?.path == "/custom")
+}
+
+@Test func geminiRefreshNeedsTheCLIOAuthClient() async {
+  let expired = GeminiAuth(accessToken: "old", refreshToken: "r", expiresAt: fixedNow.addingTimeInterval(-10))
+  let (provider, _, _) = makeProvider(expired, allowRefresh: true, oauth: nil)
+  guard case .notAuthenticated(let reason) = await provider.fetch(now: fixedNow, options: FetchOptions()).outcome
+  else {
+    Issue.record("expected notAuthenticated")
+    return
+  }
+  #expect(reason.contains("OAuth client could not be read"))
 }

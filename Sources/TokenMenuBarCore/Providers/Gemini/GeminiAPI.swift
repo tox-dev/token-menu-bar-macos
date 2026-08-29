@@ -3,8 +3,6 @@ import Foundation
 public enum GeminiAPI {
   public static let base = "https://cloudcode-pa.googleapis.com/v1internal"
   public static let tokenURL = URL(string: "https://oauth2.googleapis.com/token")!
-  public static let defaultClientID = "<read from the installed Gemini CLI>"
-  public static let defaultClientSecret = "<read from the installed Gemini CLI>"
   public static let unsupportedClientMessage =
     "Google ended Login with Google for personal Gemini accounts on June 18, 2026; only Workspace and Gemini Code Assist Standard or Enterprise accounts still report quota."
 

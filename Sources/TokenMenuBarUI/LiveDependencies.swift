@@ -117,8 +117,7 @@ public enum LiveDependencies {
       client: client,
       log: log,
       allowRefresh: allowRefresh,
-      clientID: paths.environment["GEMINI_OAUTH_CLIENT_ID"] ?? GeminiAPI.defaultClientID,
-      clientSecret: paths.environment["GEMINI_OAUTH_CLIENT_SECRET"] ?? GeminiAPI.defaultClientSecret
+      oauthClient: { GeminiOAuthConfig.resolve(environment: paths.environment, home: paths.home) }
     )
     let cursor = CursorProvider(
       auth: ChainedCursorAuthStore([
