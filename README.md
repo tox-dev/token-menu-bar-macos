@@ -7,6 +7,9 @@ reset countdowns, pace projections, notifications, 60 days of local history, and
 It reads the tokens the `claude` and `codex` CLIs already store on your Mac; it never asks you to sign in again and
 never sends anything anywhere but `api.anthropic.com` and `chatgpt.com`.
 
+Website with screenshots and a feature tour: <https://tox-dev.github.io/token-menu-bar-macos/>. Refresh the screenshots
+with `Scripts/screenshots.sh`.
+
 ## Install
 
 - **Direct download**: grab `TokenMenuBar.dmg` from the
