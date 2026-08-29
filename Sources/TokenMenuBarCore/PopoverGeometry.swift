@@ -34,7 +34,7 @@ public struct PopoverDismissalGate: Sendable, Equatable {
 }
 
 public enum PopoverGeometry {
-  public static let minimumWidth: CGFloat = 560
+  public static let minimumWidth: CGFloat = 728
   public static let minimumHeight: CGFloat = 200
   public static let margin: CGFloat = 12
   public static let chromeHeight: CGFloat = 58

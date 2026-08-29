@@ -17,7 +17,7 @@ public struct HistoryTab: View {
       VStack(alignment: .leading, spacing: 10) {
         controls
         HStack(alignment: .top, spacing: 12) {
-          chart.frame(minWidth: 660, minHeight: 380)
+          chart.frame(minWidth: 858, minHeight: 380)
           HistoryInspector(environment: environment).frame(width: 220)
         }
         if settings.historyRange == .custom {
@@ -29,7 +29,7 @@ public struct HistoryTab: View {
           }
         }
       }
-      .frame(minWidth: 980, alignment: .leading)
+      .frame(minWidth: 1274, alignment: .leading)
     }
     .task { presenter.reload() }
   }
@@ -251,7 +251,6 @@ public struct HistoryInspector: View {
       Text(presenter.selectedDate.map { $0.formatted(date: .abbreviated, time: .shortened) } ?? "Latest values")
         .font(.caption)
         .foregroundStyle(.secondary)
-        .lineLimit(1)
       if let data = presenter.state.data {
         ForEach(Array(data.series.enumerated()), id: \.element.id) { index, series in
           legendRow(series, index: index)
@@ -280,7 +279,7 @@ public struct HistoryInspector: View {
   func legendRow(_ series: HistorySeries, index: Int) -> some View {
     HStack {
       Circle().fill(UsageChart.color(index: index)).frame(width: 8, height: 8)
-      Text(series.label).lineLimit(1)
+      Text(series.label).fixedSize(horizontal: false, vertical: true)
       Spacer()
       Text(presenter.value(for: series)).monospacedDigit()
     }

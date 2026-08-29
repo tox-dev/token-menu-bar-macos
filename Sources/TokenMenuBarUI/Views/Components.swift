@@ -211,11 +211,48 @@ public struct MetricCell: View {
   public var body: some View {
     VStack(alignment: .leading, spacing: 2) {
       Text(title).font(.callout).foregroundStyle(.secondary)
-      Text(value).font(.body.monospacedDigit()).lineLimit(1)
+      Text(value).font(.body.monospacedDigit()).fixedSize(horizontal: false, vertical: true)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .hoverHelp { Text(help).font(.callout).frame(maxWidth: 260) }
+    .hoverHelp { HelpText(help) }
     .accessibilityElement(children: .ignore)
     .accessibilityLabel("\(title): \(value)")
+  }
+}
+
+public struct HelpText: View {
+  public let text: String
+
+  public init(_ text: String) {
+    self.text = text
+  }
+
+  public var body: some View {
+    Text(text).font(.callout).frame(idealWidth: 260, maxWidth: 260, alignment: .leading)
+  }
+}
+
+public struct EmptyStateView: View {
+  public let title: String
+  public let systemImage: String
+  public let description: String
+
+  public init(title: String, systemImage: String, description: String) {
+    self.title = title
+    self.systemImage = systemImage
+    self.description = description
+  }
+
+  public var body: some View {
+    HStack(alignment: .top, spacing: 12) {
+      Image(systemName: systemImage).font(.system(size: 26)).foregroundStyle(.secondary).frame(width: 32)
+      VStack(alignment: .leading, spacing: 3) {
+        Text(title).font(.headline)
+        Text(description).font(.callout).foregroundStyle(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+    }
+    .padding(.vertical, 8)
+    .frame(maxWidth: .infinity, alignment: .leading)
   }
 }

@@ -80,7 +80,9 @@ public final class PopoverController: NSObject, NSPopoverDelegate {
 
   public func applySize() {
     hosting.view.layoutSubtreeIfNeeded()
-    let size = PopoverGeometry.clamp(hosting.view.fittingSize, maximum: maximum)
+    let fitting = hosting.view.fittingSize
+    let content = measured[activeTab].map { CGSize(width: fitting.width, height: $0.height) } ?? fitting
+    let size = PopoverGeometry.clamp(content, maximum: maximum)
     if abs(popover.contentSize.width - size.width) > 1 || abs(popover.contentSize.height - size.height) > 1 {
       popover.contentSize = size
     }

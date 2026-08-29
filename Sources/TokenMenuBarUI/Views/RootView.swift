@@ -7,6 +7,7 @@ public struct RootView: View {
   public let onMeasure: (String, CGSize) -> Void
   public let onTabChange: (String) -> Void
   @State private var timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+  @State private var chromeHeight: CGFloat = PopoverGeometry.chromeHeight
 
   public init(
     environment: UIEnvironment, onMeasure: @escaping (String, CGSize) -> Void, onTabChange: @escaping (String) -> Void
@@ -18,22 +19,24 @@ public struct RootView: View {
 
   public var body: some View {
     VStack(spacing: 0) {
-      TabPicker(selection: Binding(get: { environment.settings.lastTab }, set: { select($0) }))
-        .padding(.horizontal, 12)
-        .padding(.top, 10)
-        .padding(.bottom, 6)
-      Divider()
+      VStack(spacing: 0) {
+        TabPicker(selection: Binding(get: { environment.settings.lastTab }, set: { select($0) }))
+          .padding(.horizontal, 12)
+          .padding(.top, 10)
+          .padding(.bottom, 6)
+        Divider()
+      }
+      .background(GeometryReader { proxy in Color.clear.preference(key: ChromeSizeKey.self, value: proxy.size) })
       content
     }
+    .onPreferenceChange(ChromeSizeKey.self) { size in Task { @MainActor in chromeHeight = size.height } }
     .frame(minWidth: PopoverGeometry.minimumWidth)
     .font(.body)
     .background(.regularMaterial)
     .onReceive(timer) { _ in environment.tick() }
     .task { await environment.loadRecentSamples() }
     .onChange(of: environment.state.lastRefresh) { Task { await environment.loadRecentSamples() } }
-    .onPreferenceChange(SizeKey.self) { size in
-      Task { @MainActor in onMeasure(environment.settings.lastTab.rawValue, size) }
-    }
+    .onPreferenceChange(SizeKey.self) { size in Task { @MainActor in measured(size) } }
   }
 
   @ViewBuilder private var content: some View {
@@ -44,10 +47,24 @@ public struct RootView: View {
     }
   }
 
+  func measured(_ content: CGSize) {
+    guard content != .zero else { return }
+    onMeasure(
+      environment.settings.lastTab.rawValue, CGSize(width: content.width, height: content.height + chromeHeight))
+  }
+
   func select(_ tab: PopoverTab) {
     environment.settings.lastTab = tab
     onTabChange(tab.rawValue)
     if tab == .history { environment.historyPresenter.reload() }
+  }
+}
+
+public struct ChromeSizeKey: PreferenceKey {
+  public static let defaultValue: CGSize = .zero
+  public static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
+    let next = nextValue()
+    if next != .zero { value = next }
   }
 }
 
