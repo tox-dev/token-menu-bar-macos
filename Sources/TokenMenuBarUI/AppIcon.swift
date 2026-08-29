@@ -60,6 +60,76 @@ public enum AppIcon {
   }
 }
 
+extension AppIcon {
+  public static let squircleRatio: CGFloat = 0.2237
+  public static let productInset: CGFloat = 0.092
+  public static let appIconSizes: [Int] = [16, 32, 64, 128, 256, 512, 1024]
+
+  /// The Dock and Finder icon: the brand squircle with the meter bars, drawn rather than shipped as a bitmap.
+  public static func drawProduct(in context: CGContext, size: CGFloat) {
+    let inset = size * productInset
+    let rect = CGRect(x: inset, y: inset, width: size - 2 * inset, height: size - 2 * inset)
+    let radius = rect.width * squircleRatio
+    let path = CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
+    context.saveGState()
+    context.addPath(path)
+    context.clip()
+    let space = CGColorSpaceCreateDeviceRGB()
+    let stops = [Brand.gradientStart, Brand.gradientEnd].map {
+      CGColor(srgbRed: $0.red, green: $0.green, blue: $0.blue, alpha: 1)
+    }
+    if let gradient = CGGradient(colorsSpace: space, colors: stops as CFArray, locations: [0, 1]) {
+      context.drawLinearGradient(
+        gradient, start: CGPoint(x: rect.minX, y: rect.maxY), end: CGPoint(x: rect.maxX, y: rect.minY), options: [])
+    }
+    let unit = rect.width / 100
+    let bars: [(y: CGFloat, fill: CGFloat)] = [(62, 56), (43, 38), (24, 22)]
+    for bar in bars {
+      let height = 14 * unit
+      let y = rect.minY + bar.y * unit
+      for (width, alpha) in [(CGFloat(56), 0.32), (bar.fill, 1.0)] {
+        let barRect = CGRect(x: rect.minX + 22 * unit, y: y, width: width * unit, height: height)
+        context.setFillColor(CGColor(gray: 1, alpha: alpha))
+        context.addPath(
+          CGPath(roundedRect: barRect, cornerWidth: height / 2, cornerHeight: height / 2, transform: nil))
+        context.fillPath()
+      }
+    }
+    context.restoreGState()
+  }
+
+  public static func productImage(size: CGFloat) -> NSImage {
+    NSImage(size: CGSize(width: size, height: size), flipped: false) { _ in
+      guard let context = NSGraphicsContext.current?.cgContext else { return false }
+      drawProduct(in: context, size: size)
+      return true
+    }
+  }
+
+  public static func pngData(size: Int) -> Data? {
+    let image = productImage(size: CGFloat(size))
+    guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+    let rep = NSBitmapImageRep(cgImage: cgImage)
+    rep.size = image.size
+    return rep.representation(using: .png, properties: [:])
+  }
+
+  /// Writes an `.iconset` directory; `iconutil` turns it into the `.icns` the bundle ships.
+  public static func exportIconSet(to directory: URL) throws {
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    for size in appIconSizes {
+      guard let data = pngData(size: size) else { continue }
+      try data.write(to: directory.appendingPathComponent("icon_\(size).png"))
+      if size >= 32 {
+        try data.write(to: directory.appendingPathComponent("icon_\(size / 2)x\(size / 2)@2x.png"))
+      }
+      if size <= 512 {
+        try data.write(to: directory.appendingPathComponent("icon_\(size)x\(size).png"))
+      }
+    }
+  }
+}
+
 public struct AppIconView: View {
   public let size: CGFloat
   public let tone: StatusIconTone

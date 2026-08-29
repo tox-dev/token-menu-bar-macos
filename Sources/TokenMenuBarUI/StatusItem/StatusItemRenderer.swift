@@ -142,6 +142,36 @@ public enum StatusItemRenderer {
     }
   }
 
+  /// Renders the status item on a menu-bar-like strip. The docs use this instead of a screen capture so the shot
+  /// never depends on how crowded the machine's own menu bar happens to be.
+  public static func stripImage(
+    for model: StatusItemModel, height: CGFloat = 24, dark: Bool, width: CGFloat = 520
+  )
+    -> NSImage
+  {
+    let cells = previewImage(for: model, height: height, dark: dark)
+    return NSImage(size: CGSize(width: width, height: height + 4), flipped: false) { rect in
+      let background =
+        dark
+        ? NSColor(calibratedWhite: 0.13, alpha: 1)
+        : NSColor(calibratedWhite: 0.93, alpha: 1)
+      background.setFill()
+      NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6).fill()
+      cells.draw(
+        at: CGPoint(x: rect.maxX - cells.size.width - 12, y: (rect.height - height) / 2), from: .zero,
+        operation: .sourceOver, fraction: 1)
+      return true
+    }
+  }
+
+  public static func stripData(for model: StatusItemModel, dark: Bool) -> Data? {
+    let image = stripImage(for: model, dark: dark)
+    guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+    let rep = NSBitmapImageRep(cgImage: cgImage)
+    rep.size = image.size
+    return rep.representation(using: .png, properties: [:])
+  }
+
   public static func previewImage(for model: StatusItemModel, height: CGFloat, dark: Bool) -> NSImage {
     let images = model.cells.enumerated().flatMap { index, cell -> [NSImage] in
       let image = cellImage(cell, height: height, dark: dark)

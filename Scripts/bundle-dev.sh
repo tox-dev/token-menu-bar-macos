@@ -25,6 +25,7 @@ cat >"$app/Contents/Info.plist" <<PLIST
   <key>CFBundleExecutable</key><string>TokenMenuBar</string>
   <key>CFBundleIdentifier</key><string>dev.tox.token-menu-bar</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+  <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundleName</key><string>Token Menu Bar</string>
   <key>CFBundleDisplayName</key><string>Token Menu Bar</string>
   <key>CFBundlePackageType</key><string>APPL</string>
@@ -37,6 +38,11 @@ cat >"$app/Contents/Info.plist" <<PLIST
 </dict>
 </plist>
 PLIST
+iconset="$(mktemp -d)/TokenMenuBar.iconset"
+"$binary" --export-icon "$iconset" >/dev/null
+iconutil --convert icns --output "$app/Contents/Resources/AppIcon.icns" "$iconset"
+rm -rf "$iconset"
+
 codesign --force --sign - "$app"
 echo "built $app"
 

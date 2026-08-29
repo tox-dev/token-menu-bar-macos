@@ -211,6 +211,10 @@ extension QuotaAvailability {
   #expect(PopoverGeometry.alignedOriginX(centerX: 2900, width: 1000, visibleFrame: wide) == 2008)
   #expect(PopoverGeometry.alignedOriginX(centerX: 300, width: 1000, visibleFrame: narrow) == 0)
   #expect(
+    PopoverGeometry.tabWidth(for: .history) == PopoverGeometry.widestTabWidth + 2 * PopoverGeometry.contentPadding)
+  #expect(PopoverGeometry.contentWidth(for: .settings) == PopoverGeometry.minimumWidth)
+  #expect(PopoverGeometry.contentWidth(for: .usage) < PopoverGeometry.contentWidth(for: .settings))
+  #expect(
     PopoverGeometry.clamp(CGSize(width: 900, height: 300), maximum: CGSize(width: 800, height: 900))
       == CGSize(width: 800, height: 300))
   #expect(
