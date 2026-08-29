@@ -1,0 +1,155 @@
+import AppKit
+import TokenMenuBarCore
+
+public struct StatusRenderSignature: Hashable, Sendable {
+  public let model: StatusItemModel
+  public let dark: Bool
+  public let height: Double
+
+  public init(model: StatusItemModel, dark: Bool, height: Double) {
+    self.model = model
+    self.dark = dark
+    self.height = height
+  }
+}
+
+@MainActor
+public enum StatusItemRenderer {
+  public static let maxFontSize: CGFloat = 13
+  public static let minFontSize: CGFloat = 7
+  public static let cellPadding: CGFloat = 3
+  public static let separatorWidth: CGFloat = 6
+  public static let barWidth: CGFloat = 26
+  public static let barHeight: CGFloat = 3
+
+  public static func fontSize(height: CGFloat, lineCount: Int) -> CGFloat {
+    min(maxFontSize, max(minFontSize, (height / CGFloat(max(lineCount, 1))) * 0.78))
+  }
+
+  public static func color(for kind: StatusRun.Kind, dark: Bool) -> NSColor {
+    switch kind {
+    case .label:
+      return dark ? NSColor.white : NSColor.black
+    case .number:
+      return (dark ? NSColor.white : NSColor.black).withAlphaComponent(0.85)
+    case .usage(let percent):
+      let hsb = UsageColor.color(percent: percent)
+      return NSColor(
+        hue: hsb.hue, saturation: hsb.saturation, brightness: dark ? hsb.brightness + 0.1 : hsb.brightness, alpha: 1)
+    }
+  }
+
+  public static func attributedTitle(for model: StatusItemModel, height: CGFloat, dark: Bool) -> NSAttributedString {
+    let title = NSMutableAttributedString()
+    for (index, cell) in model.cells.enumerated() {
+      if index > 0 { title.append(attachment(separatorImage(height: height))) }
+      title.append(attachment(cellImage(cell, height: height, dark: dark)))
+    }
+    return title
+  }
+
+  static func attachment(_ image: NSImage) -> NSAttributedString {
+    let attachment = NSTextAttachment()
+    attachment.image = image
+    attachment.bounds = CGRect(
+      x: 0, y: -(image.size.height - 12) / 2 - 3, width: image.size.width, height: image.size.height)
+    return NSAttributedString(attachment: attachment)
+  }
+
+  static func separatorImage(height: CGFloat) -> NSImage {
+    NSImage(size: CGSize(width: separatorWidth, height: height), flipped: false) { rect in
+      NSColor.tertiaryLabelColor.withAlphaComponent(0.5).setFill()
+      NSRect(x: rect.midX - 0.5, y: 4, width: 1, height: rect.height - 8).fill()
+      return true
+    }
+  }
+
+  public static func cellImage(_ cell: StatusCell, height: CGFloat, dark: Bool) -> NSImage {
+    cell.isMiniBar ? miniBarImage(cell, height: height, dark: dark) : textImage(cell, height: height, dark: dark)
+  }
+
+  static func lineStrings(_ cell: StatusCell, height: CGFloat, dark: Bool) -> [NSAttributedString] {
+    let size = fontSize(height: height, lineCount: cell.lines.count)
+    return cell.lines.map { runs in
+      let line = NSMutableAttributedString()
+      for run in runs {
+        let font: NSFont =
+          switch run.kind {
+          case .label: NSFont.systemFont(ofSize: size, weight: .medium)
+          default: NSFont.monospacedDigitSystemFont(ofSize: size, weight: .semibold)
+          }
+        line.append(
+          NSAttributedString(
+            string: run.text, attributes: [.font: font, .foregroundColor: color(for: run.kind, dark: dark)]))
+      }
+      return line
+    }
+  }
+
+  static func textImage(_ cell: StatusCell, height: CGFloat, dark: Bool) -> NSImage {
+    let lines = lineStrings(cell, height: height, dark: dark)
+    let widest = lines.map { $0.size().width }.max() ?? 0
+    let width = ceil(widest) + cellPadding * 2
+    return NSImage(size: CGSize(width: width, height: height), flipped: true) { rect in
+      let lineHeight = rect.height / CGFloat(max(lines.count, 1))
+      for (index, line) in lines.enumerated() {
+        let size = line.size()
+        let y = lineHeight * CGFloat(index) + (lineHeight - size.height) / 2
+        line.draw(at: CGPoint(x: (rect.width - size.width) / 2, y: y))
+      }
+      return true
+    }
+  }
+
+  static func miniBarImage(_ cell: StatusCell, height: CGFloat, dark: Bool) -> NSImage {
+    let glyph = ProviderGlyph.image(cell.provider, pointSize: min(height * 0.55, 12))
+    let labelFont = NSFont.systemFont(ofSize: 6.5, weight: .bold)
+    let labelWidth =
+      cell.bars.map { NSAttributedString(string: $0.label, attributes: [.font: labelFont]).size().width }.max() ?? 0
+    let width = cellPadding + glyph.size.width + 4 + ceil(labelWidth) + 3 + barWidth + cellPadding
+    let bars = cell.bars
+    return NSImage(size: CGSize(width: width, height: height), flipped: true) { rect in
+      let glyphY = (rect.height - glyph.size.height) / 2
+      glyph.draw(
+        in: CGRect(x: cellPadding, y: glyphY, width: glyph.size.width, height: glyph.size.height), from: .zero,
+        operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+      let rowHeight = rect.height / CGFloat(max(bars.count, 1))
+      let x = cellPadding + glyph.size.width + 4
+      for (index, bar) in bars.enumerated() {
+        let centerY = rowHeight * CGFloat(index) + rowHeight / 2
+        let label = NSAttributedString(
+          string: bar.label, attributes: [.font: labelFont, .foregroundColor: color(for: .label, dark: dark)])
+        label.draw(at: CGPoint(x: x, y: centerY - label.size().height / 2))
+        let trackRect = CGRect(
+          x: x + ceil(labelWidth) + 3, y: centerY - barHeight / 2, width: barWidth, height: barHeight)
+        color(for: .label, dark: dark).withAlphaComponent(0.18).setFill()
+        NSBezierPath(roundedRect: trackRect, xRadius: barHeight / 2, yRadius: barHeight / 2).fill()
+        let filled = max(barWidth * CGFloat(min(max(bar.percent, 0), 100) / 100), 2.5)
+        color(for: .usage(bar.percent), dark: dark).setFill()
+        NSBezierPath(
+          roundedRect: CGRect(x: trackRect.minX, y: trackRect.minY, width: filled, height: barHeight),
+          xRadius: barHeight / 2, yRadius: barHeight / 2
+        ).fill()
+      }
+      return true
+    }
+  }
+
+  public static func previewImage(for model: StatusItemModel, height: CGFloat, dark: Bool) -> NSImage {
+    let images = model.cells.enumerated().flatMap { index, cell -> [NSImage] in
+      let image = cellImage(cell, height: height, dark: dark)
+      return index == 0 ? [image] : [separatorImage(height: height), image]
+    }
+    let icon = model.showsIcon ? [AppIcon.image(height: height, tone: model.iconTone, dark: dark)] : []
+    let all = icon + images
+    let width = max(all.map(\.size.width).reduce(0, +), 1)
+    return NSImage(size: CGSize(width: width, height: height), flipped: false) { _ in
+      var x: CGFloat = 0
+      for image in all {
+        image.draw(at: CGPoint(x: x, y: 0), from: .zero, operation: .sourceOver, fraction: 1)
+        x += image.size.width
+      }
+      return true
+    }
+  }
+}

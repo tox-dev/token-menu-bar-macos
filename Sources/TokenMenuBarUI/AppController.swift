@@ -1,0 +1,400 @@
+import AppKit
+import SwiftUI
+import TokenMenuBarCore
+
+@MainActor
+public protocol UpdaterHook: AnyObject {
+  var canCheck: Bool { get }
+  var automaticallyChecks: Bool { get set }
+  func checkForUpdates()
+}
+
+@MainActor
+public struct AppDependencies {
+  public var appInfo: AppInfo
+  public var settings: TokenMenuBarCore.Settings
+  public var state: AppState
+  public var history: UsageHistoryStore
+  public var log: LogBuffer
+  public var registry: ProviderRegistry
+  public var notifier: Notifier
+  public var launchAtLogin: LaunchAtLoginBackend
+  public var clock: Clock
+  public var updater: (any UpdaterHook)?
+  public var statusBar: NSStatusBar
+  public var isSandboxed: Bool
+  public var openURL: (URL) -> Void
+  public var copyToPasteboard: (String) -> Void
+  public var revealInFinder: (URL) -> Void
+  public var chooseExportURL: () -> URL?
+  public var chooseCodexHome: () -> URL?
+  public var terminate: () -> Void
+  public var rebuildProviders: (TokenMenuBarCore.Settings) -> ProviderRegistry
+  public var screenVisibleFrame: () -> CGRect?
+
+  public init(
+    appInfo: AppInfo,
+    settings: TokenMenuBarCore.Settings,
+    state: AppState,
+    history: UsageHistoryStore,
+    log: LogBuffer,
+    registry: ProviderRegistry,
+    notifier: Notifier,
+    launchAtLogin: LaunchAtLoginBackend,
+    clock: Clock = .system,
+    updater: (any UpdaterHook)? = nil,
+    statusBar: NSStatusBar = .system,
+    isSandboxed: Bool = false,
+    openURL: @escaping (URL) -> Void,
+    copyToPasteboard: @escaping (String) -> Void,
+    revealInFinder: @escaping (URL) -> Void,
+    chooseExportURL: @escaping () -> URL?,
+    chooseCodexHome: @escaping () -> URL?,
+    terminate: @escaping () -> Void,
+    rebuildProviders: @escaping (TokenMenuBarCore.Settings) -> ProviderRegistry,
+    screenVisibleFrame: @escaping () -> CGRect?
+  ) {
+    self.appInfo = appInfo
+    self.settings = settings
+    self.state = state
+    self.history = history
+    self.log = log
+    self.registry = registry
+    self.notifier = notifier
+    self.launchAtLogin = launchAtLogin
+    self.clock = clock
+    self.updater = updater
+    self.statusBar = statusBar
+    self.isSandboxed = isSandboxed
+    self.openURL = openURL
+    self.copyToPasteboard = copyToPasteboard
+    self.revealInFinder = revealInFinder
+    self.chooseExportURL = chooseExportURL
+    self.chooseCodexHome = chooseCodexHome
+    self.terminate = terminate
+    self.rebuildProviders = rebuildProviders
+    self.screenVisibleFrame = screenVisibleFrame
+  }
+}
+
+@MainActor
+public final class AppController {
+  public let dependencies: AppDependencies
+  public let environment: UIEnvironment
+  public let coordinator: RefreshCoordinator
+  public private(set) var statusItem: StatusItemController?
+  public private(set) var popover: PopoverController?
+  private var logWindow: LogWindowController?
+  private var workspaceObservers: [Any] = []
+  private var registry: ProviderRegistry
+
+  public init(dependencies: AppDependencies) {
+    self.dependencies = dependencies
+    registry = dependencies.registry
+    let notifier = dependencies.notifier
+    let state = dependencies.state
+    coordinator = RefreshCoordinator(
+      registry: dependencies.registry,
+      settings: dependencies.settings,
+      state: state,
+      history: dependencies.history,
+      log: dependencies.log,
+      clock: dependencies.clock
+    ) { events in Task { await notifier.deliver(events) } }
+    environment = UIEnvironment(
+      state: state,
+      settings: dependencies.settings,
+      history: dependencies.history,
+      log: dependencies.log,
+      appInfo: dependencies.appInfo,
+      clock: dependencies.clock,
+      launchAtLoginStatus: dependencies.launchAtLogin.status(),
+      credentialDescriptions: Dictionary(
+        uniqueKeysWithValues: dependencies.registry.providers.map { ($0.id, $0.credentialDescription) }),
+      canCheckForUpdates: dependencies.updater?.canCheck ?? false,
+      isSandboxed: dependencies.isSandboxed
+    )
+    environment.actions = actions()
+    dependencies.log.debugEnabled = dependencies.settings.detailedLogging
+  }
+
+  func actions() -> UIActions {
+    UIActions(
+      refresh: { [weak self] in self?.refreshNow() },
+      openURL: { [weak self] in self?.dependencies.openURL($0) },
+      copy: { [weak self] in self?.dependencies.copyToPasteboard($0) },
+      exportHistory: { [weak self] in self?.exportHistory() },
+      clearHistory: { [weak self] in self?.clearHistory() },
+      revealHistory: { [weak self] in self?.revealHistory() },
+      copyDiagnostics: { [weak self] in self?.copyDiagnostics() },
+      reportIssue: { [weak self] in self?.reportIssue() },
+      showFullLog: { [weak self] in self?.showFullLog() },
+      setLaunchAtLogin: { [weak self] in self?.setLaunchAtLogin($0) },
+      openLoginItems: { [weak self] in self?.dependencies.launchAtLogin.openSettings() },
+      grantCodexAccess: { [weak self] in self?.grantCodexAccess() },
+      checkForUpdates: { [weak self] in self?.dependencies.updater?.checkForUpdates() },
+      quit: { [weak self] in self?.dependencies.terminate() },
+      settingsChanged: { [weak self] in self?.settingsChanged() }
+    )
+  }
+
+  public func start() {
+    let log = dependencies.log
+    if let previous = dependencies.settings.lastLaunchedVersion, previous != dependencies.appInfo.version {
+      log.log("updated from \(previous) to \(dependencies.appInfo.version)")
+    }
+    dependencies.settings.lastLaunchedVersion = dependencies.appInfo.version
+    log.log("launch \(dependencies.appInfo.name) \(dependencies.appInfo.version) (\(dependencies.appInfo.build))")
+    let item = StatusItemController(statusBar: dependencies.statusBar, log: log)
+    item.onClick = { [weak self] in self?.togglePopover() }
+    item.onCountdownTick = { [weak self] in self?.coordinator.rebuildStatus() }
+    item.menuProvider = { [weak self] in self?.contextMenu() ?? NSMenu() }
+    item.update(dependencies.state.statusModel)
+    statusItem = item
+    let popover = PopoverController(content: AnyView(EmptyView()))
+    popover.setContent(rootView(popover))
+    popover.excludedFrame = { [weak self] in self?.statusItem?.buttonFrameOnScreen }
+    popover.onVisibilityChange = { [weak self] visible in
+      self?.dependencies.state.popoverVisible = visible
+      self?.statusItem?.probing = visible || self?.dependencies.settings.detailedLogging == true
+      if visible { self?.refreshNow() }
+    }
+    self.popover = popover
+    installObservers()
+    dependencies.updater?.automaticallyChecks = dependencies.settings.automaticUpdates
+    coordinator.start()
+    Task { await dependencies.notifier.requestAuthorization() }
+    observeStatusModel()
+  }
+
+  func rootView(_ popover: PopoverController) -> AnyView {
+    AnyView(
+      RootView(
+        environment: environment, onMeasure: { [weak popover] tab, size in popover?.measure(tab: tab, size: size) },
+        onTabChange: { [weak popover] tab in popover?.select(tab: tab) }))
+  }
+
+  func observeStatusModel() {
+    withObservationTracking {
+      _ = dependencies.state.statusModel
+    } onChange: {
+      Task { @MainActor [weak self] in
+        guard let self else { return }
+        statusItem?.update(dependencies.state.statusModel)
+        observeStatusModel()
+      }
+    }
+  }
+
+  public func stop() {
+    coordinator.stop()
+    popover?.close()
+    statusItem?.remove(from: dependencies.statusBar)
+    statusItem = nil
+    for observer in workspaceObservers { NSWorkspace.shared.notificationCenter.removeObserver(observer) }
+    workspaceObservers.removeAll()
+    dependencies.log.log("stopped")
+  }
+
+  func installObservers() {
+    let center = NSWorkspace.shared.notificationCenter
+    workspaceObservers.append(
+      center.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
+        Task { @MainActor [weak self] in self?.handleSleep() }
+      })
+    workspaceObservers.append(
+      center.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+        Task { @MainActor [weak self] in self?.handleWake() }
+      })
+  }
+
+  public func handleSleep() {
+    dependencies.log.logDebug("sleep: pausing refresh loop")
+    coordinator.stop()
+  }
+
+  public func handleWake() {
+    dependencies.log.logDebug("wake: resuming refresh loop")
+    coordinator.start()
+  }
+
+  public func togglePopover() {
+    popover?.toggle(
+      relativeTo: statusItem?.item.button, anchorFrame: statusItem?.buttonFrameOnScreen,
+      visibleFrame: dependencies.screenVisibleFrame())
+  }
+
+  public func refreshNow() {
+    Task { await coordinator.refresh(RefreshRequest(interactive: true, force: true)) }
+  }
+
+  public func settingsChanged() {
+    dependencies.log.debugEnabled = dependencies.settings.detailedLogging
+    dependencies.updater?.automaticallyChecks = dependencies.settings.automaticUpdates
+    coordinator.rebuildStatus()
+  }
+
+  public func contextMenu() -> NSMenu {
+    let menu = NSMenu()
+    menu.addItem(withTitle: "Refresh Now", action: #selector(MenuTarget.refresh), keyEquivalent: "r").target =
+      menuTarget
+    menu.addItem(.separator())
+    for provider in ProviderID.allCases {
+      let item = NSMenuItem(
+        title: "Open \(provider.displayName) usage page", action: #selector(MenuTarget.openProvider(_:)),
+        keyEquivalent: "")
+      item.representedObject = provider.rawValue
+      item.target = menuTarget
+      menu.addItem(item)
+    }
+    if dependencies.updater?.canCheck == true {
+      menu.addItem(.separator())
+      menu.addItem(withTitle: "Check for Updates…", action: #selector(MenuTarget.checkForUpdates), keyEquivalent: "")
+        .target = menuTarget
+    }
+    menu.addItem(.separator())
+    menu.addItem(withTitle: "Quit \(dependencies.appInfo.name)", action: #selector(MenuTarget.quit), keyEquivalent: "q")
+      .target = menuTarget
+    return menu
+  }
+
+  lazy var menuTarget = MenuTarget(controller: self)
+
+  @discardableResult
+  public func exportHistory() -> Task<Void, Never> {
+    guard let url = dependencies.chooseExportURL() else { return Task {} }
+    return Task {
+      do {
+        let csv = try await dependencies.history.exportCSV()
+        try csv.write(to: url, atomically: true, encoding: .utf8)
+        dependencies.log.log("history exported to \(url.lastPathComponent)")
+      } catch {
+        dependencies.log.logError("history export failed: \(error)")
+      }
+    }
+  }
+
+  @discardableResult
+  public func clearHistory() -> Task<Void, Never> {
+    Task {
+      do {
+        let removed = try await dependencies.history.clear()
+        dependencies.log.log("history cleared rows=\(removed)")
+        environment.historyPresenter.reload()
+      } catch {
+        dependencies.log.logError("history clear failed: \(error)")
+      }
+    }
+  }
+
+  public func revealHistory() {
+    guard let location = dependencies.history.location else { return }
+    dependencies.revealInFinder(location)
+  }
+
+  public func diagnosticsReport() -> String {
+    Diagnostics.report(
+      app: dependencies.appInfo,
+      osVersion: ProcessInfo.processInfo.operatingSystemVersionString,
+      settings: dependencies.settings,
+      state: dependencies.state,
+      historyLocation: dependencies.history.location,
+      log: dependencies.log,
+      now: dependencies.clock.now()
+    )
+  }
+
+  public func copyDiagnostics() {
+    dependencies.copyToPasteboard(diagnosticsReport())
+  }
+
+  public func reportIssue() {
+    dependencies.openURL(
+      Diagnostics.issueURL(
+        repository: dependencies.appInfo.repository, title: "Issue report", report: diagnosticsReport()))
+  }
+
+  public func showFullLog() {
+    if logWindow == nil { logWindow = LogWindowController(log: dependencies.log) }
+    logWindow?.showWindow(nil)
+  }
+
+  public func setLaunchAtLogin(_ enabled: Bool) {
+    environment.launchAtLoginStatus = dependencies.launchAtLogin.setEnabled(enabled)
+    dependencies.log.log("launch at login \(enabled ? "on" : "off") -> \(environment.launchAtLoginStatus.rawValue)")
+  }
+
+  public func grantCodexAccess() {
+    guard let url = dependencies.chooseCodexHome() else { return }
+    do {
+      dependencies.settings.codexHomeBookmark = try (url as NSURL).bookmarkData(
+        options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
+      dependencies.log.log("codex home access granted: \(url.lastPathComponent)")
+      replaceProviders(dependencies.rebuildProviders(dependencies.settings))
+      refreshNow()
+    } catch {
+      dependencies.log.logError("bookmark failed: \(error)")
+    }
+  }
+
+  public func replaceProviders(_ registry: ProviderRegistry) {
+    self.registry = registry
+    coordinator.registry = registry
+    environment.credentialDescriptions = Dictionary(
+      uniqueKeysWithValues: registry.providers.map { ($0.id, $0.credentialDescription) })
+  }
+}
+
+@MainActor
+final class MenuTarget: NSObject {
+  weak var controller: AppController?
+
+  init(controller: AppController) {
+    self.controller = controller
+  }
+
+  @objc func refresh() {
+    controller?.refreshNow()
+  }
+
+  @objc func openProvider(_ sender: NSMenuItem) {
+    guard let raw = sender.representedObject as? String, let provider = ProviderID(rawValue: raw) else { return }
+    controller?.dependencies.openURL(provider.usagePage)
+  }
+
+  @objc func checkForUpdates() {
+    controller?.dependencies.updater?.checkForUpdates()
+  }
+
+  @objc func quit() {
+    controller?.dependencies.terminate()
+  }
+}
+
+@MainActor
+public final class LogWindowController: NSWindowController {
+  public let log: LogBuffer
+
+  public init(log: LogBuffer) {
+    self.log = log
+    let window = NSWindow(
+      contentRect: NSRect(x: 0, y: 0, width: 720, height: 480), styleMask: [.titled, .closable, .resizable],
+      backing: .buffered, defer: false)
+    window.title = "Token Menu Bar Log"
+    window.contentView = NSHostingView(rootView: LogTextView(entries: log.snapshot, height: 480))
+    window.center()
+    super.init(window: window)
+  }
+
+  @available(*, unavailable)
+  required init?(coder: NSCoder) {
+    nil
+  }
+
+  public override func showWindow(_ sender: Any?) {
+    window?.contentView = NSHostingView(
+      rootView: LogTextView(entries: log.snapshot, height: window?.frame.height ?? 480))
+    super.showWindow(sender)
+    window?.makeKeyAndOrderFront(sender)
+  }
+}
