@@ -59,9 +59,7 @@ public final class StatusItemController {
   public var frontmostContext: () -> String = {
     NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? ""
   }
-  public var visibleItemFrame: (NSStatusItem) -> CGRect? = { item in
-    item.button?.window.flatMap { $0.isVisible ? $0.frame : nil }
-  }
+  public var visibleItemFrame: (NSStatusItem) -> CGRect? = { StatusItemController.onScreenFrame(of: $0.button?.window) }
   public var fitCheckDelay: Duration = .milliseconds(250)
   private var observers: [Any] = []
   private var appearanceObservation: NSKeyValueObservation?
@@ -158,6 +156,11 @@ public final class StatusItemController {
       guard (try? await Task.sleep(for: fitCheckDelay)) != nil else { return }
       self?.checkFit()
     }
+  }
+
+  public static func onScreenFrame(of window: NSWindow?, screens: [NSScreen] = NSScreen.screens) -> CGRect? {
+    guard let window, window.isVisible, screens.contains(where: { $0.frame.contains(window.frame) }) else { return nil }
+    return window.frame
   }
 
   public func settleFitCheck() async {

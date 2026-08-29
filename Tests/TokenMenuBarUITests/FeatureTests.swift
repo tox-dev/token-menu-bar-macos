@@ -133,6 +133,21 @@ private func makeFeatureDependencies(
   await Task.yield()
 }
 
+@Test @MainActor func onScreenFrameRequiresAVisibleWindowInsideAScreen() {
+  #expect(StatusItemController.onScreenFrame(of: nil) == nil)
+  let window = NSWindow(
+    contentRect: NSRect(x: 10, y: 10, width: 50, height: 20), styleMask: [.borderless], backing: .buffered, defer: false
+  )
+  window.isReleasedWhenClosed = false
+  #expect(StatusItemController.onScreenFrame(of: window) == nil)
+  window.orderFrontRegardless()
+  let screens = NSScreen.screens
+  #expect(StatusItemController.onScreenFrame(of: window, screens: screens) == window.frame)
+  window.setFrameOrigin(NSPoint(x: 100_000, y: 10))
+  #expect(StatusItemController.onScreenFrame(of: window, screens: screens) == nil)
+  window.orderOut(nil)
+}
+
 @Test @MainActor func liveDependenciesBuildDemoGraph() async throws {
   let root = FileManager.default.temporaryDirectory.appendingPathComponent("tmb-demo-\(UUID().uuidString)")
   let paths = LiveDependencies.Paths(

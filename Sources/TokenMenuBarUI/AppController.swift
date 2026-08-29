@@ -251,7 +251,7 @@ public final class AppController {
   public func togglePopover() {
     popover?.toggle(
       relativeTo: statusItem?.item.button, anchorFrame: statusItem?.buttonFrameOnScreen,
-      visibleFrame: dependencies.screenVisibleFrame())
+      visibleFrame: statusItem?.item.button?.window?.screen?.visibleFrame ?? dependencies.screenVisibleFrame())
   }
 
   public func refreshNow() {
