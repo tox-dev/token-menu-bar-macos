@@ -123,8 +123,12 @@ extension QuotaAvailability {
     ProviderOutcomeBuilder.outcome(for: .http(status: 429, body: "slow", retryAfter: 42), hint: "h")
       == .rateLimited("HTTP 429: slow", retryAfter: 42))
   #expect(ProviderFetchOutcome.rateLimited("x", retryAfter: nil).errorDescription == "x")
-  #expect(PollingPolicy(idleInterval: 300, activeInterval: 120).interval(active: true, requested: 60) == 120)
-  #expect(PollingPolicy(idleInterval: 300, activeInterval: 120).interval(active: false, requested: 600) == 600)
+  let policy = PollingPolicy.defaults(for: .claude)
+  #expect(policy.interval(active: true, requested: 300) == 120)
+  #expect(policy.interval(active: true, requested: 60) == 120)
+  #expect(policy.interval(active: false, requested: 60) == 120)
+  #expect(policy.interval(active: false, requested: 600) == 600)
+  #expect(PollingPolicy.defaults(for: .codex).defaultInterval == 120)
 }
 
 @Test func registryOrdersAndLooksUpProviders() {
@@ -223,7 +227,7 @@ extension QuotaAvailability {
 
 struct FakeProvider: UsageProvider {
   let id: ProviderID
-  let pollingPolicy = PollingPolicy(idleInterval: 0, activeInterval: 0)
+  let pollingPolicy = PollingPolicy(minimumInterval: 0, activeInterval: 0, defaultInterval: 0)
   var result: ProviderFetchResult = ProviderFetchResult(outcome: .failed("unset"))
   var credentials: CredentialState = .valid(expiresAt: nil)
   var credentialDescription: String { "fake" }

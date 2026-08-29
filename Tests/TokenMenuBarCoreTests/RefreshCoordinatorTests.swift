@@ -23,7 +23,7 @@ private func snapshot(_ provider: ProviderID, _ percent: Double, resets: TimeInt
 
 final class ScriptedProvider: UsageProvider, @unchecked Sendable {
   let id: ProviderID
-  var pollingPolicy = PollingPolicy(idleInterval: 0, activeInterval: 0)
+  var pollingPolicy = PollingPolicy(minimumInterval: 0, activeInterval: 0, defaultInterval: 0)
   private let lock = NSLock()
   private var queue: [ProviderFetchResult]
   private(set) var calls: [FetchOptions] = []
@@ -52,7 +52,7 @@ private func makeCoordinator(
   history: UsageHistoryStore? = nil
 ) throws -> (RefreshCoordinator, AppState, Settings, UsageHistoryStore, NotificationSink) {
   let settings = settings ?? makeSettings()
-  settings.refreshSeconds = 60
+  for provider in ProviderID.allCases { settings.setRefreshInterval(60, for: provider) }
   let state = AppState()
   let history = try history ?? UsageHistoryStore(url: nil)
   let sink = NotificationSink()
@@ -179,7 +179,7 @@ final class NotificationSink {
   let clock = Clock(
     now: { box.date },
     sleep: { _ in
-      box.date = box.date.addingTimeInterval(60)
+      box.date = box.date.addingTimeInterval(120)
       await ticks.increment()
       if await ticks.count >= 3 { throw CancellationError() }
     })
@@ -285,9 +285,10 @@ extension UsageHistoryStore {
       ProviderFetchResult(outcome: .success(snapshot(.codex, 5))),
       ProviderFetchResult(outcome: .failed("HTTP 500")),
     ])
-  codex.pollingPolicy = PollingPolicy(idleInterval: 300, activeInterval: 90)
+  codex.pollingPolicy = PollingPolicy(minimumInterval: 60, activeInterval: 90, defaultInterval: 300)
   let box = DateBox(fixedNow)
-  let (coordinator, state, _, _, _) = try makeCoordinator([codex], clock: box.clock)
+  let (coordinator, state, settings, _, _) = try makeCoordinator([codex], clock: box.clock)
+  settings.setRefreshInterval(300, for: .codex)
   await coordinator.refresh(RefreshRequest())
   #expect(coordinator.nextAttempt(for: .codex) == fixedNow.addingTimeInterval(60))
   await coordinator.refresh(RefreshRequest(force: true))

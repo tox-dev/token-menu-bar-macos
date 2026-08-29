@@ -12,6 +12,11 @@ public enum AnalyticsMetric: String, Codable, CaseIterable, Sendable, Hashable {
   case skillInvocations
   case pluginInvocations
   case codeReviews
+  case cacheWriteTokens
+  case costUSD
+  case messages
+  case sessions
+  case toolCalls
 
   public var title: String {
     switch self {
@@ -26,6 +31,11 @@ public enum AnalyticsMetric: String, Codable, CaseIterable, Sendable, Hashable {
     case .skillInvocations: "Skills used"
     case .pluginInvocations: "Plugin calls"
     case .codeReviews: "Code reviews"
+    case .cacheWriteTokens: "Cache write tokens"
+    case .costUSD: "API-equivalent cost"
+    case .messages: "Messages"
+    case .sessions: "Sessions"
+    case .toolCalls: "Tool calls"
     }
   }
 
@@ -33,7 +43,8 @@ public enum AnalyticsMetric: String, Codable, CaseIterable, Sendable, Hashable {
     switch self {
     case .surfaceUsagePercent: "%"
     case .modelCredits, .credits: "credits"
-    case .inputTokens, .cachedInputTokens, .outputTokens: "tokens"
+    case .inputTokens, .cachedInputTokens, .outputTokens, .cacheWriteTokens: "tokens"
+    case .costUSD: "USD"
     default: "count"
     }
   }

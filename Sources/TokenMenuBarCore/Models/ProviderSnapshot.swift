@@ -165,6 +165,7 @@ public struct ProviderSnapshot: Codable, Sendable, Hashable {
   public let spend: SpendControl?
   public let resetCredits: ResetCredits?
   public let notices: [Notice]
+  public let localUsage: LocalUsage?
   public let source: DataSource
   public let fetchedAt: Date
 
@@ -176,6 +177,7 @@ public struct ProviderSnapshot: Codable, Sendable, Hashable {
     spend: SpendControl? = nil,
     resetCredits: ResetCredits? = nil,
     notices: [Notice] = [],
+    localUsage: LocalUsage? = nil,
     source: DataSource = .network,
     fetchedAt: Date
   ) {
@@ -186,6 +188,7 @@ public struct ProviderSnapshot: Codable, Sendable, Hashable {
     self.spend = spend
     self.resetCredits = resetCredits
     self.notices = notices
+    self.localUsage = localUsage
     self.source = source
     self.fetchedAt = fetchedAt
   }

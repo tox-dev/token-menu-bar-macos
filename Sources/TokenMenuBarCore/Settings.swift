@@ -10,9 +10,7 @@ public enum PopoverTab: String, CaseIterable, Codable, Sendable {
 @MainActor
 @Observable
 public final class Settings {
-  public static let minimumRefreshSeconds = 60
-  public static let maximumRefreshSeconds = 600
-  public static let defaultRefreshSeconds = 120
+  public static let maximumRefreshSeconds = 1800
   public static let defaultAnalyticsMinutes = 15
 
   private let defaults: UserDefaults
@@ -20,15 +18,17 @@ public final class Settings {
   private let decoder = JSONDecoder()
   private var loading = true
 
-  public var refreshSeconds: Int {
-    didSet {
-      let clamped = min(max(refreshSeconds, Self.minimumRefreshSeconds), Self.maximumRefreshSeconds)
-      if clamped != refreshSeconds {
-        refreshSeconds = clamped
-        return
-      }
-      store(refreshSeconds, key: .refreshSeconds)
-    }
+  public var refreshSeconds: [ProviderID: Int] {
+    didSet { storeCodable(refreshSeconds, key: .refreshSeconds) }
+  }
+
+  public func refreshInterval(for provider: ProviderID) -> Int {
+    refreshSeconds[provider] ?? Int(PollingPolicy.defaults(for: provider).defaultInterval)
+  }
+
+  public func setRefreshInterval(_ seconds: Int, for provider: ProviderID) {
+    let floor = Int(PollingPolicy.defaults(for: provider).minimumInterval)
+    refreshSeconds[provider] = min(max(seconds, floor), Self.maximumRefreshSeconds)
   }
 
   public var analyticsRefreshMinutes: Int {
@@ -78,7 +78,7 @@ public final class Settings {
 
   public init(defaults: UserDefaults) {
     self.defaults = defaults
-    refreshSeconds = defaults.object(forKey: Key.refreshSeconds.rawValue) as? Int ?? Self.defaultRefreshSeconds
+    refreshSeconds = Self.loadCodable([ProviderID: Int].self, defaults, .refreshSeconds) ?? [:]
     analyticsRefreshMinutes =
       defaults.object(forKey: Key.analyticsMinutes.rawValue) as? Int ?? Self.defaultAnalyticsMinutes
     enabledProviders = Self.loadCodable(Set<ProviderID>.self, defaults, .enabledProviders) ?? Set(ProviderID.allCases)

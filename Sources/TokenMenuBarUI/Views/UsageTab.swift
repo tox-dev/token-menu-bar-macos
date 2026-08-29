@@ -107,6 +107,14 @@ public struct ProviderCardView: View {
       if card.credits != nil || card.resetCredits != nil {
         CreditsView(credits: card.credits, resetCredits: card.resetCredits)
       }
+      if let local = card.localUsage {
+        LocalUsageView(usage: local)
+      }
+      if let reviews = card.codeReviews {
+        MetricCell(
+          title: "Code reviews", value: reviews,
+          help: "Code reviews the provider counted today and over the last seven days.")
+      }
     }
     .padding(12)
     .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
@@ -239,6 +247,41 @@ public struct SpendView: View {
           help: "Credits are bought on the provider website; the app only displays them.")
       }
     }
+  }
+}
+
+public struct LocalUsageView: View {
+  public let usage: LocalUsage
+
+  public init(usage: LocalUsage) {
+    self.usage = usage
+  }
+
+  public var body: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      Text("Local session logs").font(.body.weight(.medium))
+      LazyVGrid(columns: [GridItem(.adaptive(minimum: 112, maximum: 160), alignment: .leading)], spacing: 8) {
+        MetricCell(
+          title: "5-hour block", value: Format.compactNumber(Double(usage.windowTokens)) + " tokens",
+          help: "Tokens the CLI logged since the current session window started, including cache reads.")
+        MetricCell(
+          title: "Block cost", value: Self.money(usage.windowCost),
+          help: "What the same traffic would cost at API list prices; the subscription is not billed per token.")
+        MetricCell(
+          title: "Burn rate", value: Self.money(usage.costPerHour) + "/hr",
+          help: "API-equivalent spend per hour over the current block.")
+        MetricCell(
+          title: "Today",
+          value: "\(Format.compactNumber(Double(usage.todayTokens))) tokens · \(usage.todayMessages) msgs",
+          help: "Tokens and assistant messages logged today.")
+        MetricCell(
+          title: "Today cost", value: Self.money(usage.todayCost), help: "API-equivalent cost of today's traffic.")
+      }
+    }
+  }
+
+  static func money(_ value: Double) -> String {
+    value.formatted(.currency(code: "USD").precision(.fractionLength(value < 10 ? 2 : 0)))
   }
 }
 

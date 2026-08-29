@@ -2,7 +2,7 @@ import Foundation
 
 public actor CodexProvider: UsageProvider {
   public nonisolated let id: ProviderID = .codex
-  public nonisolated let pollingPolicy = PollingPolicy(idleInterval: 120, activeInterval: 60)
+  public nonisolated let pollingPolicy = PollingPolicy.defaults(for: .codex)
   private let auth: any CodexAuthStore
   private let rollouts: CodexRolloutReader?
   private let client: APIClient

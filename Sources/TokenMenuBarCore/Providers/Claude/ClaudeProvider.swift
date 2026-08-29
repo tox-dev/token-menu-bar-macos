@@ -4,9 +4,10 @@ public actor ClaudeProvider: UsageProvider {
   public static let profileCacheInterval: TimeInterval = 6 * 3600
 
   public nonisolated let id: ProviderID = .claude
-  public nonisolated let pollingPolicy = PollingPolicy(idleInterval: 300, activeInterval: 120)
+  public nonisolated let pollingPolicy = PollingPolicy.defaults(for: .claude)
   private let credentials: any ClaudeCredentialStore
   private let localAccountURL: URL?
+  private let transcripts: ClaudeTranscriptReader?
   private let client: APIClient
   private let log: LogBuffer
   private let allowRefresh: @Sendable () -> Bool
@@ -15,12 +16,14 @@ public actor ClaudeProvider: UsageProvider {
   public init(
     credentials: any ClaudeCredentialStore,
     localAccountURL: URL?,
+    transcripts: ClaudeTranscriptReader? = nil,
     client: APIClient,
     log: LogBuffer,
     allowRefresh: @escaping @Sendable () -> Bool
   ) {
     self.credentials = credentials
     self.localAccountURL = localAccountURL
+    self.transcripts = transcripts
     self.client = client
     self.log = log
     self.allowRefresh = allowRefresh
@@ -75,17 +78,23 @@ public actor ClaudeProvider: UsageProvider {
     case .failure(let error): warnings.append("Profile unavailable: \(error.message)")
     }
     let identity = ClaudeMapper.identity(profile: profile, credentials: active, local: local)
+    let transcriptMessages = await transcripts?.refresh(now: now) ?? []
     switch usageResult {
     case .success(let response):
+      let windows = ClaudeMapper.windows(response)
+      let session = windows.first { $0.id == "session" }
       let snapshot = ProviderSnapshot(
         provider: .claude,
         identity: identity,
-        windows: ClaudeMapper.windows(response),
+        windows: windows,
         spend: ClaudeMapper.spend(response, now: now),
         notices: ClaudeMapper.notices(response),
+        localUsage: ClaudeTranscriptReader.localUsage(
+          transcriptMessages, windowResetsAt: session?.resetsAt, windowDuration: ClaudeMapper.sessionDuration, now: now),
         fetchedAt: now
       )
-      return ProviderFetchResult(outcome: .success(snapshot), warnings: warnings)
+      let analytics = options.includeAnalytics ? ClaudeTranscriptReader.analytics(transcriptMessages, now: now) : nil
+      return ProviderFetchResult(outcome: .success(snapshot), warnings: warnings, analytics: analytics)
     case .failure(let error):
       return ProviderFetchResult(
         outcome: ProviderOutcomeBuilder.outcome(for: error, hint: id.loginHint), warnings: warnings)

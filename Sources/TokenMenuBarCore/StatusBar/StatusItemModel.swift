@@ -131,10 +131,14 @@ public enum StatusItemBuilder {
           percent: own.map(\.2.usedPercent).max() ?? 0, tooltip: tooltip)
       }
     } else {
+      let perProvider = Dictionary(grouping: entries, by: \.0.provider).mapValues(\.count)
       cells = entries.map { key, snapshot, window in
+        let tag = StatusTemplate.windowTag(window)
         let context = StatusCellContext(
           provider: key.provider,
           window: window,
+          cellLabel: perProvider[key.provider, default: 1] > 1
+            ? "\(key.provider.shortLabel) \(tag)" : key.provider.shortLabel,
           shortLabel: input.labels[key] ?? "\(key.provider.shortLabel) \(StatusTemplate.windowTag(window))",
           decimals: input.decimals,
           planName: snapshot.identity?.planName,

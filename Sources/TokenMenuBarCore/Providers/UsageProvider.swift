@@ -11,16 +11,25 @@ public struct FetchOptions: Sendable, Equatable {
 }
 
 public struct PollingPolicy: Sendable, Equatable {
-  public let idleInterval: TimeInterval
+  public let minimumInterval: TimeInterval
   public let activeInterval: TimeInterval
+  public let defaultInterval: TimeInterval
 
-  public init(idleInterval: TimeInterval, activeInterval: TimeInterval) {
-    self.idleInterval = idleInterval
+  public init(minimumInterval: TimeInterval, activeInterval: TimeInterval, defaultInterval: TimeInterval) {
+    self.minimumInterval = minimumInterval
     self.activeInterval = activeInterval
+    self.defaultInterval = defaultInterval
   }
 
   public func interval(active: Bool, requested: TimeInterval) -> TimeInterval {
-    max(requested, active ? activeInterval : idleInterval)
+    max(active ? min(requested, activeInterval) : requested, minimumInterval)
+  }
+
+  public static func defaults(for provider: ProviderID) -> PollingPolicy {
+    switch provider {
+    case .claude: PollingPolicy(minimumInterval: 120, activeInterval: 120, defaultInterval: 300)
+    case .codex: PollingPolicy(minimumInterval: 60, activeInterval: 60, defaultInterval: 120)
+    }
   }
 }
 

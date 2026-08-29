@@ -50,7 +50,7 @@ public enum Diagnostics {
     out.append("\(app.name) \(app.version) (\(app.build)) \(app.isAppStore ? "App Store" : "Direct")")
     out.append("macOS \(osVersion)")
     out.append(
-      "Refresh every \(settings.refreshSeconds)s, analytics every \(settings.analyticsRefreshMinutes)m, format \(settings.statusFormat.rawValue)"
+      "Refresh \(ProviderID.allCases.map { "\($0.rawValue) \(settings.refreshInterval(for: $0))s" }.joined(separator: ", ")), analytics every \(settings.analyticsRefreshMinutes)m, format \(settings.statusFormat.rawValue)"
     )
     out.append("Providers: \(settings.enabledProviders.map(\.rawValue).sorted().joined(separator: ", "))")
     out.append("History: \(historyLocation?.path ?? "in memory")")

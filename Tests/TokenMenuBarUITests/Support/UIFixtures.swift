@@ -48,6 +48,9 @@ func sampleSnapshot(_ provider: ProviderID, percent: Double = 36) -> ProviderSna
       limitReached: false, balance: Money(amountMinor: 50, currency: "USD"), autoReload: true, canPurchaseCredits: true),
     resetCredits: ResetCredits(available: 1, applicable: 1, totalEarned: 2),
     notices: [Notice(kind: .promotion, text: "Boosted limits"), Notice(kind: .limitReached, text: "Limit reached")],
+    localUsage: LocalUsage(
+      windowTokens: 1_200_000, windowCost: 14.2, costPerHour: 5.5, todayTokens: 3_000_000, todayCost: 40,
+      todayMessages: 120),
     fetchedAt: fixedNow.addingTimeInterval(-10)
   )
 }
@@ -68,6 +71,10 @@ func makeEnvironment(settings: TokenMenuBarCore.Settings? = nil, populate: Bool 
     state.update(.codex) {
       $0.snapshot = sampleSnapshot(.codex, percent: 80)
       $0.availability = .current
+      $0.analytics = ProviderAnalytics(
+        provider: .codex,
+        points: [AnalyticsPoint(day: DayStamp.string(fixedNow), metric: .codeReviews, series: "reviews", value: 3)],
+        fetchedAt: fixedNow)
     }
     state.setRefreshing(true, at: fixedNow.addingTimeInterval(-60))
   }
@@ -162,7 +169,7 @@ final class FakeUpdater: UpdaterHook {
 struct StaticProvider: UsageProvider {
   let id: ProviderID
   let result: ProviderFetchResult
-  let pollingPolicy = PollingPolicy(idleInterval: 0, activeInterval: 0)
+  let pollingPolicy = PollingPolicy(minimumInterval: 0, activeInterval: 0, defaultInterval: 0)
 
   var credentialDescription: String { "static \(id.rawValue)" }
   func credentialState(now: Date) -> CredentialState { .valid(expiresAt: nil) }

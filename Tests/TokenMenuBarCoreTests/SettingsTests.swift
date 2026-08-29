@@ -14,18 +14,19 @@ private func freshDefaults() -> UserDefaults {
 @Test @MainActor func settingsDefaultsAndClamping() {
   let defaults = freshDefaults()
   let settings = Settings(defaults: defaults)
-  #expect(settings.refreshSeconds == Settings.defaultRefreshSeconds)
+  #expect(settings.refreshInterval(for: .claude) == 300)
+  #expect(settings.refreshInterval(for: .codex) == 120)
   #expect(settings.enabledProviders == Set(ProviderID.allCases))
   #expect(settings.statusFormat == .stacked)
-  #expect(settings.activeTemplate == "{provider}\n{pct}")
+  #expect(settings.activeTemplate == "{cell}\n{pct}")
   #expect(settings.hideZeroCells)
   #expect(settings.automaticUpdates)
   #expect(settings.lastLaunchedVersion == nil)
-  settings.refreshSeconds = 5
-  #expect(settings.refreshSeconds == Settings.minimumRefreshSeconds)
-  settings.refreshSeconds = 5000
-  #expect(settings.refreshSeconds == Settings.maximumRefreshSeconds)
-  #expect(defaults.integer(forKey: "refreshSeconds") == Settings.maximumRefreshSeconds)
+  settings.setRefreshInterval(5, for: .claude)
+  #expect(settings.refreshInterval(for: .claude) == 120)
+  settings.setRefreshInterval(5000, for: .codex)
+  #expect(settings.refreshInterval(for: .codex) == Settings.maximumRefreshSeconds)
+  #expect(Settings(defaults: defaults).refreshInterval(for: .codex) == Settings.maximumRefreshSeconds)
   settings.analyticsRefreshMinutes = 1
   #expect(settings.analyticsRefreshMinutes == 5)
   settings.percentDecimals = 9
@@ -96,13 +97,13 @@ private func freshDefaults() -> UserDefaults {
 @Test @MainActor func settingsResetRestoresDefaults() {
   let defaults = freshDefaults()
   let settings = Settings(defaults: defaults)
-  settings.refreshSeconds = 300
+  settings.setRefreshInterval(600, for: .claude)
   settings.statusFormat = .inline
   settings.enabledProviders = []
   settings.lastTab = .settings
   settings.lastLaunchedVersion = "9"
   settings.resetToDefaults()
-  #expect(settings.refreshSeconds == Settings.defaultRefreshSeconds)
+  #expect(settings.refreshInterval(for: .claude) == 300)
   #expect(settings.statusFormat == .stacked)
   #expect(settings.enabledProviders == Set(ProviderID.allCases))
   #expect(settings.lastTab == .usage)

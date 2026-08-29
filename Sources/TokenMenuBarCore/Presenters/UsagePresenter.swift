@@ -56,6 +56,8 @@ public struct ProviderCard: Sendable, Hashable, Identifiable {
   public let emptyTitle: String
   public let emptyDescription: String
   public let isRefreshing: Bool
+  public let localUsage: LocalUsage?
+  public let codeReviews: String?
 
   public var id: ProviderID { provider }
 
@@ -105,8 +107,21 @@ public enum UsagePresenter {
       credentialDescription: state.credentialState?.description,
       emptyTitle: title,
       emptyDescription: description,
-      isRefreshing: state.isRefreshing
+      isRefreshing: state.isRefreshing,
+      localUsage: snapshot?.localUsage,
+      codeReviews: codeReviewSummary(state.analytics, now: now)
     )
+  }
+
+  static func codeReviewSummary(_ analytics: ProviderAnalytics?, now: Date) -> String? {
+    guard let analytics else { return nil }
+    let reviews = analytics.points.filter { $0.metric == .codeReviews }
+    guard !reviews.isEmpty else { return nil }
+    let today = DayStamp.string(now)
+    let weekStart = DayStamp.string(now.addingTimeInterval(-6 * 86400))
+    let todayCount = reviews.filter { $0.day == today }.reduce(0) { $0 + $1.value }
+    let weekCount = reviews.filter { $0.day >= weekStart }.reduce(0) { $0 + $1.value }
+    return "\(Int(todayCount)) today · \(Int(weekCount)) this week"
   }
 
   static func chips(provider: ProviderID, snapshot: ProviderSnapshot?) -> [Chip] {

@@ -69,7 +69,7 @@ public final class RefreshCoordinator {
       var keepGoing = true
       while keepGoing {
         await refresh(RefreshRequest())
-        keepGoing = (try? await clock.sleep(min(Self.tickInterval, TimeInterval(settings.refreshSeconds)))) != nil
+        keepGoing = (try? await clock.sleep(Self.tickInterval)) != nil
       }
     }
   }
@@ -134,7 +134,7 @@ public final class RefreshCoordinator {
     if request.force { return true }
     if let blocked = retryNotBefore[provider.id], blocked > now { return false }
     let interval = provider.pollingPolicy.interval(
-      active: state.popoverVisible, requested: TimeInterval(settings.refreshSeconds))
+      active: state.popoverVisible, requested: TimeInterval(settings.refreshInterval(for: provider.id)))
     return lastAttempt[provider.id].map { now.timeIntervalSince($0) >= interval - 1 } ?? true
   }
 

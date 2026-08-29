@@ -17,7 +17,7 @@ public struct HistoryTab: View {
       VStack(alignment: .leading, spacing: 10) {
         controls
         HStack(alignment: .top, spacing: 12) {
-          chart.frame(minWidth: 520, minHeight: 300)
+          chart.frame(minWidth: 660, minHeight: 380)
           HistoryInspector(environment: environment).frame(width: 220)
         }
         if settings.historyRange == .custom {
@@ -29,7 +29,7 @@ public struct HistoryTab: View {
           }
         }
       }
-      .frame(minWidth: 820, alignment: .leading)
+      .frame(minWidth: 980, alignment: .leading)
     }
     .task { presenter.reload() }
   }
@@ -340,7 +340,7 @@ public struct AnalyticsSectionsView: View {
             AxisValueLabel(format: .dateTime.month(.abbreviated).day())
           }
         }
-        .frame(height: 140)
+        .frame(height: 170)
       }
     }
     .padding(12)

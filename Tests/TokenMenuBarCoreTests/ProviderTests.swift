@@ -64,10 +64,12 @@ private let expiredClaude = ClaudeOAuthCredentials(
   accessToken: "old", refreshToken: "ref", expiresAt: fixedNow.addingTimeInterval(-10))
 
 private func claudeProvider(
-  _ store: any ClaudeCredentialStore, transport: StubTransport, allowRefresh: Bool = false, localAccount: URL? = nil
+  _ store: any ClaudeCredentialStore, transport: StubTransport, allowRefresh: Bool = false, localAccount: URL? = nil,
+  transcripts: URL? = nil
 ) -> ClaudeProvider {
   ClaudeProvider(
     credentials: store, localAccountURL: localAccount,
+    transcripts: transcripts.map { ClaudeTranscriptReader(root: $0) },
     client: APIClient(transport: transport, log: makeLog(), clock: testClock), log: makeLog(),
     allowRefresh: { allowRefresh })
 }
@@ -403,4 +405,24 @@ private func stubCodexAnalytics(_ transport: StubTransport) {
     now: fixedNow, options: FetchOptions())
   #expect(unsaved.outcome.snapshot != nil)
   #expect(store.saved.isEmpty)
+}
+
+@Test func claudeProviderReportsLocalUsageAndAnalytics() async throws {
+  let root = temporaryDirectory()
+  let project = root.appendingPathComponent("-Users-me-repo")
+  try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
+  let stamp = ISODate.string(fixedNow.addingTimeInterval(-600))
+  let record =
+    #"{"type":"assistant","uuid":"u1","requestId":"r1","sessionId":"s1","timestamp":"\#(stamp)","message":{"id":"m1","model":"claude-opus-5","content":[],"usage":{"input_tokens":10,"output_tokens":1000000,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}"#
+  try (record + "\n").write(to: project.appendingPathComponent("a.jsonl"), atomically: true, encoding: .utf8)
+  let transport = StubTransport()
+  transport.on(path: "/api/oauth/usage", .json("claude_usage"))
+  transport.on(path: "/api/oauth/profile", .json("claude_profile"))
+  let provider = claudeProvider(MemoryClaudeStore(validClaude), transport: transport, transcripts: root)
+  let plain = await provider.fetch(now: fixedNow, options: FetchOptions())
+  #expect(plain.outcome.snapshot?.localUsage?.windowTokens == 1_000_010)
+  #expect(plain.analytics == nil)
+  let withAnalytics = await provider.fetch(now: fixedNow, options: FetchOptions(includeAnalytics: true))
+  #expect(withAnalytics.analytics?.provider == .claude)
+  #expect(withAnalytics.analytics?.points.contains { $0.metric == .costUSD && $0.value == 75.00015 } == true)
 }

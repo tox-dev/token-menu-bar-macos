@@ -14,7 +14,7 @@ private func context(
   _ window: QuotaWindow = session, decimals: Int = 0, plan: String? = "Max 20x", credits: String? = "$5.00"
 ) -> StatusCellContext {
   StatusCellContext(
-    provider: .claude, window: window, shortLabel: "CC 5h", decimals: decimals, planName: plan, credits: credits,
+    provider: .claude, window: window, cellLabel: "CC·5h", shortLabel: "CC 5h", decimals: decimals, planName: plan, credits: credits,
     now: fixedNow)
 }
 
@@ -31,10 +31,10 @@ private func context(
 
 @Test func templateRendersEveryToken() {
   let template =
-    "{provider} {providerName} {window} {label}\n{pct} {pct0} {pct1} {pct2} {remaining} {reset} {resetClock} {plan} {credits} {unknown}"
+    "{cell} {provider} {providerName} {window} {label}\n{pct} {pct0} {pct1} {pct2} {remaining} {reset} {resetClock} {plan} {credits} {unknown}"
   let lines = StatusTemplate.render(template, context: context(decimals: 1))
   #expect(lines.count == 2)
-  #expect(StatusTemplate.plainText([lines[0]]) == "CC Claude 5h CC 5h")
+  #expect(StatusTemplate.plainText([lines[0]]) == "CC·5h CC Claude 5h CC 5h")
   let second = StatusTemplate.plainText([lines[1]])
   #expect(second.hasPrefix("36.4% 36% 36.4% 36.40% 63.6% 4h24m "))
   #expect(second.hasSuffix(" Max 20x $5.00 "))
@@ -47,9 +47,9 @@ private func context(
 @Test func templateDetectsCountdownUsage() {
   #expect(StatusTemplate.referencesCountdown("{reset}"))
   #expect(!StatusTemplate.referencesCountdown("{resetClock}"))
-  #expect(StatusFormat.stacked.template == "{provider}\n{pct}")
+  #expect(StatusFormat.stacked.template == "{cell}\n{pct}")
   #expect(StatusFormat.custom.template == nil)
-  #expect(StatusTemplate.tokens.count == 12)
+  #expect(StatusTemplate.tokens.count == 13)
 }
 
 @Test func windowTagsAbbreviate() {
@@ -121,7 +121,9 @@ private func input(
 @Test func builderRendersStackedCells() {
   let model = StatusItemBuilder.build(input())
   #expect(model.cells.map(\.id) == ["claude:session", "claude:weekly:fable", "codex:weekly"])
-  #expect(model.cells[0].lines.map { StatusTemplate.plainText([$0]) } == ["CC", "36%"])
+  #expect(model.cells[0].lines.map { StatusTemplate.plainText([$0]) } == ["CC 5h", "36%"])
+  #expect(model.cells[1].lines.map { StatusTemplate.plainText([$0]) } == ["CC FAB", "61%"])
+  #expect(model.cells[2].lines.map { StatusTemplate.plainText([$0]) } == ["CX", "62%"])
   #expect(model.cells[0].tooltip == "Claude Current session: 36%, resets 4 hr 24 min")
   #expect(!model.cells[0].isMiniBar)
   #expect(model.iconTone == .normal)

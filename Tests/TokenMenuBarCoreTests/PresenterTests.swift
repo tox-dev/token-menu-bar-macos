@@ -99,6 +99,28 @@ private func snapshot(source: DataSource = .network) -> ProviderSnapshot {
       == ProviderID.claude.loginHint)
 }
 
+@Test func usagePresenterCodeReviewSummary() {
+  #expect(UsagePresenter.codeReviewSummary(nil, now: fixedNow) == nil)
+  let empty = ProviderAnalytics(
+    provider: .codex, points: [AnalyticsPoint(day: "d", metric: .turns, series: "m", value: 1)], fetchedAt: fixedNow)
+  #expect(UsagePresenter.codeReviewSummary(empty, now: fixedNow) == nil)
+  let today = DayStamp.string(fixedNow)
+  let old = DayStamp.string(fixedNow.addingTimeInterval(-3 * 86400))
+  let ancient = DayStamp.string(fixedNow.addingTimeInterval(-10 * 86400))
+  let analytics = ProviderAnalytics(
+    provider: .codex,
+    points: [
+      AnalyticsPoint(day: today, metric: .codeReviews, series: "reviews", value: 2),
+      AnalyticsPoint(day: old, metric: .codeReviews, series: "reviews", value: 7),
+      AnalyticsPoint(day: ancient, metric: .codeReviews, series: "reviews", value: 100),
+    ], fetchedAt: fixedNow)
+  #expect(UsagePresenter.codeReviewSummary(analytics, now: fixedNow) == "2 today · 9 this week")
+  let state = ProviderState(snapshot: snapshot(), analytics: analytics, availability: .current)
+  #expect(
+    UsagePresenter.card(provider: .codex, state: state, samples: [:], now: fixedNow).codeReviews
+      == "2 today · 9 this week")
+}
+
 @Test func usagePresenterSummaries() {
   #expect(UsagePresenter.spendSummary(SpendControl(enabled: false)) == "Off")
   #expect(

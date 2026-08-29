@@ -8,8 +8,8 @@ public enum StatusFormat: String, CaseIterable, Codable, Sendable {
 
   public var template: String? {
     switch self {
-    case .stacked: "{provider}\n{pct}"
-    case .inline: "{label}:{pct}"
+    case .stacked: "{cell}\n{pct}"
+    case .inline: "{cell}:{pct}"
     case .miniBars, .custom: nil
     }
   }
@@ -34,6 +34,7 @@ public struct StatusRun: Hashable, Sendable {
 public struct StatusCellContext: Sendable {
   public let provider: ProviderID
   public let window: QuotaWindow
+  public let cellLabel: String
   public let shortLabel: String
   public let decimals: Int
   public let planName: String?
@@ -41,11 +42,12 @@ public struct StatusCellContext: Sendable {
   public let now: Date
 
   public init(
-    provider: ProviderID, window: QuotaWindow, shortLabel: String, decimals: Int, planName: String?, credits: String?,
-    now: Date
+    provider: ProviderID, window: QuotaWindow, cellLabel: String, shortLabel: String, decimals: Int, planName: String?,
+    credits: String?, now: Date
   ) {
     self.provider = provider
     self.window = window
+    self.cellLabel = cellLabel
     self.shortLabel = shortLabel
     self.decimals = decimals
     self.planName = planName
@@ -56,6 +58,7 @@ public struct StatusCellContext: Sendable {
 
 public enum StatusTemplate {
   public static let tokens: [(token: String, help: String)] = [
+    ("{cell}", "provider tag, plus the window tag when a provider shows several windows"),
     ("{provider}", "provider tag (CC, CX)"),
     ("{providerName}", "provider name"),
     ("{window}", "window tag (5h, 7d, model)"),
@@ -157,6 +160,7 @@ public enum StatusTemplate {
   static func run(for name: String, context: StatusCellContext) -> StatusRun? {
     let percent = context.window.usedPercent
     switch name {
+    case "cell": return StatusRun(text: context.cellLabel, kind: .label)
     case "provider": return StatusRun(text: context.provider.shortLabel, kind: .label)
     case "providerName": return StatusRun(text: context.provider.displayName, kind: .label)
     case "window": return StatusRun(text: windowTag(context.window), kind: .label)

@@ -79,6 +79,7 @@ public enum LiveDependencies {
     let claude = ClaudeProvider(
       credentials: claudeStore,
       localAccountURL: paths.home.appendingPathComponent(".claude.json"),
+      transcripts: ClaudeTranscriptReader(root: claudeHome.appendingPathComponent("projects")),
       client: client,
       log: log,
       allowRefresh: allowRefresh

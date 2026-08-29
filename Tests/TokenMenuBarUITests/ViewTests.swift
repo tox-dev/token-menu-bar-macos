@@ -97,6 +97,9 @@ import TokenMenuBarCore
     height: 200)
   _ = host(CreditsView(credits: snapshot.credits, resetCredits: snapshot.resetCredits), width: 400, height: 200)
   _ = host(CreditsView(credits: nil, resetCredits: nil), width: 400, height: 200)
+  _ = host(LocalUsageView(usage: snapshot.localUsage!), width: 400, height: 200)
+  #expect(LocalUsageView.money(3.456) == "$3.46")
+  #expect(LocalUsageView.money(42.4) == "$42")
 }
 
 @Test @MainActor func historyTabRendersStatesAndInteractions() async throws {
