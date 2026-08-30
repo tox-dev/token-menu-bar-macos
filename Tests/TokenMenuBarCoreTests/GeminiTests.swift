@@ -1,7 +1,6 @@
 import Foundation
 import Testing
-
-@testable import TokenMenuBarCore
+import TokenMenuBarCore
 
 @Test func geminiAuthParsesDocumentAndClaims() {
   let auth = GeminiAuth(document: Fixtures.json("gemini_creds"))!
@@ -53,52 +52,65 @@ private let validGemini = GeminiAuth(
       == "/custom/.gemini/oauth_creds.json")
 }
 
-@Test func geminiMapperBuildsOneWindowPerModelQuota() {
-  let windows = GeminiMapper.windows(Fixtures.decode(GeminiAPI.QuotaResponse.self, "gemini_quota"))
-  #expect(windows.map(\.id) == ["model:gemini-2.5-pro", "model:gemini-2.5-flash"])
-  #expect(windows.first { $0.id == "model:gemini-2.5-pro" }?.usedPercent == 60)
-  #expect(windows.first { $0.id == "model:gemini-2.5-flash" }?.label == "Gemini 2.5 Flash")
-  #expect(windows.allSatisfy { $0.resetsAt == ISODate.parse("2026-08-30T07:00:00Z") && $0.duration == 86400 })
+@MainActor
+private func geminiSnapshot(
+  assist: StubTransport.Response, quota: StubTransport.Response, auth: GeminiAuth = validGemini
+)
+  async -> ProviderSnapshot?
+{
+  let (provider, transport, _) = makeProvider(auth)
+  transport.on(path: ":loadCodeAssist", assist)
+  transport.on(path: ":retrieveUserQuota", quota)
+  guard case .success(let snapshot) = await provider.fetch(now: fixedNow, options: FetchOptions()).outcome else {
+    Issue.record("expected a snapshot")
+    return nil
+  }
+  return snapshot
 }
 
-@Test func geminiMapperReadsIdentityAndCredits() {
-  let assist = Fixtures.decode(GeminiAPI.LoadCodeAssistResponse.self, "gemini_load_code_assist")
-  #expect(assist.projectID == "gen-lang-client-0123456789")
-  #expect(assist.unsupportedReason == nil)
-  let identity = GeminiMapper.identity(assist, auth: validGemini)
-  #expect(identity.planName == "Google AI Pro")
-  #expect(identity.email == "you@example.com")
-  #expect(identity.tier == "standard-tier")
-  #expect(GeminiMapper.credits(assist)?.balance == 1500)
-  #expect(GeminiMapper.credits(nil) == nil)
+@Test func geminiReportsOneWindowPerModelQuota() async throws {
+  let snapshot = try #require(
+    await geminiSnapshot(assist: .json("gemini_load_code_assist"), quota: .json("gemini_quota")))
+  #expect(snapshot.windows.map(\.id) == ["model:gemini-2.5-flash", "model:gemini-2.5-pro"])
+  #expect(snapshot.windows.first { $0.id == "model:gemini-2.5-pro" }?.usedPercent == 60)
+  #expect(snapshot.windows.first { $0.id == "model:gemini-2.5-flash" }?.label == "Gemini 2.5 Flash")
+  #expect(snapshot.windows.allSatisfy { $0.resetsAt == ISODate.parse("2026-08-30T07:00:00Z") && $0.duration == 86400 })
 }
 
-@Test func geminiReportsClientsTheAPIRefuses() {
-  let unsupported = Fixtures.decode(GeminiAPI.LoadCodeAssistResponse.self, "gemini_unsupported")
-  #expect(unsupported.projectID == "projects/legacy-123")
-  #expect(unsupported.unsupportedReason?.contains("Antigravity") == true)
-  let noTier = GeminiAPI.LoadCodeAssistResponse(
-    currentTier: nil, paidTier: nil, cloudaicompanionProject: .object(["projectId": .string("p")]),
-    ineligibleTiers: [GeminiAPI.IneligibleTier(reasonCode: "OTHER", reasonMessage: nil)])
-  #expect(noTier.projectID == "p")
-  #expect(noTier.unsupportedReason == GeminiAPI.unsupportedClientMessage)
-  #expect(
-    GeminiAPI.LoadCodeAssistResponse(
-      currentTier: nil, paidTier: nil, cloudaicompanionProject: nil, ineligibleTiers: nil
-    )
-    .unsupportedReason == nil)
+@Test func geminiReportsTheTierAndItsCredits() async throws {
+  let snapshot = try #require(
+    await geminiSnapshot(assist: .json("gemini_load_code_assist"), quota: .json("gemini_quota")))
+  #expect(snapshot.identity?.planName == "Google AI Pro")
+  #expect(snapshot.identity?.email == "you@example.com")
+  #expect(snapshot.identity?.tier == "standard-tier")
+  #expect(snapshot.credits?.balance == 1500)
 }
 
-@Test(arguments: [
-  ("standard-tier", nil as String?, "Standard"), ("legacy-tier", nil, "Legacy"), ("free-tier", nil, "Free"),
-  ("free-tier", "corp.example", "Workspace"), ("other", nil, "Other tier"),
-])
-func geminiPlanNames(tier: String, hosted: String?, expected: String) {
-  let assist = GeminiAPI.LoadCodeAssistResponse(
-    currentTier: GeminiAPI.Tier(id: tier, name: "Other tier", availableCredits: nil), paidTier: nil,
-    cloudaicompanionProject: nil, ineligibleTiers: nil)
-  #expect(GeminiMapper.planName(assist, hostedDomain: hosted) == expected)
-  #expect(GeminiMapper.planName(nil, hostedDomain: nil) == "Gemini")
+@Test(
+  arguments: [
+    ("standard-tier", nil as String?, "Standard"), ("legacy-tier", nil, "Legacy"), ("free-tier", nil, "Free"),
+    ("free-tier", "corp.example", "Workspace"), ("other", nil, "Other tier"),
+  ])
+func geminiNamesThePlanFromTheTier(tier: String, hosted: String?, expected: String) async throws {
+  let assist = #"""
+    {"currentTier": {"id": "\#(tier)", "name": "Other tier"},
+     "cloudaicompanionProject": {"id": "projects/p"}}
+    """#
+  let auth = GeminiAuth(
+    accessToken: "ya29.valid", refreshToken: "1//refresh",
+    idToken: idToken(email: "you@example.com", hd: hosted), expiresAt: fixedNow.addingTimeInterval(3600))
+  let snapshot = try #require(
+    await geminiSnapshot(assist: .text(assist), quota: .json("gemini_quota"), auth: auth))
+  #expect(snapshot.identity?.planName == expected)
+}
+
+@Test func geminiNamesThePlanGenericallyWithoutATier() async throws {
+  let snapshot = try #require(
+    await geminiSnapshot(
+      assist: .text(#"{"cloudaicompanionProject": {"id": "projects/p"}}"#),
+      quota: .json("gemini_quota")))
+  #expect(snapshot.identity?.planName == "Gemini")
+  #expect(snapshot.credits == nil)
 }
 
 @Test func geminiProviderFetchesQuota() async {
@@ -175,7 +187,11 @@ private func makeProvider(
   transport2.on(path: ":loadCodeAssist", .text("boom", status: 500))
   transport2.on(path: ":retrieveUserQuota", .text(#"{"error":{"status":"SUBSCRIPTION_REQUIRED"}}"#, status: 403))
   let result = await subscription.fetch(now: fixedNow, options: FetchOptions())
-  #expect(result.outcome == .notAuthenticated(GeminiAPI.unsupportedClientMessage))
+  guard case .notAuthenticated(let subscriptionReason) = result.outcome else {
+    Issue.record("expected notAuthenticated")
+    return
+  }
+  #expect(subscriptionReason.contains("Login with Google"))
 }
 
 @Test func geminiProviderPropagatesHTTPFailures() async {
@@ -266,7 +282,6 @@ private func makeProvider(
     GeminiOAuthConfig.extract(from: source)
       == GeminiOAuthClient(id: "123-abc.apps.googleusercontent.com", secret: "SECRET-value"))
   #expect(GeminiOAuthConfig.extract(from: "const OAUTH_CLIENT_ID = 'only-id';") == nil)
-  #expect(GeminiOAuthConfig.value(of: "MISSING", in: source) == nil)
   var probed: [String] = []
   let found = GeminiOAuthConfig.resolve(
     environment: [:], home: home,

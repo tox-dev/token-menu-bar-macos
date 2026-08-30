@@ -65,18 +65,23 @@ sequenceDiagram
     participant P as UsageProvider
     participant S as AppState
     participant H as UsageHistoryStore
-    T->>C: refresh(force:analytics:)
-    C->>P: credentialState(now:)
+    T->>+C: refresh(force:analytics:)
+    C->>+P: credentialState(now:)
     alt token missing or expired
-        P-->>C: notAuthenticated
-        C->>S: availability = .authenticationRequired
+        P-->>-C: notAuthenticated
+        C->>+S: availability = .authenticationRequired
+        S-->>-C: state published
     else token usable
-        C->>P: fetch(now:options:)
-        P-->>C: success, partial, or networkUnavailable
-        C->>S: snapshot, warnings, lastError
-        C->>H: record(snapshot) when a window moved 5%
+        C->>+P: fetch(now:options:)
+        P-->>-C: success, partial, or networkUnavailable
+        C->>+S: snapshot, warnings, lastError
+        S-->>-C: state published
+        C->>+H: record(snapshot) when a window moved 5%
+        H-->>-C: stored
     end
-    C->>S: rebuild the status model and the widget snapshot
+    C->>+S: rebuild the status model and the widget snapshot
+    S-->>-C: cells and snapshot ready
+    C-->>-T: next tick scheduled
 ```
 
 ## Adding a provider

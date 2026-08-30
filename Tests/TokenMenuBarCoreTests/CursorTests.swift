@@ -1,7 +1,6 @@
 import Foundation
 import Testing
-
-@testable import TokenMenuBarCore
+import TokenMenuBarCore
 
 @Test func cursorAuthDerivesUserAndCookie() {
   #expect(validCursor.userID == "user_01ABC")
@@ -70,90 +69,111 @@ private let validCursor = CursorAuth(accessToken: cursorJWT(), email: "cached@ex
   #expect(try ChainedCursorAuthStore([MemoryCursorStore(nil)]).load() == nil)
 }
 
-@Test func cursorMapperBuildsOneWindowPerQuotaBucket() {
-  let summary = Fixtures.decode(CursorAPI.UsageSummary.self, "cursor_usage_summary")
-  let windows = CursorMapper.windows(summary)
-  #expect(windows.map(\.id) == ["plan", "on_demand", "team_pool"])
-  #expect(windows.map(\.usedPercent) == [30, 5, 25])
-  #expect(windows.first?.duration == Double(31 * 86400))
-  #expect(windows.first?.resetsAt == ISODate.parse("2026-09-10T00:00:00.000Z"))
+@MainActor
+private func cursorSnapshot(
+  summary: StubTransport.Response, me: StubTransport.Response = .json("cursor_me"),
+  period: StubTransport.Response? = nil, auth: CursorAuth = validCursor
+) async -> ProviderSnapshot? {
+  let (provider, transport) = makeProvider(auth)
+  transport.on(path: "/api/usage-summary", summary)
+  transport.on(path: "/api/auth/me", me)
+  if let period { transport.on(path: "/GetCurrentPeriodUsage", period) }
+  guard case .success(let snapshot) = await provider.fetch(now: fixedNow, options: FetchOptions()).outcome else {
+    Issue.record("expected a snapshot")
+    return nil
+  }
+  return snapshot
 }
 
-@Test func cursorMapperReadsTheOnDemandSpendLimit() {
-  let spend = CursorMapper.spend(Fixtures.decode(CursorAPI.UsageSummary.self, "cursor_usage_summary"))
-  #expect(spend?.used == Money(amountMinor: 500, currency: "USD"))
-  #expect(spend?.limit == Money(amountMinor: 10000, currency: "USD"))
-  #expect(spend?.percent == 5)
-  #expect(spend?.limitReached == false)
+@Test func cursorReportsOneWindowPerQuotaBucket() async throws {
+  let snapshot = try #require(await cursorSnapshot(summary: .json("cursor_usage_summary")))
+  #expect(snapshot.windows.map(\.id) == ["on_demand", "plan", "team_pool"])
+  #expect(snapshot.windows.first { $0.id == "plan" }?.usedPercent == 30)
+  #expect(snapshot.windows.first { $0.id == "on_demand" }?.usedPercent == 5)
+  #expect(snapshot.windows.first { $0.id == "team_pool" }?.usedPercent == 25)
+  #expect(snapshot.windows.first { $0.id == "plan" }?.duration == Double(31 * 86400))
+  #expect(snapshot.windows.first { $0.id == "plan" }?.resetsAt == ISODate.parse("2026-09-10T00:00:00.000Z"))
 }
 
-@Test func cursorMapperPrefersTheAccountEmailOverTheCachedOne() {
-  let summary = Fixtures.decode(CursorAPI.UsageSummary.self, "cursor_usage_summary")
-  let identity = CursorMapper.identity(
-    summary, auth: validCursor, me: Fixtures.decode(CursorAPI.Me.self, "cursor_me"))
-  #expect(identity.planName == "Pro Plus")
-  #expect(identity.email == "you@example.com")
-  #expect(CursorMapper.identity(summary, auth: validCursor, me: nil).email == "cached@example.com")
+@Test func cursorReportsTheOnDemandSpendLimit() async throws {
+  let snapshot = try #require(await cursorSnapshot(summary: .json("cursor_usage_summary")))
+  #expect(snapshot.spend?.used == Money(amountMinor: 500, currency: "USD"))
+  #expect(snapshot.spend?.limit == Money(amountMinor: 10000, currency: "USD"))
+  #expect(snapshot.spend?.percent == 5)
+  #expect(snapshot.spend?.limitReached == false)
 }
 
-@Test func cursorMapperFallsBackToThePeriodEndpoint() {
-  let fallback = Fixtures.decode(CursorAPI.PeriodUsage.self, "cursor_period_usage").summary
-  #expect(CursorMapper.windows(fallback).map(\.id) == ["plan"])
-  #expect(CursorMapper.windows(fallback).first?.usedPercent == 60)
-  #expect(CursorMapper.spend(fallback) == nil)
-  #expect(CursorMapper.identity(fallback, auth: CursorAuth(accessToken: "x"), me: nil).planName == "Cursor")
+@Test func cursorPrefersTheAccountEmailOverTheCachedOne() async throws {
+  let withAccount = try #require(await cursorSnapshot(summary: .json("cursor_usage_summary")))
+  #expect(withAccount.identity?.planName == "Pro Plus")
+  #expect(withAccount.identity?.email == "you@example.com")
+  let cached = try #require(
+    await cursorSnapshot(summary: .json("cursor_usage_summary"), me: .text("nope", status: 403)))
+  #expect(cached.identity?.email == "cached@example.com")
 }
 
-@Test func cursorMapperNoticesUnlimitedPlansAndPeriodUsage() {
-  let summary = Fixtures.decode(CursorAPI.UsageSummary.self, "cursor_usage_summary")
-  #expect(CursorMapper.notices(summary, period: nil).isEmpty)
-  let notices = CursorMapper.notices(
-    CursorAPI.UsageSummary(
-      billingCycleStart: nil, billingCycleEnd: nil, membershipType: nil, isUnlimited: true, individualUsage: nil,
-      teamUsage: nil), period: Fixtures.decode(CursorAPI.PeriodUsage.self, "cursor_period_usage"))
-  #expect(notices.map(\.text) == ["This plan has unlimited usage.", "You have used 60% of your plan."])
+@Test func cursorFallsBackToThePeriodEndpoint() async throws {
+  let snapshot = try #require(
+    await cursorSnapshot(
+      summary: .text("nope", status: 403), me: .text("nope", status: 403), period: .json("cursor_period_usage"),
+      auth: CursorAuth(accessToken: "x")))
+  #expect(snapshot.windows.map(\.id) == ["plan"])
+  #expect(snapshot.windows.first?.usedPercent == 60)
+  #expect(snapshot.spend == nil)
+  #expect(snapshot.identity?.planName == "Cursor")
+  #expect(snapshot.notices.map(\.text) == ["You have used 60% of your plan."])
 }
 
+@Test func cursorCallsAnUnlimitedPlanOut() async throws {
+  let body = #"{"isUnlimited": true, "individualUsage": null}"#
+  let snapshot = try #require(
+    await cursorSnapshot(summary: .text(body), period: .json("cursor_period_usage")))
+  #expect(snapshot.notices.map(\.text).contains("This plan has unlimited usage."))
+}
+
+@Test func cursorIgnoresADisabledOnDemandBucket() async throws {
+  let body = #"""
+    {"individualUsage": {"onDemand": {"enabled": false, "used": 1, "limit": 1, "remaining": 0}}}
+    """#
+  let snapshot = try #require(await cursorSnapshot(summary: .text(body)))
+  #expect(snapshot.spend == nil)
+  #expect(snapshot.windows.isEmpty)
+}
+
+@Test func cursorCallsAFullOnDemandBucketAReachedLimit() async throws {
+  let body = #"""
+    {"billingCycleStart": "bad",
+     "individualUsage": {"onDemand": {"used": 100, "limit": 100, "remaining": 0}}}
+    """#
+  let snapshot = try #require(await cursorSnapshot(summary: .text(body)))
+  #expect(snapshot.spend?.limitReached == true)
+  #expect(snapshot.spend?.percent == 100)
+  #expect(snapshot.windows.first?.duration == nil)
+}
+
+@MainActor
+private func cursorPlanWindows(_ fields: String) async throws -> [QuotaWindow] {
+  let body = "{\"individualUsage\": {\"plan\": {\"enabled\": true, " + fields + "}}}"
+  return try #require(await cursorSnapshot(summary: .text(body))).windows
+}
+
+/// The vendor reports a bucket's usage four ways and the app has to agree on one number: the total wins, then the
+/// mean of the auto and API shares, then whichever share is present, then used against the limit.
 @Test(
   arguments: [
-    (cursorBucket(auto: 1, api: 2, total: 3), 3.0), (cursorBucket(auto: 10, api: 20), 15.0),
-    (cursorBucket(auto: 10), 10.0), (cursorBucket(api: 20), 20.0), (cursorBucket(used: 25, limit: 100), 25.0),
-    (cursorBucket(used: 25, limit: 0), nil), (cursorBucket(), nil),
+    (#""autoPercentUsed": 1, "apiPercentUsed": 2, "totalPercentUsed": 3"#, 3.0),
+    (#""autoPercentUsed": 10, "apiPercentUsed": 20"#, 15.0),
+    (#""autoPercentUsed": 10"#, 10.0),
+    (#""apiPercentUsed": 20"#, 20.0),
+    (#""used": 25, "limit": 100"#, 25.0),
   ])
-func cursorBucketPercentPrecedence(bucket: CursorAPI.Bucket, percent: Double?) {
-  #expect(bucket.percentUsed == percent)
+func cursorPicksThePercentTheVendorReports(fields: String, percent: Double) async throws {
+  #expect(try await cursorPlanWindows(fields).map(\.usedPercent) == [percent])
 }
 
-private func cursorBucket(
-  auto: Double? = nil, api: Double? = nil, total: Double? = nil, used: Double? = nil, limit: Double? = nil
-) -> CursorAPI.Bucket {
-  CursorAPI.Bucket(
-    enabled: true, used: used, limit: limit, remaining: nil, autoPercentUsed: auto, apiPercentUsed: api,
-    totalPercentUsed: total)
-}
-
-@Test func cursorSpendReflectsTheOnDemandBucket() {
-  let disabledSpend = CursorAPI.UsageSummary(
-    billingCycleStart: nil, billingCycleEnd: nil, membershipType: nil, isUnlimited: nil,
-    individualUsage: CursorAPI.IndividualUsage(
-      plan: nil,
-      onDemand: CursorAPI.Bucket(
-        enabled: false, used: 1, limit: 1, remaining: 0, autoPercentUsed: nil, apiPercentUsed: nil,
-        totalPercentUsed: nil),
-      overall: nil), teamUsage: nil)
-  #expect(CursorMapper.spend(disabledSpend) == nil)
-  #expect(CursorMapper.windows(disabledSpend).isEmpty)
-  let exhausted = CursorAPI.UsageSummary(
-    billingCycleStart: "bad", billingCycleEnd: nil, membershipType: nil, isUnlimited: nil,
-    individualUsage: CursorAPI.IndividualUsage(
-      plan: nil,
-      onDemand: CursorAPI.Bucket(
-        enabled: nil, used: 100, limit: 100, remaining: 0, autoPercentUsed: nil, apiPercentUsed: nil,
-        totalPercentUsed: nil),
-      overall: nil), teamUsage: nil)
-  #expect(CursorMapper.spend(exhausted)?.limitReached == true)
-  #expect(CursorMapper.spend(exhausted)?.percent == 100)
-  #expect(CursorMapper.windows(exhausted).first?.duration == nil)
+@Test(arguments: [#""used": 25, "limit": 0"#, #""remaining": 3"#])
+func cursorSkipsABucketWithoutAPercent(fields: String) async throws {
+  #expect(try await cursorPlanWindows(fields).isEmpty)
 }
 
 @Test func cursorProviderFetchesSummaryAndIdentity() async {
