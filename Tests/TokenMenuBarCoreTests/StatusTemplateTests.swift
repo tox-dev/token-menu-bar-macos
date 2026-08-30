@@ -33,7 +33,7 @@ private func context(
 @Test func templateRendersEveryToken() {
   let template =
     "{cell} {provider} {providerName} {window} {label}\n"
-      + "{pct} {pct0} {pct1} {pct2} {remaining} {reset} {resetClock} {plan} {credits} {unknown}"
+    + "{pct} {pct0} {pct1} {pct2} {remaining} {reset} {resetClock} {plan} {credits} {unknown}"
   let lines = StatusTemplate.render(template, context: context(decimals: 1))
   #expect(lines.count == 2)
   #expect(StatusTemplate.plainText([lines[0]]) == "CC·5h CC Claude 5h CC 5h")

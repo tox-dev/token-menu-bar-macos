@@ -253,7 +253,7 @@ func codexPlanNames(planType: String?, expected: String) {
   #expect(
     skills.absoluteString
       == "https://chatgpt.com/backend-api/wham/analytics/daily-skill-usage-metrics"
-        + "?start_date=2026-08-01&end_date=2026-08-29&group_by=day&workspace_user=true&top_skill_limit=20"
+      + "?start_date=2026-08-01&end_date=2026-08-29&group_by=day&workspace_user=true&top_skill_limit=20"
   )
   #expect(CodexAPI.Analytics.plugins.url(start: "a", end: "b").query?.contains("top_plugin_limit=20") == true)
   #expect(CodexAPI.Analytics.tokenUsage.url(start: "a", end: "b").query == "start_date=a&end_date=b&group_by=day")

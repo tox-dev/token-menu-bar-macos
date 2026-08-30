@@ -248,10 +248,7 @@ private func stubCodexAnalytics(_ transport: StubTransport) {
   transport.on(
     path: "rate-limit-reset-credits",
     .text(
-      #"""
-      {"available_count":2,"applicable_available_count":1,"total_earned_count":3,
-      "immediate_reset_purchase_eligible":true}
-      """#
+      #"{"available_count":2,"applicable_available_count":1,"total_earned_count":3,"immediate_reset_purchase_eligible":true}"#
     ))
   stubCodexAnalytics(transport)
   let provider = codexProvider(MemoryCodexStore(validCodex), transport: transport)
@@ -294,10 +291,7 @@ private func stubCodexAnalytics(_ transport: StubTransport) {
 @Test func codexProviderFallsBackToRolloutsWhenSignedOut() async throws {
   let root = temporaryDirectory()
   let line =
-    #"""
-    {"timestamp":"2026-08-29T09:00:00Z","payload":{"rate_limits":{"primary":{"used_percent":44,
-    "window_minutes":300,"resets_at":1788040000},"secondary":null,"plan_type":"plus"}}}
-    """#
+    #"{"timestamp":"2026-08-29T09:00:00Z","payload":{"rate_limits":{"primary":{"used_percent":44,"window_minutes":300,"resets_at":1788040000},"secondary":null,"plan_type":"plus"}}}"#
   try (line + "\n").write(to: root.appendingPathComponent("rollout-a.jsonl"), atomically: true, encoding: .utf8)
   let transport = StubTransport()
   let result = await codexProvider(MemoryCodexStore(nil), transport: transport, rollouts: root).fetch(
@@ -335,10 +329,7 @@ private func stubCodexAnalytics(_ transport: StubTransport) {
   }
   let root = temporaryDirectory()
   try
-    (#"""
-    {"payload":{"rate_limits":{"primary":{"used_percent":9,"window_minutes":10080,
-    "resets_at":1788540000}}}}
-    """# + "\n")
+    (#"{"payload":{"rate_limits":{"primary":{"used_percent":9,"window_minutes":10080,"resets_at":1788540000}}}}"# + "\n")
     .write(to: root.appendingPathComponent("rollout-b.jsonl"), atomically: true, encoding: .utf8)
   let fallback = await codexProvider(MemoryCodexStore(validCodex), transport: transport, rollouts: root).fetch(
     now: fixedNow, options: FetchOptions())

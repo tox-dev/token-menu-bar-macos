@@ -115,7 +115,7 @@ import Testing
     {"oauthAccount":{"emailAddress":"a@b.c","organizationName":"Org",
     "organizationRateLimitTier":"default_claude_max_5x","hasExtraUsageEnabled":true}}
     """#
-      .utf8
+    .utf8
   ).write(to: url)
   let account = ClaudeLocalAccount.load(from: url)
   #expect(

@@ -34,5 +34,7 @@ import Testing
   let view = Text("Token Menu Bar").frame(width: 200, height: 60)
   #expect(PopoverExporter.image(view, dark: true)?.size == CGSize(width: 200, height: 60))
   #expect(PopoverExporter.png(view, dark: false)?.isEmpty == false)
+  // a view with no intrinsic size has nothing to render
   #expect(PopoverExporter.image(Color.clear.frame(width: 0, height: 0), dark: false) == nil)
+  #expect(PopoverExporter.png(Color.clear.frame(width: 0, height: 0), dark: false) == nil)
 }
