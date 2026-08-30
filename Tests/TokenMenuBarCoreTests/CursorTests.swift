@@ -78,36 +78,47 @@ private func makeProvider(_ auth: CursorAuth?, store: MemoryCursorStore? = nil) 
   #expect(try ChainedCursorAuthStore([MemoryCursorStore(nil)]).load() == nil)
 }
 
-@Test func cursorMapperBuildsWindowsSpendAndIdentity() {
+@Test func cursorMapperBuildsOneWindowPerQuotaBucket() {
   let summary = Fixtures.decode(CursorAPI.UsageSummary.self, "cursor_usage_summary")
   let windows = CursorMapper.windows(summary)
   #expect(windows.map(\.id) == ["plan", "on_demand", "team_pool"])
-  #expect(windows.first { $0.id == "plan" }?.usedPercent == 30)
-  #expect(windows.first { $0.id == "on_demand" }?.usedPercent == 5)
-  #expect(windows.first { $0.id == "team_pool" }?.usedPercent == 25)
+  #expect(windows.map(\.usedPercent) == [30, 5, 25])
   #expect(windows.first?.duration == Double(31 * 86400))
   #expect(windows.first?.resetsAt == ISODate.parse("2026-09-10T00:00:00.000Z"))
-  let spend = CursorMapper.spend(summary)
+}
+
+@Test func cursorMapperReadsTheOnDemandSpendLimit() {
+  let spend = CursorMapper.spend(Fixtures.decode(CursorAPI.UsageSummary.self, "cursor_usage_summary"))
   #expect(spend?.used == Money(amountMinor: 500, currency: "USD"))
   #expect(spend?.limit == Money(amountMinor: 10000, currency: "USD"))
   #expect(spend?.percent == 5)
   #expect(spend?.limitReached == false)
-  let me = Fixtures.decode(CursorAPI.Me.self, "cursor_me")
-  let identity = CursorMapper.identity(summary, auth: validCursor, me: me)
+}
+
+@Test func cursorMapperPrefersTheAccountEmailOverTheCachedOne() {
+  let summary = Fixtures.decode(CursorAPI.UsageSummary.self, "cursor_usage_summary")
+  let identity = CursorMapper.identity(
+    summary, auth: validCursor, me: Fixtures.decode(CursorAPI.Me.self, "cursor_me"))
   #expect(identity.planName == "Pro Plus")
   #expect(identity.email == "you@example.com")
   #expect(CursorMapper.identity(summary, auth: validCursor, me: nil).email == "cached@example.com")
-  #expect(CursorMapper.notices(summary, period: nil).isEmpty)
-  let period = Fixtures.decode(CursorAPI.PeriodUsage.self, "cursor_period_usage")
-  let fallback = period.summary
+}
+
+@Test func cursorMapperFallsBackToThePeriodEndpoint() {
+  let fallback = Fixtures.decode(CursorAPI.PeriodUsage.self, "cursor_period_usage").summary
   #expect(CursorMapper.windows(fallback).map(\.id) == ["plan"])
   #expect(CursorMapper.windows(fallback).first?.usedPercent == 60)
   #expect(CursorMapper.spend(fallback) == nil)
   #expect(CursorMapper.identity(fallback, auth: CursorAuth(accessToken: "x"), me: nil).planName == "Cursor")
+}
+
+@Test func cursorMapperNoticesUnlimitedPlansAndPeriodUsage() {
+  let summary = Fixtures.decode(CursorAPI.UsageSummary.self, "cursor_usage_summary")
+  #expect(CursorMapper.notices(summary, period: nil).isEmpty)
   let notices = CursorMapper.notices(
     CursorAPI.UsageSummary(
       billingCycleStart: nil, billingCycleEnd: nil, membershipType: nil, isUnlimited: true, individualUsage: nil,
-      teamUsage: nil), period: period)
+      teamUsage: nil), period: Fixtures.decode(CursorAPI.PeriodUsage.self, "cursor_period_usage"))
   #expect(notices.map(\.text) == ["This plan has unlimited usage.", "You have used 60% of your plan."])
 }
 

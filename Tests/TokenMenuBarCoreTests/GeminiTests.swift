@@ -67,22 +67,27 @@ private func makeProvider(
       == "/custom/.gemini/oauth_creds.json")
 }
 
-@Test func geminiMapperBuildsWindowsIdentityAndCredits() {
-  let assist = Fixtures.decode(GeminiAPI.LoadCodeAssistResponse.self, "gemini_load_code_assist")
-  #expect(assist.projectID == "gen-lang-client-0123456789")
-  #expect(assist.unsupportedReason == nil)
-  let quota = Fixtures.decode(GeminiAPI.QuotaResponse.self, "gemini_quota")
-  let windows = GeminiMapper.windows(quota)
+@Test func geminiMapperBuildsOneWindowPerModelQuota() {
+  let windows = GeminiMapper.windows(Fixtures.decode(GeminiAPI.QuotaResponse.self, "gemini_quota"))
   #expect(windows.map(\.id) == ["model:gemini-2.5-pro", "model:gemini-2.5-flash"])
   #expect(windows.first { $0.id == "model:gemini-2.5-pro" }?.usedPercent == 60)
   #expect(windows.first { $0.id == "model:gemini-2.5-flash" }?.label == "Gemini 2.5 Flash")
   #expect(windows.allSatisfy { $0.resetsAt == ISODate.parse("2026-08-30T07:00:00Z") && $0.duration == 86400 })
+}
+
+@Test func geminiMapperReadsIdentityAndCredits() {
+  let assist = Fixtures.decode(GeminiAPI.LoadCodeAssistResponse.self, "gemini_load_code_assist")
+  #expect(assist.projectID == "gen-lang-client-0123456789")
+  #expect(assist.unsupportedReason == nil)
   let identity = GeminiMapper.identity(assist, auth: validGemini)
   #expect(identity.planName == "Google AI Pro")
   #expect(identity.email == "you@example.com")
   #expect(identity.tier == "standard-tier")
   #expect(GeminiMapper.credits(assist)?.balance == 1500)
   #expect(GeminiMapper.credits(nil) == nil)
+}
+
+@Test func geminiReportsClientsTheAPIRefuses() {
   let unsupported = Fixtures.decode(GeminiAPI.LoadCodeAssistResponse.self, "gemini_unsupported")
   #expect(unsupported.projectID == "projects/legacy-123")
   #expect(unsupported.unsupportedReason?.contains("Antigravity") == true)

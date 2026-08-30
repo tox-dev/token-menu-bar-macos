@@ -67,32 +67,55 @@ func appIconInkFollowsTone(tone: StatusIconTone, dark: Bool, ink: NSColor) {
   #expect(signature == StatusRenderSignature(model: .empty, dark: true, height: 22))
 }
 
-@Test @MainActor func statusItemControllerRendersAndTracksTimers() async throws {
+@MainActor
+private func statusController(
+  tickInterval: Double = 0.05, onPresent: @escaping (NSStatusBarButton) -> Void = { _ in }
+)
+  -> StatusItemController
+{
   let log = makeLog()
   log.debugEnabled = true
-  var presented = 0
-  let controller = StatusItemController(log: log, tickInterval: 0.05) { _ in presented += 1 }
+  return StatusItemController(log: log, tickInterval: tickInterval) { onPresent($0) }
+}
+
+@Test @MainActor func statusItemDrawsTheIconWhenThereIsNothingToShow() {
+  let controller = statusController()
   defer { controller.remove() }
   #expect(controller.item.button != nil)
   #expect(controller.barHeight >= 22)
-  _ = controller.isDark
   controller.update(.empty)
   #expect(controller.item.button?.image != nil)
   #expect(controller.item.button?.imagePosition != .noImage)
+}
+
+@Test @MainActor func statusItemDrawsCellsAsAttributedTitle() {
+  let controller = statusController()
+  defer { controller.remove() }
   controller.update(statusModel(format: .custom))
-  #expect(controller.countdownRunning)
   #expect(controller.item.button?.attributedTitle.length == 7)
   #expect(controller.item.button?.image == nil)
   #expect(controller.item.button?.toolTip?.contains("Claude") == true)
+}
+
+@Test @MainActor func statusItemRunsTheCountdownOnlyForTemplatesThatNeedIt() async throws {
+  let controller = statusController()
+  defer { controller.remove() }
+  controller.update(statusModel(format: .custom))
+  #expect(controller.countdownRunning)
   controller.update(statusModel(format: .stacked))
   #expect(!controller.countdownRunning)
-  controller.update(statusModel(format: .stacked))
   controller.render(force: true)
   var ticks = 0
   controller.onCountdownTick = { ticks += 1 }
   controller.update(statusModel(format: .custom))
-  for _ in 0..<200 where ticks == 0 { try await Task.sleep(for: .milliseconds(25)) }
+  for _ in 0..<200 where ticks == 0 { try await Task.sleep(for: .milliseconds(20)) }
   #expect(ticks >= 1)
+}
+
+@Test @MainActor func statusItemProbeReportsTheSameStateUntilItChanges() async throws {
+  let controller = statusController()
+  defer { controller.remove() }
+  controller.update(statusModel(format: .stacked))
   var probes: [StatusItemProbe] = []
   controller.onProbeChange = { probes.append($0) }
   controller.probing = true
@@ -103,6 +126,12 @@ func appIconInkFollowsTone(tone: StatusIconTone, dark: Bool, ink: NSColor) {
   try await Task.sleep(for: .milliseconds(200))
   controller.probing = false
   _ = controller.buttonFrameOnScreen
+}
+
+@Test @MainActor func statusItemLeftClickTogglesAndRightClickOpensTheMenu() {
+  var presented = 0
+  let controller = statusController { _ in presented += 1 }
+  defer { controller.remove() }
   var clicks = 0
   controller.onClick = { clicks += 1 }
   controller.buttonClicked(nil)
@@ -120,6 +149,12 @@ func appIconInkFollowsTone(tone: StatusIconTone, dark: Bool, ink: NSColor) {
   #expect(controller.item.menu != nil)
   controller.item.menu?.delegate?.menuDidClose?(controller.item.menu!)
   #expect(controller.item.menu == nil)
+}
+
+@Test @MainActor func statusItemFollowsTheMenuBarAppearance() async throws {
+  let controller = statusController()
+  defer { controller.remove() }
+  controller.update(statusModel(format: .stacked))
   NotificationCenter.default.post(name: NSApplication.didChangeScreenParametersNotification, object: nil)
   controller.item.button?.appearance = NSAppearance(named: .darkAqua)
   controller.appearanceChanged()

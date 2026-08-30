@@ -254,24 +254,30 @@ private func loadedPresenter() async throws -> (HistoryPresenter, Settings, Hist
   #expect(settings.historyHiddenKeys.isEmpty)
 }
 
-@Test @MainActor func historyPresenterRangesRollupsAndCustomPaging() async throws {
+@Test @MainActor func historyPresenterPairsRangeWithRollup() async throws {
   let (presenter, _, settings) = try makePresenter()
   presenter.setRollup(.day)
   #expect(settings.historyRange == .week)
   presenter.setRange(.today)
   #expect(settings.historyRollup == .hour)
+}
+
+@Test @MainActor func historyPresenterRequestCarriesTheDisplayChoices() async throws {
+  let (presenter, _, _) = try makePresenter()
+  presenter.setRange(.today)
   presenter.setStacked(true)
   presenter.setUseUTC(true)
   #expect(presenter.timeZone.secondsFromGMT() == 0)
   let today = presenter.request(now: fixedNow)
   #expect(today.stacked)
   #expect(today.timeZone.secondsFromGMT() == 0)
-  #expect(
-    today.start
-      == Calendar(identifier: .gregorian).startOfDay(for: fixedNow).addingTimeInterval(
-        TimeInterval(Calendar.current.timeZone.secondsFromGMT(for: fixedNow))) || today.start <= fixedNow)
+  #expect(today.start <= fixedNow)
   presenter.setRange(.month)
   #expect(presenter.request(now: fixedNow).start == fixedNow.addingTimeInterval(-30 * 86400))
+}
+
+@Test @MainActor func historyPresenterCustomRangeFollowsNowUntilPinned() async throws {
+  let (presenter, _, _) = try makePresenter()
   presenter.setRange(.custom)
   presenter.customStart = fixedNow.addingTimeInterval(-7200)
   presenter.customEnd = fixedNow.addingTimeInterval(-3600)
@@ -283,6 +289,11 @@ private func loadedPresenter() async throws -> (HistoryPresenter, Settings, Hist
   #expect(presenter.request(now: fixedNow).end == fixedNow)
   presenter.customStart = fixedNow.addingTimeInterval(10)
   #expect(presenter.request(now: fixedNow).start == fixedNow.addingTimeInterval(-60))
+}
+
+@Test @MainActor func historyPresenterPagesWithinTheCustomRange() async throws {
+  let (presenter, _, _) = try makePresenter()
+  presenter.setRange(.custom)
   presenter.customStart = fixedNow.addingTimeInterval(-7200)
   presenter.customEnd = fixedNow.addingTimeInterval(-3600)
   presenter.followNow = false
@@ -299,6 +310,11 @@ private func loadedPresenter() async throws -> (HistoryPresenter, Settings, Hist
   #expect(!presenter.followNow)
   presenter.select(x: fixedNow)
   #expect(presenter.selectedDate == nil)
+}
+
+@Test @MainActor func historyPresenterEditingAnEndpointStopsFollowingNow() async throws {
+  let (presenter, _, _) = try makePresenter()
+  presenter.setRange(.custom)
   presenter.setCustomStart(fixedNow.addingTimeInterval(-9000))
   await presenter.waitForLoad()
   #expect(presenter.customStart == fixedNow.addingTimeInterval(-9000))

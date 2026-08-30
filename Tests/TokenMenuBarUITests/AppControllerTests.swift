@@ -5,29 +5,47 @@ import UserNotifications
 
 @testable import TokenMenuBarUI
 
-@Test @MainActor func appControllerStartsRefreshesAndStops() async throws {
+@MainActor
+private func startedController() throws -> (AppController, AppDependencies, Recorder) {
   let provider = ScriptedProvider(id: .claude, result: ProviderFetchResult(outcome: .success(sampleSnapshot(.claude))))
   let (dependencies, recorder) = try makeDependencies(providers: [provider])
   dependencies.settings.lastLaunchedVersion = "0.9"
   dependencies.settings.detailedLogging = true
   let controller = AppController(dependencies: dependencies)
+  controller.start()
+  return (controller, dependencies, recorder)
+}
+
+@Test @MainActor func appControllerStartInstallsTheStatusItemAndRecordsTheUpgrade() throws {
+  let (controller, dependencies, _) = try startedController()
   #expect(controller.environment.credentialDescriptions == [.claude: "scripted claude"])
   #expect(controller.environment.canCheckForUpdates)
-  controller.start()
   #expect(controller.statusItem != nil)
   #expect(controller.popover != nil)
   #expect(dependencies.settings.lastLaunchedVersion == "1.2.3")
   #expect(dependencies.log.text.contains("updated from 0.9"))
+}
+
+@Test @MainActor func appControllerRefreshFeedsTheStatusItem() async throws {
+  let (controller, dependencies, _) = try startedController()
   await controller.coordinator.refresh(RefreshRequest(force: true))
   try await Task.sleep(for: .milliseconds(50))
   #expect(dependencies.state.state(for: .claude).availability == .current)
   #expect(!dependencies.state.statusModel.cells.isEmpty)
   #expect(controller.statusItem?.model.cells.count == dependencies.state.statusModel.cells.count)
+}
+
+@Test @MainActor func appControllerTogglesThePopover() async throws {
+  let (controller, dependencies, _) = try startedController()
   controller.togglePopover()
   #expect(dependencies.state.popoverVisible == controller.popover?.isShown)
   controller.popover?.close()
   try await Task.sleep(for: .milliseconds(50))
   #expect(controller.popover?.isShown == false)
+}
+
+@Test @MainActor func appControllerSuspendsPollingWhileTheMacSleeps() async throws {
+  let (controller, dependencies, _) = try startedController()
   controller.handleSleep()
   #expect(!controller.coordinator.isRunning)
   controller.handleWake()
@@ -35,6 +53,13 @@ import UserNotifications
   controller.refreshNow()
   controller.settingsChanged()
   #expect((dependencies.updater as? FakeUpdater)?.automaticallyChecks == true)
+  NSWorkspace.shared.notificationCenter.post(name: NSWorkspace.willSleepNotification, object: nil)
+  NSWorkspace.shared.notificationCenter.post(name: NSWorkspace.didWakeNotification, object: nil)
+  await Task.yield()
+}
+
+@Test @MainActor func appControllerContextMenuItemsRunTheirCommands() throws {
+  let (controller, dependencies, recorder) = try startedController()
   let menu = controller.contextMenu()
   #expect(menu.items.count == 7)
   _ = menu.items[0].target?.perform(menu.items[0].action, with: menu.items[0])
@@ -44,13 +69,17 @@ import UserNotifications
   #expect((dependencies.updater as? FakeUpdater)?.checks == 1)
   _ = menu.items[6].target?.perform(menu.items[6].action, with: menu.items[6])
   #expect(recorder.terminated == 1)
-  let stray = NSMenuItem(title: "x", action: nil, keyEquivalent: "")
-  controller.menuTarget.run(stray)
+}
+
+@Test @MainActor func appControllerIgnoresCommandsItDoesNotKnow() throws {
+  let (controller, _, recorder) = try startedController()
+  controller.menuTarget.run(NSMenuItem(title: "x", action: nil, keyEquivalent: ""))
   controller.run("usage:nope")
-  #expect(recorder.urls.count == 1)
-  NSWorkspace.shared.notificationCenter.post(name: NSWorkspace.willSleepNotification, object: nil)
-  NSWorkspace.shared.notificationCenter.post(name: NSWorkspace.didWakeNotification, object: nil)
-  await Task.yield()
+  #expect(recorder.urls.isEmpty)
+}
+
+@Test @MainActor func appControllerStopReleasesTheStatusItem() throws {
+  let (controller, dependencies, _) = try startedController()
   controller.stop()
   #expect(controller.statusItem == nil)
   #expect(!controller.coordinator.isRunning)
