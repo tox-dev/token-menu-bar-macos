@@ -139,8 +139,8 @@ public enum StatusItemRenderer {
     }
   }
 
-  /// Renders the status item on a menu-bar-like strip. The docs use this instead of a screen capture so the shot
-  /// never depends on how crowded the machine's own menu bar happens to be.
+  /// Renders the status item on a menu-bar-like strip. The docs use this rather than a screen capture, which would
+  /// carry whatever else crowds the machine's own menu bar.
   public static func stripImage(
     for model: StatusItemModel, height: CGFloat = 24, dark: Bool, width: CGFloat = 520
   )

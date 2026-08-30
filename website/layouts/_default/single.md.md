@@ -6,4 +6,4 @@
 
 ---
 
-{{ .Site.Title }} — {{ .Site.Params.repository }}
+{{ .Site.Title }}: {{ .Site.Params.repository }}

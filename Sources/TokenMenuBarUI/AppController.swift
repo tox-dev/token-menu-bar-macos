@@ -401,12 +401,12 @@ public final class AppController {
   }
 }
 
-/// Renders the popover tabs straight to PNG for the website. A screen capture of the live popover picks up its
-/// shadow and whatever sits behind it; hosting the same view offscreen yields exactly the content and nothing else.
+/// Renders the popover tabs straight to PNG for the website. A screen capture of the live popover picks up its shadow
+/// and whatever sits behind it, so the export hosts the same view offscreen and keeps the content alone.
 @MainActor
 public enum PopoverExporter {
-  /// Renders a view at its own natural size. A screen capture of the live popover picks up its shadow and whatever
-  /// sits behind it; hosting the view offscreen yields the content and nothing else.
+  /// Renders a view at its own natural size, offscreen, so the shot carries the content without the popover's
+  /// shadow or the desktop behind it.
   public static func image(_ view: some View, dark: Bool) -> NSImage? {
     let hosting = NSHostingView(rootView: view)
     hosting.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)

@@ -4,17 +4,21 @@ description: Download the app, sign in to the clients you use, and read your fir
 weight: 1
 ---
 
-Token Menu Bar needs macOS 26 and at least one supported client signed in:
+## Before you start
 
-- `claude` (Claude Code) stores its OAuth token in the Keychain item `Claude Code-credentials`.
-- `codex login` writes `~/.codex/auth.json`.
-- `gemini` (Gemini CLI, Login with Google) writes `~/.gemini/oauth_creds.json`.
-- The Cursor app keeps its session in `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb`;
-  `cursor-agent login` writes `~/.cursor/auth.json`.
-- Copilot CLI, Neovim and JetBrains write `~/.config/github-copilot/hosts.json` or `apps.json`.
+Token Menu Bar needs macOS 26 and one signed-in client. It reads the token that client already stored, so no password
+reaches this app and nothing asks you to sign in twice. A provider you have not signed into stays hidden until its token
+appears; Settings > Providers toggles them.
 
-The app never asks for a password; it reuses those tokens read-only. Providers you never signed into stay hidden until a
-sign-in appears; toggle them under Settings > Providers.
+| Client      | Sign in with                            | Token lands in                                                                                  |
+| ----------- | --------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Claude Code | `claude`                                | Keychain item `Claude Code-credentials`                                                         |
+| Codex       | `codex login`                           | `~/.codex/auth.json`                                                                            |
+| Gemini CLI  | `gemini`, through Login with Google     | `~/.gemini/oauth_creds.json`                                                                    |
+| Cursor      | the Cursor app, or `cursor-agent login` | `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb`, or `~/.cursor/auth.json` |
+| Copilot     | Copilot CLI, Neovim or JetBrains        | `~/.config/github-copilot/hosts.json` or `apps.json`                                            |
+
+## Get the app
 
 ### Direct download
 
@@ -23,7 +27,8 @@ sign-in appears; toggle them under Settings > Providers.
 2. Drag **Token Menu Bar** into `/Applications` and open it.
 3. Approve the Keychain prompt with **Always Allow** so the app can read the Claude Code token.
 
-The direct build is signed with a Developer ID, notarized, and updates itself through Sparkle (Settings > About).
+The direct build carries a Developer ID signature and Apple's notarization, and updates itself through Sparkle (Settings
+\> About).
 
 ### Homebrew
 
@@ -39,14 +44,13 @@ brew install --cask Casks/token-menu-bar.rb
 
 ### Mac App Store
 
-The sandboxed build is submitted from the release pipeline once the Apple Developer account is enrolled. It asks you to
-point it at `~/.codex` on first launch because the sandbox cannot read that folder on its own.
+The release pipeline uploads the sandboxed build once the Apple Developer account is enrolled. On first launch it asks
+you to point it at `~/.codex`, which the sandbox cannot read on its own.
 
 ## First launch
 
-The menu bar shows the app icon until the first refresh completes; then one cell per selected window appears. Open the
-popover to see every window, and use **Settings > Menu bar** to choose which windows sit in the bar and how they are
-formatted.
+The menu bar shows the app icon until the first refresh lands; then one cell per selected window appears. Open the
+popover to see every window, and pick the windows and their format under **Settings > Menu bar**.
 
 {{< callout kind="tip" title="Launch at login" >}} Turn on **Launch at login** under Settings > About. macOS may ask you
 to approve the item under System Settings > General > Login Items; the app offers a shortcut to that pane.
@@ -62,4 +66,4 @@ Scripts/bundle-dev.sh --run   # ad-hoc signed .app in dist/
 ```
 
 `swift test` needs a toolchain that ships swift-testing (Xcode, or a swift.org toolchain through `swiftly`). Ad-hoc
-builds get a new code signature every time, so macOS repeats the Keychain prompt after each rebuild.
+builds take a new code signature each time, so macOS repeats the Keychain prompt after every rebuild.

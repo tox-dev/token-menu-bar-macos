@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sparkle is stripped from the bundle: App Review rejects binaries that can update themselves.
+# This strips Sparkle from the bundle; App Review rejects binaries that update themselves.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

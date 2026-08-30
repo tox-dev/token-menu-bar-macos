@@ -46,7 +46,7 @@ public enum Brand {
     gradientStart.mixed(with: gradientEnd, fraction: fraction)
   }
 
-  /// Semantic colors are owned by the usage scale, never by the brand, so a full gauge always reads as red.
+  /// The usage scale owns the semantic colors rather than the brand, so a full gauge reads as red.
   public static var usageStops: [(name: String, color: BrandColor)] {
     [("green", usage(0)), ("orange", usage(UsageColor.orangeAt * 100)), ("red", usage(100))]
   }

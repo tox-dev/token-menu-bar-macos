@@ -1,5 +1,5 @@
 {{- /* Dev serves the raw stylesheet for fast rebuilds; production minifies, fingerprints and pins it
-       with a subresource-integrity hash. Plain CSS on purpose: the build needs only the Hugo binary. */ -}}
+       with a subresource-integrity hash. Plain CSS keeps the Hugo binary as the whole toolchain. */ -}}
 {{ if hugo.IsServer }}
   {{ with resources.Get "css/site.css" }}
     <link rel="stylesheet" href="{{ .RelPermalink }}">

@@ -4,13 +4,13 @@ title: Token Menu Bar
 
 ## Made to stay out of the way
 
-- Polls Claude every 5 minutes and Codex every 2 (faster while the popover is open), with backoff when a vendor asks to
-  slow down, because Anthropic's usage endpoint rate-limits after a handful of calls.
-- Falls back to the Codex CLI's own session logs when you are offline or signed out, so the numbers never vanish.
-- Pauses while the Mac sleeps and refreshes on wake.
+- Polls Claude every 5 minutes and Codex every 2 (faster while the popover is open), and backs off when a vendor asks it
+  to, since Anthropic's usage endpoint rate-limits after a handful of calls.
+- Falls back to the Codex CLI's own session logs when you are offline or signed out, so the last numbers stay on screen.
+- Pauses while the Mac sleeps, and refreshes on wake.
 
 ## Where to go next
 
-Four doors, depending on what you need: [Get started](/start/) walks the install through to your first numbers,
-[How-to guides](/guides/) covers single tasks, [Reference](/reference/) describes every screen and option, and
-[Explanation](/explanation/) covers why polling is slow and what the app reads.
+Pick the door that matches what you need. [Get started](/start/) walks the install through to your first numbers.
+[How-to guides](/guides/) covers one task at a time. [Reference](/reference/) describes each screen and option.
+[Explanation](/explanation/) covers what the app reads and why it polls at the pace it does.

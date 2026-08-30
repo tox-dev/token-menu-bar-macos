@@ -47,7 +47,7 @@ public struct AdaptiveWidthPlanner: Sendable, Equatable {
   }
 
   /// macOS parks an item that no longer fits past the screen edge, so an item whose frame stops overlapping every
-  /// screen counts as hidden. Overlap rather than containment: an item at the very edge can poke a point past it.
+  /// screen counts as hidden. Overlap decides it rather than containment, since an edge item can poke a point past.
   public static func isOnScreen(itemFrame: CGRect, screenFrames: [CGRect]) -> Bool {
     itemFrame.width > 0 && screenFrames.contains { $0.intersects(itemFrame) }
   }

@@ -1,10 +1,10 @@
 ---
 title: Settings reference
-description: Every option in the Settings tab.
+description: What each option in the Settings tab does.
 weight: 3
 ---
 
-Everything lives in the popover's Settings tab; changes apply immediately and persist.
+The popover's Settings tab holds these options. A change takes effect as you make it and survives a restart.
 
 ## About
 
@@ -14,16 +14,17 @@ Defaults**, **Copy Diagnostics** (a report with versions, provider state and the
 
 ## Menu bar
 
-- **Order**: keep provider order, or sort cells by percent used.
-- **Format**: Stacked, Inline, Mini bars, or Custom.
-- **Decimals**: 0 to 2 decimals on the percent.
-- **Hide 0%**: drop cells whose window is at 0%.
-- **Fit to space**: step down to narrower layouts when macOS hides the item for lack of room, and remember what fit per
-  frontmost app.
-- **Template**: the custom format string, built from the tokens below.
-- **Windows shown**: tick the windows that get a cell; at least one stays selected, and labels are editable per window.
+| Option        | What it does                                                                                                        |
+| ------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Order         | Keeps provider order, or sorts cells by percent used                                                                |
+| Format        | Stacked, Inline, Mini bars, or Custom                                                                               |
+| Decimals      | 0 to 2 decimals on the percent                                                                                      |
+| Hide 0%       | Drops cells whose window sits at 0%                                                                                 |
+| Fit to space  | Steps down to narrower layouts when macOS hides the item for lack of room, and remembers what fit per frontmost app |
+| Template      | The custom format string, built from the tokens below                                                               |
+| Windows shown | Ticks the windows that get a cell; one stays selected, and each label is editable                                   |
 
-The preview under the controls is rendered by the same code that draws the menu bar.
+The same code that draws the menu bar renders the preview under the controls.
 
 ### Template tokens
 
@@ -45,12 +46,12 @@ The preview under the controls is rendered by the same code that draws the menu 
 
 Enable or disable each provider (Claude, Codex, Gemini, Cursor, Copilot), see the credential state, and set the refresh
 interval per provider. The floors are 2 minutes for Claude and 1 minute for the others; while the popover is open the
-app polls at the floor. **Refresh expired tokens on my behalf** is off by default because refreshing rotates the CLI's
-refresh token and writes it back to the Keychain or `~/.codex/auth.json`.
+app polls at the floor. **Refresh expired tokens on my behalf** starts off, since a refresh rotates the CLI's refresh
+token and writes the new one back to the Keychain or `~/.codex/auth.json`.
 
 ## Data
 
-How often analytics are fetched, where the history database lives, and buttons to reveal, export (CSV) or clear it.
+How often the app fetches analytics, where the history database lives, and buttons to reveal, export (CSV) or clear it.
 
 ## Notifications
 
@@ -58,6 +59,6 @@ Threshold notifications at 50/75/90/100%, window-reset notifications, and sign-i
 
 ## Log
 
-The last 200 log lines, a full-log window, copy and clear, a detailed-logging switch that also enables the status item
-probe (useful when the cell disappears behind the notch), and **Demo data**, which relaunches the app on generated
-numbers with a separate history file so you can try every screen, or take screenshots, without exposing your account.
+The last 200 log lines, a full-log window, copy and clear, a detailed-logging switch that also turns on the status item
+probe, which helps when the cell disappears behind the notch, and **Demo data**, which relaunches the app on generated
+numbers with a separate history file, so you can walk the screens or take screenshots without showing your account.

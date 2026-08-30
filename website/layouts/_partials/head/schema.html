@@ -1,4 +1,4 @@
-{{- /* Structured data: the graph is built as a Go dict and jsonified, so nothing needs hand-escaping. */ -}}
+{{- /* A Go dict through jsonify, so no field needs hand-escaping. */ -}}
 {{- $author := dict
   "@type" "Person"
   "name" .Site.Params.author

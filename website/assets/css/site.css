@@ -1,5 +1,5 @@
 /* Palette mirrors Sources/TokenMenuBarCore/Brand.swift so the site and the app never drift.
-   The iris gradient is deliberately cool: green/orange/red belong to the usage scale alone. */
+   The iris gradient stays cool: green, orange and red belong to the usage scale alone. */
 
 :root {
   color-scheme: light;
@@ -505,7 +505,7 @@ td {
   color: var(--muted);
 }
 
-/* Usage legend — the semantic scale, documented on the site */
+/* The usage scale is semantic: green through red maps to the thresholds the site documents */
 
 .legend {
   display: flex;

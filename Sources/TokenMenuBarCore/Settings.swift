@@ -77,7 +77,7 @@ public final class Settings {
   public var lastLaunchedVersion: String? { didSet { store(lastLaunchedVersion, key: .lastLaunchedVersion) } }
   public var accessBookmarks: [String: Data] { didSet { storeCodable(accessBookmarks, key: .accessBookmarks) } }
   /// nil follows TOKEN_MENU_BAR_DEMO or --demo; once the user ticks the box their choice wins, so turning demo
-  /// off in an instance the environment started actually leaves demo mode.
+  /// off in an instance the environment started leaves demo mode.
   public var demoMode: Bool? { didSet { store(demoMode, key: .demoMode) } }
 
   public init(defaults: UserDefaults) {

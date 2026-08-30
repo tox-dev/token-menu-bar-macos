@@ -2,8 +2,8 @@ import SwiftUI
 import TokenMenuBarCore
 import WidgetKit
 
-// WidgetKit hands these entry points a context that cannot be constructed outside an extension host, so this file
-// stays as thin as possible and is excluded from the coverage gate.
+// WidgetKit hands these entry points a context that no test can construct outside an extension host, so this file
+// holds the calls alone and the coverage gate caps its size instead.
 extension UsageTimelineProvider: TimelineProvider {
   public func placeholder(in context: Context) -> UsageEntry {
     placeholderEntry()

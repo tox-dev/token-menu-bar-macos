@@ -4,8 +4,8 @@
 
 {{ .Site.Title }} is a {{ .Site.Params.license }}-licensed {{ .Site.Params.minimumOS }} menu bar app
 by {{ .Site.Params.author }}.
-It reads the OAuth tokens the Claude Code, Codex, Gemini, Cursor and GitHub Copilot clients already store on the
-machine and shows each plan's remaining quota. Source: {{ .Site.Params.repository }}
+It reads the OAuth tokens the Claude Code, Codex, Gemini, Cursor and GitHub Copilot clients keep on the machine, and
+shows how much of each plan's quota is left. Source: {{ .Site.Params.repository }}
 
 Append `index.md` to any page URL, or follow the links below, to fetch that page as clean markdown.
 

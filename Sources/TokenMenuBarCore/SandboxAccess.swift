@@ -37,7 +37,7 @@ public struct SandboxResource: Sendable, Hashable, Identifiable {
     "~/\(relativePath)"
   }
 
-  /// The path this build will actually read, so the grant panel and the provider agree on one location.
+  /// The path this build reads, so the grant panel and the provider agree on one location.
   public func configuredURL(environment: [String: String], home: URL) -> URL {
     switch override {
     case .path(let key):
