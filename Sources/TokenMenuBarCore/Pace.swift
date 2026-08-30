@@ -80,7 +80,8 @@ public struct PaceEstimate: Sendable, Hashable {
         ?? "Early in window"
     default:
       projectedExhaustion.map {
-        "\(status.title) (expected \(Format.percent(expectedPercent ?? 0))); hits 100% \(Format.resetClock($0, now: now))"
+        "\(status.title) (expected \(Format.percent(expectedPercent ?? 0))); "
+          + "hits 100% \(Format.resetClock($0, now: now))"
       }
         ?? "\(status.title) (expected \(Format.percent(expectedPercent ?? 0))); lasts until reset"
     }

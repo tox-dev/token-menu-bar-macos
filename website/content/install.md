@@ -49,7 +49,8 @@ popover to see every window, and use **Settings > Menu bar** to choose which win
 formatted.
 
 {{< callout kind="tip" title="Launch at login" >}}
-Turn on **Launch at login** under Settings > About. macOS may ask you to approve the item under System Settings > General > Login Items; the app offers a shortcut to that pane.
+Turn on **Launch at login** under Settings > About. macOS may ask you to approve the item under
+System Settings > General > Login Items; the app offers a shortcut to that pane.
 {{< /callout >}}
 
 ## Building from source

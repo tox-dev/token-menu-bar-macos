@@ -179,7 +179,8 @@ public enum StatusItemBuilder {
         )
         let lines = StatusTemplate.render(template, context: context)
         let tooltip =
-          "\(key.provider.displayName) \(window.label): \(Format.percent(window.usedPercent)), resets \(Format.countdown(to: window.resetsAt, now: input.now))"
+          "\(key.provider.displayName) \(window.label): \(Format.percent(window.usedPercent)), "
+          + "resets \(Format.countdown(to: window.resetsAt, now: input.now))"
         return StatusCell(
           id: key.storageKey, provider: key.provider, lines: lines, percent: window.usedPercent, tooltip: tooltip)
       }

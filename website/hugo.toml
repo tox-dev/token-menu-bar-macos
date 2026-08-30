@@ -8,8 +8,13 @@ disableKinds = ["taxonomy", "term", "rss"]
 timeout = "60s"
 
 [params]
-description = "Claude, Codex, Gemini, Cursor and GitHub Copilot plan usage in the macOS menu bar: session and weekly windows, reset countdowns, pace projections, history and widgets."
-keywords = "claude usage,codex usage,menu bar,macos,claude code limits,copilot quota,cursor usage,gemini quota,token usage monitor"
+description = """
+Claude, Codex, Gemini, Cursor and GitHub Copilot plan usage in the macOS menu bar: session and weekly \
+windows, reset countdowns, pace projections, history and widgets.\
+"""
+keywords = """
+claude usage,codex usage,menu bar,macos,claude code limits,copilot quota,cursor usage,gemini quota\
+"""
 tagline = "Your AI coding plan limits, one glance away"
 repository = "https://github.com/tox-dev/token-menu-bar-macos"
 latestRelease = "https://github.com/tox-dev/token-menu-bar-macos/releases/latest"

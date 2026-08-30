@@ -237,7 +237,8 @@ public final class RefreshCoordinator {
       log.logError("refresh provider=\(id.rawValue) outcome=\(next.availability.rawValue) error=\(error)")
     }
     log.logDebug(
-      "refresh provider=\(id.rawValue) outcome=\(next.availability.rawValue) windows=\(next.snapshot?.windows.count ?? 0)"
+      "refresh provider=\(id.rawValue) outcome=\(next.availability.rawValue) "
+        + "windows=\(next.snapshot?.windows.count ?? 0)"
     )
     state.update(id) { $0 = next }
     return NotificationPlanner.events(

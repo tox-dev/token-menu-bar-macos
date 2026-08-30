@@ -2,7 +2,8 @@
 
 > {{ .Site.Params.description }}
 
-{{ .Site.Title }} is a {{ .Site.Params.license }}-licensed {{ .Site.Params.minimumOS }} menu bar app by {{ .Site.Params.author }}.
+{{ .Site.Title }} is a {{ .Site.Params.license }}-licensed {{ .Site.Params.minimumOS }} menu bar app
+by {{ .Site.Params.author }}.
 It reads the OAuth tokens the Claude Code, Codex, Gemini, Cursor and GitHub Copilot clients already store on the
 machine and shows each plan's remaining quota. Source: {{ .Site.Params.repository }}
 

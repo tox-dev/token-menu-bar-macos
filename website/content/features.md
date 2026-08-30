@@ -67,6 +67,6 @@ One card per provider:
 
 ## Settings tab
 
-{{< shot name="popover-settings" alt="Settings" caption="Settings tab: menu bar, providers, data, notifications and the log." >}}
+{{< shot name="popover-settings" alt="Settings" caption="Settings tab: menu bar, providers, data and the log." >}}
 
 See [Settings](settings.md) for every option.

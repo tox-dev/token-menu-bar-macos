@@ -50,7 +50,10 @@ public enum Diagnostics {
     out.append("\(app.name) \(app.version) (\(app.build)) \(app.isAppStore ? "App Store" : "Direct")")
     out.append("macOS \(osVersion)")
     out.append(
-      "Refresh \(ProviderID.allCases.map { "\($0.rawValue) \(settings.refreshInterval(for: $0))s" }.joined(separator: ", ")), analytics every \(settings.analyticsRefreshMinutes)m, format \(settings.statusFormat.rawValue)"
+      "Refresh "
+        + ProviderID.allCases.map { "\($0.rawValue) \(settings.refreshInterval(for: $0))s" }
+        .joined(separator: ", ")
+        + ", analytics every \(settings.analyticsRefreshMinutes)m, format \(settings.statusFormat.rawValue)"
     )
     out.append("Providers: \(settings.enabledProviders.map(\.rawValue).sorted().joined(separator: ", "))")
     out.append("History: \(historyLocation?.path ?? "in memory")")
@@ -58,7 +61,8 @@ public enum Diagnostics {
     for provider in state.orderedProviders {
       let item = state.state(for: provider)
       out.append(
-        "- \(provider.displayName): \(item.availability.rawValue), plan \(item.snapshot?.identity?.planName ?? "-"), windows \(item.snapshot?.windows.map { "\($0.id)=\(Format.percent($0.usedPercent))" }.joined(separator: " ") ?? "-")"
+        "- \(provider.displayName): \(item.availability.rawValue), "
+          + "plan \(item.snapshot?.identity?.planName ?? "-"), windows \(windowSummary(item))"
       )
       if let error = item.lastError { out.append("  error: \(error)") }
       if let credential = item.credentialState { out.append("  credentials: \(credential.description)") }
@@ -67,6 +71,11 @@ public enum Diagnostics {
     out.append("Log (last \(lines) lines):")
     out += log.tail(lines).map(\.line)
     return out.joined(separator: "\n")
+  }
+
+  static func windowSummary(_ state: ProviderState) -> String {
+    guard let windows = state.snapshot?.windows, !windows.isEmpty else { return "-" }
+    return windows.map { "\($0.id)=\(Format.percent($0.usedPercent))" }.joined(separator: " ")
   }
 
   public static func issueURL(repository: URL, title: String, report: String) -> URL {

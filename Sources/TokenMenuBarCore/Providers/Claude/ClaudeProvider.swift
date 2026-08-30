@@ -90,7 +90,8 @@ public actor ClaudeProvider: UsageProvider {
         spend: ClaudeMapper.spend(response, now: now),
         notices: ClaudeMapper.notices(response),
         localUsage: ClaudeTranscriptReader.localUsage(
-          transcriptMessages, windowResetsAt: session?.resetsAt, windowDuration: ClaudeMapper.sessionDuration, now: now),
+          transcriptMessages, windowResetsAt: session?.resetsAt,
+          windowDuration: ClaudeMapper.sessionDuration, now: now),
         fetchedAt: now
       )
       let analytics = options.includeAnalytics ? ClaudeTranscriptReader.analytics(transcriptMessages, now: now) : nil

@@ -197,7 +197,8 @@ public struct WindowHelpView: View {
     VStack(alignment: .leading, spacing: 4) {
       Text(row.window.label).font(.headline)
       Text(
-        "Used \(Format.percent(row.window.usedPercent, decimals: 1)), \(Format.percent(row.window.remainingPercent, decimals: 1)) left"
+        "Used \(Format.percent(row.window.usedPercent, decimals: 1)), "
+          + "\(Format.percent(row.window.remainingPercent, decimals: 1)) left"
       )
       if let duration = row.window.duration { Text("Window: \(Format.duration(duration))") }
       if let expected = row.pace.expectedPercent { Text("Even pace would be \(Format.percent(expected)) by now") }

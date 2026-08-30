@@ -89,7 +89,8 @@ targets:
       - name: Strip Sparkle for App Store builds
         script: |
           if [ "$CONFIGURATION" = "AppStore" ]; then
-            echo "App Store configuration: Sparkle is compiled out via APPSTORE and must not ship; the release workflow removes the framework after export."
+            echo "App Store build: Sparkle is compiled out via APPSTORE;"
+            echo "the release workflow removes the framework after export."
           fi
   TokenMenuBarWidget:
     type: app-extension

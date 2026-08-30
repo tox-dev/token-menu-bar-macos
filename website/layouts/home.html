@@ -6,7 +6,8 @@
       <h1>{{ .Site.Params.tagline }}</h1>
       <p class="lede">{{ .Site.Params.description }}</p>
       <div class="hero-actions">
-        <a class="button button-primary" href="{{ .Site.Params.latestRelease }}">Download for {{ .Site.Params.minimumOS }}</a>
+        <a class="button button-primary" href="{{ .Site.Params.latestRelease }}">
+          Download for {{ .Site.Params.minimumOS }}</a>
         <a class="button button-secondary" href="{{ "install/" | relURL }}">Install options</a>
       </div>
       <p class="hero-note">
@@ -60,7 +61,8 @@
       {{ range hugo.Data.features }}
         <div class="card">
           <div class="card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="{{ .icon }}" />
             </svg>
           </div>
@@ -79,11 +81,11 @@
       <p>The popover sizes itself to the screen and keeps its position when you switch tabs.</p>
     </div>
     <div class="shots">
-      {{ range $shot := (slice
-        (dict "name" "popover-usage" "alt" "Usage tab with provider cards"
-          "caption" "Usage: every window with percent, reset countdown and pace.")
-        (dict "name" "popover-history" "alt" "History tab with usage charts"
-          "caption" "History: 60 days of samples, reset cliffs and vendor analytics.")) }}
+      {{ $usage := dict "name" "popover-usage" "alt" "Usage tab with provider cards"
+        "caption" "Usage: each window with percent, reset countdown and pace." }}
+      {{ $history := dict "name" "popover-history" "alt" "History tab with usage charts"
+        "caption" "History: 60 days of samples, reset cliffs and vendor analytics." }}
+      {{ range $shot := (slice $usage $history) }}
       <figure>
         {{ range $variant := (slice "light" "dark") }}
           {{ with resources.Get (printf "images/%s-%s.png" $shot.name $variant) }}

@@ -117,7 +117,8 @@ public struct APIClient: Sendable {
     let status = (response as? HTTPURLResponse)?.statusCode ?? 0
     let duration = Int(clock.now().timeIntervalSince(started) * 1000)
     log.logDebug(
-      "response operation=\(operation) id=\(id) endpoint=\(endpoint) status=\(status) bytes=\(data.count) duration=\(duration)ms"
+      "response operation=\(operation) id=\(id) endpoint=\(endpoint) status=\(status) "
+        + "bytes=\(data.count) duration=\(duration)ms"
     )
     guard (200..<300).contains(status) else {
       let snippet = String(decoding: data.prefix(Self.bodySnippetLength), as: UTF8.self)
