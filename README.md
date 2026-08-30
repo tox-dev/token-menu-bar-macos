@@ -16,16 +16,16 @@ clients rather than to this app, and it calls only the vendors' own endpoints.
 | <img src="website/static/brand/glyph/cursor.svg"> Cursor   | Cursor app, `~/.cursor`    | plan, spend     |
 | <img src="website/static/brand/glyph/copilot.svg"> Copilot | `~/.config/github-copilot` | premium         |
 
-Website with screenshots and a feature tour: <https://tox-dev.github.io/token-menu-bar-macos/>. `Scripts/screenshots.sh`
-refreshes the screenshots.
+Website with screenshots and a feature tour: <https://tox-dev.github.io/token-menu-bar-macos/>. `just shots` refreshes
+the screenshots.
 
 ## Install
 
 | Channel         | How                                                                                                                                                 |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Direct download | `TokenMenuBar.dmg` from the [latest release](https://github.com/tox-dev/token-menu-bar-macos/releases/latest), which updates itself through Sparkle |
-| Homebrew        | `brew install --cask token-menu-bar` once the cask lands in homebrew-cask; until then `brew install --cask Casks/token-menu-bar.rb` from a checkout |
 | Mac App Store   | sandboxed build, which the release workflow uploads once the Apple Developer account is enrolled                                                    |
+| Homebrew        | `brew install --cask token-menu-bar` once the cask lands in homebrew-cask; until then `brew install --cask Casks/token-menu-bar.rb` from a checkout |
+| Direct download | `TokenMenuBar.dmg` from the [latest release](https://github.com/tox-dev/token-menu-bar-macos/releases/latest), which updates itself through Sparkle |
 
 Requires macOS 26. Sign in once with each client you use (`claude`, `codex login`, `gemini`, the Cursor app, Copilot
 CLI/Neovim/JetBrains); the app picks the tokens up from the Keychain (`Claude Code-credentials`), `~/.codex/auth.json`,
@@ -75,23 +75,25 @@ Settings > Providers.
 
 ## Development
 
-The package has three targets: `TokenMenuBarCore` (the logic, no AppKit), `TokenMenuBarUI` (a thin SwiftUI and AppKit
-layer), and the `TokenMenuBar` executable. `Scripts/coverage.sh` fails when a line in Core or UI never runs during the
-tests.
+[mise](https://mise.jdx.dev) pins the tools and [just](https://just.systems) runs the workflows.
 
 ```sh
-swift build
-swift test
-Scripts/coverage.sh          # tests plus the 100% line gate
-Scripts/bundle-dev.sh --run  # ad-hoc .app for machines without Xcode
+mise install   # hugo, just, pre-commit, xcodegen
+just           # the list of workflows
+just check     # build, tests with the coverage gate, every lint hook
+just run       # ad-hoc .app for machines without Xcode, launched
+just install   # the same build, into /Applications
 ```
+
+The package has three targets: `TokenMenuBarCore` (the logic, no AppKit), `TokenMenuBarUI` (a thin SwiftUI and AppKit
+layer), and the `TokenMenuBar` executable. `just coverage` fails when a line in Core or UI never runs during the tests.
 
 `swift test` needs a toolchain that ships swift-testing (Xcode, or a swift.org toolchain via `swiftly`). Ad-hoc dev
 builds take a fresh code signature each time, so macOS asks for Keychain access on every rebuild; signed release builds
 ask once.
 
-`cd App && xcodegen generate` writes the Xcode project. Two schemes exist, `TokenMenuBar-Direct` (Developer ID, hardened
-runtime, Sparkle) and `TokenMenuBar-AppStore` (sandbox, no updater).
+`just xcode` writes the Xcode project. Two schemes exist, `TokenMenuBar-Direct` (Developer ID, hardened runtime,
+Sparkle) and `TokenMenuBar-AppStore` (sandbox, no updater).
 
 ## Releasing
 
