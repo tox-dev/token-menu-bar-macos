@@ -16,6 +16,7 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer && swift --version
       - name: Cache SwiftPM
@@ -28,7 +29,7 @@ jobs:
       - name: Build
         run: swift build -Xswiftc -warnings-as-errors
       - name: Tests with coverage gate
-        run: Scripts/coverage.sh
+        run: just coverage
 
   app:
     name: Build app flavors
@@ -42,12 +43,11 @@ jobs:
             configuration: AppStore
     steps:
       - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer
-      - name: Install xcodegen
-        run: brew install xcodegen
       - name: Generate project
-        run: cd App && xcodegen generate
+        run: just xcode
       - name: Build
         env:
           SCHEME: ${{ matrix.scheme }}

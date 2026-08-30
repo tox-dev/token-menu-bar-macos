@@ -1,0 +1,10 @@
+# Developer tools. `mise install` provides them from the versions locked in mise.lock; `just` drives the workflows.
+# The Swift toolchain comes from Xcode or swiftly, since the release builds need Xcode anyway.
+[tools]
+hugo = "latest"
+just = "latest"
+pre-commit = "latest"
+xcodegen = "latest"
+
+[settings]
+lockfile = true
