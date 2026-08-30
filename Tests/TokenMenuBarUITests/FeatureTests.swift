@@ -103,7 +103,8 @@ private func makeFeatureDependencies(
   controller.update(ladder: ladder)
   #expect(controller.ladder.count == ladder.count)
   #expect(controller.model == ladder[0])
-  await controller.settleFitCheck()
+  // each failed fit schedules the next check, so wait for the ladder to settle rather than a single tick
+  for _ in 0..<50 where controller.model == ladder[0] { await controller.settleFitCheck() }
   #expect(controller.model == controller.ladder[1])
   controller.update(ladder: ladder)
   #expect(!controller.checkFit())

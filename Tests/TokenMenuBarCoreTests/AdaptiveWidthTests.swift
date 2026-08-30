@@ -103,3 +103,27 @@ private func input(
     !AdaptiveWidthPlanner.hiddenByNotch(
       itemFrame: CGRect(x: 500, y: 0, width: 50, height: 30), leftArea: nil, rightArea: right))
 }
+
+@Test func onScreenNeedsOverlapAndWidth() {
+  let screen = CGRect(x: 0, y: 0, width: 1440, height: 900)
+  #expect(
+    AdaptiveWidthPlanner.isOnScreen(itemFrame: CGRect(x: 100, y: 0, width: 60, height: 24), screenFrames: [screen]))
+  #expect(
+    AdaptiveWidthPlanner.isOnScreen(itemFrame: CGRect(x: 1430, y: 0, width: 60, height: 24), screenFrames: [screen]))
+  #expect(
+    !AdaptiveWidthPlanner.isOnScreen(itemFrame: CGRect(x: 5000, y: 0, width: 60, height: 24), screenFrames: [screen]))
+  #expect(
+    !AdaptiveWidthPlanner.isOnScreen(itemFrame: CGRect(x: 10, y: 0, width: 0, height: 24), screenFrames: [screen]))
+  #expect(!AdaptiveWidthPlanner.isOnScreen(itemFrame: screen, screenFrames: []))
+}
+
+@Test(arguments: [(1, [13.0]), (2, [9.0, 11.5])])
+func fontSizesMatchTheLineCount(lineCount: Int, expected: [Double]) {
+  #expect(StatusMetrics.fontSizes(height: 24, lineCount: lineCount) == expected)
+}
+
+@Test func threeLinesShrinkWithTheBarHeight() {
+  #expect(StatusMetrics.fontSizes(height: 24, lineCount: 3) == [8, 8, 8])
+  #expect(StatusMetrics.fontSizes(height: 120, lineCount: 3) == [9, 9, 9])
+  #expect(StatusMetrics.fontSizes(height: 1, lineCount: 3).allSatisfy { $0 == StatusMetrics.minFontSize })
+}

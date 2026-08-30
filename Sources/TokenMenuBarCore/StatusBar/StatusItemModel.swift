@@ -215,3 +215,18 @@ extension Array where Element: Hashable {
     return filter { seen.insert($0).inserted }
   }
 }
+
+/// Text metrics for the status item. They live here rather than in the renderer because they are arithmetic on the
+/// menu bar height, and the two-line case has to match the proportions of the system's own widgets.
+public enum StatusMetrics {
+  public static let maxFontSize: Double = 13
+  public static let minFontSize: Double = 8
+
+  public static func fontSizes(height: Double, lineCount: Int) -> [Double] {
+    switch lineCount {
+    case ...1: [maxFontSize]
+    case 2: [9, 11.5]
+    default: Array(repeating: max(minFontSize, min(9, height / Double(lineCount) * 0.8)), count: lineCount)
+    }
+  }
+}

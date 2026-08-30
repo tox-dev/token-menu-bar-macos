@@ -275,26 +275,34 @@ public final class AppController {
 
   public func contextMenu() -> NSMenu {
     let menu = NSMenu()
-    menu.addItem(withTitle: "Refresh Now", action: #selector(MenuTarget.refresh), keyEquivalent: "r").target =
-      menuTarget
-    menu.addItem(.separator())
-    for provider in registry.ids where dependencies.settings.enabledProviders.contains(provider) {
+    let commands = MenuCommand.menu(
+      providers: registry.ids.filter(dependencies.settings.enabledProviders.contains),
+      canCheckForUpdates: dependencies.updater?.canCheck == true, appName: dependencies.appInfo.name)
+    for command in commands {
+      guard command != .separator else {
+        menu.addItem(.separator())
+        continue
+      }
       let item = NSMenuItem(
-        title: "Open \(provider.displayName) usage page", action: #selector(MenuTarget.openProvider(_:)),
-        keyEquivalent: "")
-      item.representedObject = provider.rawValue
+        title: command.title, action: #selector(MenuTarget.run(_:)), keyEquivalent: command.keyEquivalent)
+      item.representedObject = command.id
       item.target = menuTarget
       menu.addItem(item)
     }
-    if dependencies.updater?.canCheck == true {
-      menu.addItem(.separator())
-      menu.addItem(withTitle: "Check for Updates…", action: #selector(MenuTarget.checkForUpdates), keyEquivalent: "")
-        .target = menuTarget
-    }
-    menu.addItem(.separator())
-    menu.addItem(withTitle: "Quit \(dependencies.appInfo.name)", action: #selector(MenuTarget.quit), keyEquivalent: "q")
-      .target = menuTarget
     return menu
+  }
+
+  public func run(_ commandID: String) {
+    switch commandID {
+    case MenuCommand.refresh.id: refreshNow()
+    case MenuCommand.checkForUpdates.id: dependencies.updater?.checkForUpdates()
+    case MenuCommand.quit(appName: "").id: dependencies.terminate()
+    default:
+      guard let raw = commandID.split(separator: ":").last, let provider = ProviderID(rawValue: String(raw)) else {
+        return
+      }
+      dependencies.openURL(provider.usagePage)
+    }
   }
 
   lazy var menuTarget = MenuTarget(controller: self)
@@ -433,21 +441,9 @@ final class MenuTarget: NSObject {
     self.controller = controller
   }
 
-  @objc func refresh() {
-    controller?.refreshNow()
-  }
-
-  @objc func openProvider(_ sender: NSMenuItem) {
-    guard let raw = sender.representedObject as? String, let provider = ProviderID(rawValue: raw) else { return }
-    controller?.dependencies.openURL(provider.usagePage)
-  }
-
-  @objc func checkForUpdates() {
-    controller?.dependencies.updater?.checkForUpdates()
-  }
-
-  @objc func quit() {
-    controller?.dependencies.terminate()
+  @objc func run(_ sender: NSMenuItem) {
+    guard let id = sender.representedObject as? String else { return }
+    controller?.run(id)
   }
 }
 

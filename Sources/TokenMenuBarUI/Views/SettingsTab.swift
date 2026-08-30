@@ -80,10 +80,8 @@ public struct SettingsTab: View {
       set: { settings.setRefreshInterval($0 * 60, for: provider) })
   }
 
-  /// Sandboxed builds cannot read these paths until the user picks them, so Settings offers one button per
-  /// directory the provider still needs.
   public func missingAccess(_ provider: ProviderID) -> [SandboxResource] {
-    provider.sandboxResources.filter { settings.bookmark(for: $0) == nil }
+    settings.missingAccess(for: provider)
   }
 
   public func openRepository() {

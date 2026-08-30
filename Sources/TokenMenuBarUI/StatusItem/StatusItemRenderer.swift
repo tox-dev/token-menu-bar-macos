@@ -23,11 +23,7 @@ public enum StatusItemRenderer {
   public static let barHeight: CGFloat = 4
 
   public static func fontSizes(height: CGFloat, lineCount: Int) -> [CGFloat] {
-    switch lineCount {
-    case ...1: return [maxFontSize]
-    case 2: return [9, 11.5]
-    default: return Array(repeating: max(minFontSize, min(9, height / CGFloat(lineCount) * 0.8)), count: lineCount)
-    }
+    StatusMetrics.fontSizes(height: Double(height), lineCount: lineCount).map { CGFloat($0) }
   }
 
   public static func color(for kind: StatusRun.Kind, dark: Bool) -> NSColor {

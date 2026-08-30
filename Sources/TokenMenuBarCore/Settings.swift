@@ -123,6 +123,11 @@ public final class Settings {
     accessBookmarks[resource.id] = data
   }
 
+  /// The paths this provider still cannot read in a sandboxed build, so Settings can offer one button each.
+  public func missingAccess(for provider: ProviderID) -> [SandboxResource] {
+    provider.sandboxResources.filter { bookmark(for: $0) == nil }
+  }
+
   public func flush() {
     defaults.synchronize()
   }
