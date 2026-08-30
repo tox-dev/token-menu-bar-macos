@@ -45,7 +45,8 @@ func sampleSnapshot(_ provider: ProviderID, percent: Double = 36) -> ProviderSna
     spend: SpendControl(
       enabled: true, canToggle: true, used: Money(amountMinor: 100, currency: "USD"),
       limit: Money(amountMinor: 1000, currency: "USD"), percent: 10, resetsAt: fixedNow.addingTimeInterval(86400 * 3),
-      limitReached: false, balance: Money(amountMinor: 50, currency: "USD"), autoReload: true, canPurchaseCredits: true),
+      limitReached: false, balance: Money(amountMinor: 50, currency: "USD"), autoReload: true,
+      canPurchaseCredits: true),
     resetCredits: ResetCredits(available: 1, applicable: 1, totalEarned: 2),
     notices: [Notice(kind: .promotion, text: "Boosted limits"), Notice(kind: .limitReached, text: "Limit reached")],
     localUsage: LocalUsage(

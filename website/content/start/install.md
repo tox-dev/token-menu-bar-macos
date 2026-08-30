@@ -1,6 +1,6 @@
 ---
-title: Install
-description: Download, Homebrew or the Mac App Store, and what each client needs to be signed in.
+title: Install Token Menu Bar
+description: Download the app, sign in to the clients you use, and read your first numbers.
 weight: 1
 ---
 
@@ -20,8 +20,8 @@ sign-in appears; toggle them under Settings > Providers.
 
 1. Download `TokenMenuBar.dmg` from the
    [latest release](https://github.com/tox-dev/token-menu-bar-macos/releases/latest).
-1. Drag **Token Menu Bar** into `/Applications` and open it.
-1. Approve the Keychain prompt with **Always Allow** so the app can read the Claude Code token.
+2. Drag **Token Menu Bar** into `/Applications` and open it.
+3. Approve the Keychain prompt with **Always Allow** so the app can read the Claude Code token.
 
 The direct build is signed with a Developer ID, notarized, and updates itself through Sparkle (Settings > About).
 
@@ -48,9 +48,8 @@ The menu bar shows the app icon until the first refresh completes; then one cell
 popover to see every window, and use **Settings > Menu bar** to choose which windows sit in the bar and how they are
 formatted.
 
-{{< callout kind="tip" title="Launch at login" >}}
-Turn on **Launch at login** under Settings > About. macOS may ask you to approve the item under
-System Settings > General > Login Items; the app offers a shortcut to that pane.
+{{< callout kind="tip" title="Launch at login" >}} Turn on **Launch at login** under Settings > About. macOS may ask you
+to approve the item under System Settings > General > Login Items; the app offers a shortcut to that pane.
 {{< /callout >}}
 
 ## Building from source

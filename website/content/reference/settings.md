@@ -1,6 +1,6 @@
 ---
-title: Settings
-description: 'Every option: menu bar format, providers, refresh cadence, data, notifications and the log.'
+title: Settings reference
+description: Every option in the Settings tab.
 weight: 3
 ---
 

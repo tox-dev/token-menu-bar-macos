@@ -26,29 +26,24 @@ brandGradientEnd = "#9A6BFF"
 themeColor = "#5A46E8"
 
 [[menu.main]]
-name = "Install"
-url = "/install/"
+name = "Get started"
+url = "/start/"
 weight = 1
 
 [[menu.main]]
-name = "What you see"
-url = "/features/"
+name = "How-to guides"
+url = "/guides/"
 weight = 2
 
 [[menu.main]]
-name = "Settings"
-url = "/settings/"
+name = "Reference"
+url = "/reference/"
 weight = 3
 
 [[menu.main]]
-name = "Privacy"
-url = "/privacy/"
+name = "Explanation"
+url = "/explanation/"
 weight = 4
-
-[[menu.main]]
-name = "Contributing"
-url = "/contributing/"
-weight = 5
 
 [outputs]
 home = ["HTML", "llms"]

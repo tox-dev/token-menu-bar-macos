@@ -29,7 +29,8 @@
   --shadow: 0 10px 30px rgba(15, 17, 23, 0.09);
   --shadow-lg: 0 24px 60px rgba(15, 17, 23, 0.16);
 
-  --page: 1120px;
+  --page: 1240px;
+  --prose: 1140px;
   --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Inter, system-ui, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, "Cascadia Mono", monospace;
 }
@@ -556,7 +557,11 @@ td {
 }
 
 .page .wrap {
-  max-width: 760px;
+  max-width: var(--prose);
+}
+
+.page-wide .wrap {
+  max-width: var(--page);
 }
 
 .page-title {
@@ -724,4 +729,34 @@ body.theme-dark .only-light {
 .provider img {
   width: 18px;
   height: 18px;
+}
+
+.card-link {
+  text-decoration: none;
+  display: block;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+
+.card-link:hover {
+  border-color: var(--iris);
+  transform: translateY(-2px);
+}
+
+.card-link h3 {
+  color: var(--ink);
+}
+
+.breadcrumb {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+
+.breadcrumb a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--iris);
 }

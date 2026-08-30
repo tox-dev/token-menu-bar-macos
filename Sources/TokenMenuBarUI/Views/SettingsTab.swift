@@ -150,10 +150,8 @@ public struct SettingsTab: View {
           .font(.caption)
           .foregroundStyle(.secondary)
       }
-      HStack(spacing: 12) {
-        StatusPreview(model: environment.state.statusModel)
-        Text("Windows shown:").foregroundStyle(.secondary)
-      }
+      StatusPreview(model: environment.state.statusModel)
+      Text("Windows shown").foregroundStyle(.secondary)
       WindowSelectionList(environment: environment)
     }
   }

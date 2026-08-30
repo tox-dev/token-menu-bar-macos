@@ -164,11 +164,21 @@ public enum StatusItemRenderer {
     }
   }
 
-  public static func stripData(for model: StatusItemModel, dark: Bool) -> Data? {
+  /// Renders at a device scale so the strip stays sharp when the website shows it a few hundred points wide.
+  public static func stripData(for model: StatusItemModel, dark: Bool, scale: Int = 3) -> Data? {
     let image = stripImage(for: model, dark: dark)
-    guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
-    let rep = NSBitmapImageRep(cgImage: cgImage)
+    let pixels = CGSize(width: image.size.width * CGFloat(scale), height: image.size.height * CGFloat(scale))
+    guard
+      let rep = NSBitmapImageRep(
+        bitmapDataPlanes: nil, pixelsWide: Int(pixels.width), pixelsHigh: Int(pixels.height), bitsPerSample: 8,
+        samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0,
+        bitsPerPixel: 0)
+    else { return nil }
     rep.size = image.size
+    NSGraphicsContext.saveGraphicsState()
+    NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+    image.draw(in: CGRect(origin: .zero, size: image.size))
+    NSGraphicsContext.restoreGraphicsState()
     return rep.representation(using: .png, properties: [:])
   }
 

@@ -397,27 +397,30 @@ public final class AppController {
 /// shadow and whatever sits behind it; hosting the same view offscreen yields exactly the content and nothing else.
 @MainActor
 public enum PopoverExporter {
-  public static func image(_ view: some View, size: CGSize, dark: Bool) -> NSImage? {
-    let hosting = NSHostingView(rootView: view.frame(width: size.width, height: size.height))
+  /// Renders a view at its own natural size. A screen capture of the live popover picks up its shadow and whatever
+  /// sits behind it; hosting the view offscreen yields the content and nothing else.
+  public static func image(_ view: some View, dark: Bool) -> NSImage? {
+    let hosting = NSHostingView(rootView: view)
     hosting.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-    hosting.frame = CGRect(origin: .zero, size: size)
+    // The popover paints on a translucent material with no window behind it here, so give it an opaque backing
+    // the same size as the content rather than a larger canvas that would show through at the edges.
+    hosting.wantsLayer = true
+    hosting.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+    hosting.frame = CGRect(origin: .zero, size: hosting.fittingSize)
     hosting.layoutSubtreeIfNeeded()
-    guard let rep = hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds) else { return nil }
+    guard hosting.bounds.width > 0, let rep = hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds) else {
+      return nil
+    }
     hosting.cacheDisplay(in: hosting.bounds, to: rep)
-    let image = NSImage(size: size)
+    let image = NSImage(size: hosting.bounds.size)
     image.addRepresentation(rep)
     return image
   }
 
-  /// The natural height of the view at a fixed width, so an exported tab is exactly as tall as its content.
-  public static func height(_ view: some View, width: CGFloat) -> CGFloat {
-    NSHostingView(rootView: view.frame(width: width)).fittingSize.height
-  }
-
-  public static func png(_ view: some View, size: CGSize, dark: Bool) -> Data? {
-    guard let image = image(view, size: size, dark: dark),
-      let rep = image.representations.first as? NSBitmapImageRep
-    else { return nil }
+  public static func png(_ view: some View, dark: Bool) -> Data? {
+    guard let image = image(view, dark: dark), let rep = image.representations.first as? NSBitmapImageRep else {
+      return nil
+    }
     return rep.representation(using: .png, properties: [:])
   }
 }

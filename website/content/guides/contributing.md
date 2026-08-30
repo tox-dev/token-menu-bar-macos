@@ -1,6 +1,6 @@
 ---
-title: Contributing
-description: Targets, tests, adding a provider, refreshing screenshots and cutting a release.
+title: Work on the app
+description: Build the targets, run the gate, add a provider and refresh the screenshots.
 weight: 5
 ---
 

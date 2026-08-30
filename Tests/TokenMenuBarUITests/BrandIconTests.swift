@@ -31,8 +31,8 @@ import Testing
 }
 
 @Test @MainActor func popoverExporterRendersAViewToPNG() {
-  let view = Text("Token Menu Bar").padding()
-  #expect(PopoverExporter.height(view, width: 200) > 0)
-  #expect(PopoverExporter.image(view, size: CGSize(width: 200, height: 60), dark: true)?.size.width == 200)
-  #expect(PopoverExporter.png(view, size: CGSize(width: 200, height: 60), dark: false)?.isEmpty == false)
+  let view = Text("Token Menu Bar").frame(width: 200, height: 60)
+  #expect(PopoverExporter.image(view, dark: true)?.size == CGSize(width: 200, height: 60))
+  #expect(PopoverExporter.png(view, dark: false)?.isEmpty == false)
+  #expect(PopoverExporter.image(Color.clear.frame(width: 0, height: 0), dark: false) == nil)
 }

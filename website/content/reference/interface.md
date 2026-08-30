@@ -1,6 +1,6 @@
 ---
-title: What you see
-description: Menu bar cells, the Usage, History and Settings tabs, and the widgets.
+title: Interface reference
+description: What the menu bar, the three tabs and the widgets show.
 weight: 2
 ---
 
@@ -69,4 +69,4 @@ One card per provider:
 
 {{< shot name="popover-settings" alt="Settings" caption="Settings tab: menu bar, providers, data and the log." >}}
 
-See [Settings](settings.md) for every option.
+See [Settings](/reference/settings/) for every option.

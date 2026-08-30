@@ -8,13 +8,13 @@ history, desktop widgets, and the Codex and Claude analytics charts.
 It reads the tokens the `claude`, `codex`, `gemini`, Cursor and Copilot clients already store on your Mac; it never asks
 you to sign in again and only talks to the vendors' own endpoints.
 
-| Provider                                                                  | Reads                      | Windows                 |
-| ------------------------------------------------------------------------- | -------------------------- | ----------------------- |
-| <img src="website/static/brand/providers/claude.svg" width="16"> Claude   | Keychain, `~/.claude`      | session, weekly         |
-| <img src="website/static/brand/providers/codex.svg" width="16"> Codex     | `~/.codex`                 | 5-hour, weekly, review  |
-| <img src="website/static/brand/providers/gemini.svg" width="16"> Gemini   | `~/.gemini`                | daily buckets per model |
-| <img src="website/static/brand/providers/cursor.svg" width="16"> Cursor   | Cursor app, `~/.cursor`    | plan, spend             |
-| <img src="website/static/brand/providers/copilot.svg" width="16"> Copilot | `~/.config/github-copilot` | premium                 |
+| Provider                                                   | Reads                      | Windows         |
+| ---------------------------------------------------------- | -------------------------- | --------------- |
+| <img src="website/static/brand/glyph/claude.svg"> Claude   | Keychain, `~/.claude`      | session, weekly |
+| <img src="website/static/brand/glyph/codex.svg"> Codex     | `~/.codex`                 | 5-hour, weekly  |
+| <img src="website/static/brand/glyph/gemini.svg"> Gemini   | `~/.gemini`                | daily per model |
+| <img src="website/static/brand/glyph/cursor.svg"> Cursor   | Cursor app, `~/.cursor`    | plan, spend     |
+| <img src="website/static/brand/glyph/copilot.svg"> Copilot | `~/.config/github-copilot` | premium         |
 
 Website with screenshots and a feature tour: <https://tox-dev.github.io/token-menu-bar-macos/>. Refresh the screenshots
 with `Scripts/screenshots.sh`.

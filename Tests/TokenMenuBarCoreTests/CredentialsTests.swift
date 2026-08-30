@@ -111,7 +111,10 @@ import Testing
   let url = directory.appendingPathComponent(".claude.json")
   #expect(ClaudeLocalAccount.load(from: url) == nil)
   try Data(
-    #"{"oauthAccount":{"emailAddress":"a@b.c","organizationName":"Org","organizationRateLimitTier":"default_claude_max_5x","hasExtraUsageEnabled":true}}"#
+    #"""
+    {"oauthAccount":{"emailAddress":"a@b.c","organizationName":"Org",
+    "organizationRateLimitTier":"default_claude_max_5x","hasExtraUsageEnabled":true}}
+    """#
       .utf8
   ).write(to: url)
   let account = ClaudeLocalAccount.load(from: url)

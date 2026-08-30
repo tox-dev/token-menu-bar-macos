@@ -1,6 +1,6 @@
 ---
-title: Privacy and limits
-description: What the app reads, where it sends it, and why polling is deliberately slow.
+title: Privacy and rate limits
+description: What the app reads, where it sends it, and why polling is slow on purpose.
 weight: 4
 ---
 

@@ -10,7 +10,8 @@ machine and shows each plan's remaining quota. Source: {{ .Site.Params.repositor
 Append `index.md` to any page URL, or follow the links below, to fetch that page as clean markdown.
 
 ## Pages
-{{ range (slice "/install" "/features" "/settings" "/privacy" "/contributing") }}{{ with $.Site.GetPage . }}
+{{ range (slice "/start/install" "/reference/interface" "/reference/settings" "/explanation/privacy"
+  "/guides/contributing") }}{{ with $.Site.GetPage . }}
 - [{{ .Title }}]({{ (.OutputFormats.Get "md").Permalink }}){{ with .Description }}: {{ . }}{{ end }}
 {{- end }}{{ end }}
 

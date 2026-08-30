@@ -68,13 +68,8 @@ if let index = CommandLine.arguments.firstIndex(of: "--export-popover"), index +
     for tab in PopoverTab.allCases {
       controller.environment.settings.lastTab = tab
       for (suffix, dark) in [("light", false), ("dark", true)] {
-        let size = CGSize(width: PopoverGeometry.contentWidth(for: tab) + 2 * PopoverGeometry.contentPadding, height: 0)
         let view = RootView(environment: controller.environment, onMeasure: { _, _ in }, onTabChange: { _ in })
-        let height = PopoverExporter.height(view, width: size.width)
-        guard
-          let data = PopoverExporter.png(
-            view, size: CGSize(width: size.width, height: max(height, 400)), dark: dark)
-        else { continue }
+        guard let data = PopoverExporter.png(view, dark: dark) else { continue }
         try data.write(to: directory.appendingPathComponent("popover-\(tab.rawValue.lowercased())-\(suffix).png"))
       }
     }

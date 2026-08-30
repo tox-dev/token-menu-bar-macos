@@ -84,7 +84,8 @@ import Testing
   let spend = CodexMapper.spend(
     .init(
       reached: true,
-      individualLimit: .init(limit: "100", used: "42.5", remaining: "57.5", usedPercent: 42.5, resetAt: 1_788_558_705)))!
+      individualLimit: .init(
+        limit: "100", used: "42.5", remaining: "57.5", usedPercent: 42.5, resetAt: 1_788_558_705)))!
   #expect(spend.used == Money(amountMinor: 4250, currency: "USD"))
   #expect(spend.limit == Money(amountMinor: 10000, currency: "USD"))
   #expect(spend.percent == 42.5)
@@ -251,7 +252,8 @@ func codexPlanNames(planType: String?, expected: String) {
   let skills = CodexAPI.Analytics.skills.url(start: "2026-08-01", end: "2026-08-29")
   #expect(
     skills.absoluteString
-      == "https://chatgpt.com/backend-api/wham/analytics/daily-skill-usage-metrics?start_date=2026-08-01&end_date=2026-08-29&group_by=day&workspace_user=true&top_skill_limit=20"
+      == "https://chatgpt.com/backend-api/wham/analytics/daily-skill-usage-metrics"
+        + "?start_date=2026-08-01&end_date=2026-08-29&group_by=day&workspace_user=true&top_skill_limit=20"
   )
   #expect(CodexAPI.Analytics.plugins.url(start: "a", end: "b").query?.contains("top_plugin_limit=20") == true)
   #expect(CodexAPI.Analytics.tokenUsage.url(start: "a", end: "b").query == "start_date=a&end_date=b&group_by=day")

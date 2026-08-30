@@ -8,7 +8,7 @@
       <div class="hero-actions">
         <a class="button button-primary" href="{{ .Site.Params.latestRelease }}">
           Download for {{ .Site.Params.minimumOS }}</a>
-        <a class="button button-secondary" href="{{ "install/" | relURL }}">Install options</a>
+        <a class="button button-secondary" href="{{ "start/install/" | relURL }}">Install options</a>
       </div>
       <p class="hero-note">
         Reads the tokens the CLIs already store on your Mac. No account, no telemetry, nothing leaves your machine
@@ -39,7 +39,7 @@
       (dict "id" "gemini" "name" "Gemini CLI") (dict "id" "cursor" "name" "Cursor")
       (dict "id" "copilot" "name" "GitHub Copilot")) }}
       <strong class="provider">
-        <img src="{{ (printf "brand/providers/%s.svg" $p.id) | relURL }}" alt="" width="18" height="18">
+        <img src="{{ (printf "brand/glyph/%s.svg" $p.id) | relURL }}" alt="" width="18" height="18">
         {{ $p.name }}
       </strong>
     {{ end }}
@@ -77,15 +77,17 @@
 <section class="section">
   <div class="wrap">
     <div class="section-head">
-      <h2>Three tabs, no ceremony</h2>
-      <p>The popover sizes itself to the screen and keeps its position when you switch tabs.</p>
+      <h2>One popover, three tabs</h2>
+      <p>It sizes itself to the screen and keeps its position when you switch tabs.</p>
     </div>
     <div class="shots">
       {{ $usage := dict "name" "popover-usage" "alt" "Usage tab with provider cards"
         "caption" "Usage: each window with percent, reset countdown and pace." }}
       {{ $history := dict "name" "popover-history" "alt" "History tab with usage charts"
         "caption" "History: 60 days of samples, reset cliffs and vendor analytics." }}
-      {{ range $shot := (slice $usage $history) }}
+      {{ $settings := dict "name" "popover-settings" "alt" "Settings tab"
+        "caption" "Settings: menu bar format, providers, data, notifications and the log." }}
+      {{ range $shot := (slice $usage $history $settings) }}
       <figure>
         {{ range $variant := (slice "light" "dark") }}
           {{ with resources.Get (printf "images/%s-%s.png" $shot.name $variant) }}
