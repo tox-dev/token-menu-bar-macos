@@ -2,7 +2,15 @@
   "auth_mode": "chatgpt",
   "OPENAI_API_KEY": null,
   "tokens": {
-    "id_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9wbGFuX3R5cGUiOiJwcm8iLCJjaGF0Z3B0X2FjY291bnRfaWQiOiJhY2N0XzEyMyIsImNoYXRncHRfc3Vic2NyaXB0aW9uX2FjdGl2ZV91bnRpbCI6IjIwMjYtMDctMjNUMTk6NTc6MjMrMDA6MDAifSwiZXhwIjoxNzg4MDQ0MDAwfQ.sig",
+    "id_token_claims": {
+      "email": "user@example.com",
+      "https://api.openai.com/auth": {
+        "chatgpt_plan_type": "pro",
+        "chatgpt_account_id": "acct_123",
+        "chatgpt_subscription_active_until": "2026-07-23T19:57:23+00:00"
+      },
+      "exp": 1788044000
+    },
     "access_token": "ACCESS-EXAMPLE",
     "refresh_token": "REFRESH-EXAMPLE",
     "account_id": "00000000-0000-4000-8000-000000000000"

@@ -9,8 +9,11 @@ private func line(
   output: Int = 20, cacheWrite: Int = 30, cacheRead: Int = 40, tools: Int = 1
 ) -> String {
   let content = (0..<tools).map { _ in #"{"type":"tool_use","name":"Bash"}"# } + [#"{"type":"text","text":"hi"}"#]
-  return
-    #"{"type":"assistant","uuid":"u-\#(id)","requestId":"\#(request)","sessionId":"\#(session)","timestamp":"\#(ISODate.string(at))","message":{"id":"\#(id)","model":"\#(model)","content":[\#(content.joined(separator: ","))],"usage":{"input_tokens":\#(input),"output_tokens":\#(output),"cache_creation_input_tokens":\#(cacheWrite),"cache_read_input_tokens":\#(cacheRead)}}}"#
+  return #"{"type":"assistant","uuid":"u-\#(id)","requestId":"\#(request)","sessionId":"\#(session)","#
+    + #""timestamp":"\#(ISODate.string(at))","message":{"id":"\#(id)","model":"\#(model)","#
+    + #""content":[\#(content.joined(separator: ","))],"usage":{"input_tokens":\#(input),"#
+    + #""output_tokens":\#(output),"cache_creation_input_tokens":\#(cacheWrite),"#
+    + #""cache_read_input_tokens":\#(cacheRead)}}}"#
 }
 
 private func transcriptRoot() throws -> URL {

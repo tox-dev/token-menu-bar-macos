@@ -222,7 +222,7 @@ private func claudeProvider(
 
 private let validCodex = CodexAuth(
   accessToken: "codex-tok", refreshToken: "codex-ref",
-  idToken: CodexAuth(document: Fixtures.json("codex_auth"))!.idToken, accountID: "acct")
+  idToken: CodexAuth(document: Fixtures.codexAuth())!.idToken, accountID: "acct")
 
 private func codexProvider(
   _ store: any CodexAuthStore, transport: StubTransport, allowRefresh: Bool = false, rollouts: URL? = nil
@@ -248,8 +248,8 @@ private func stubCodexAnalytics(_ transport: StubTransport) {
   transport.on(
     path: "rate-limit-reset-credits",
     .text(
-      #"{"available_count":2,"applicable_available_count":1,"total_earned_count":3,"immediate_reset_purchase_eligible":true}"#
-    ))
+      #"{"available_count":2,"applicable_available_count":1,"total_earned_count":3,"#
+        + #""immediate_reset_purchase_eligible":true}"#))
   stubCodexAnalytics(transport)
   let provider = codexProvider(MemoryCodexStore(validCodex), transport: transport)
   #expect(provider.id == .codex)
@@ -291,7 +291,8 @@ private func stubCodexAnalytics(_ transport: StubTransport) {
 @Test func codexProviderFallsBackToRolloutsWhenSignedOut() async throws {
   let root = temporaryDirectory()
   let line =
-    #"{"timestamp":"2026-08-29T09:00:00Z","payload":{"rate_limits":{"primary":{"used_percent":44,"window_minutes":300,"resets_at":1788040000},"secondary":null,"plan_type":"plus"}}}"#
+    #"{"timestamp":"2026-08-29T09:00:00Z","payload":{"rate_limits":{"primary":{"#
+    + #""used_percent":44,"window_minutes":300,"resets_at":1788040000},"secondary":null,"plan_type":"plus"}}}"#
   try (line + "\n").write(to: root.appendingPathComponent("rollout-a.jsonl"), atomically: true, encoding: .utf8)
   let transport = StubTransport()
   let result = await codexProvider(MemoryCodexStore(nil), transport: transport, rollouts: root).fetch(
@@ -328,9 +329,10 @@ private func stubCodexAnalytics(_ transport: StubTransport) {
     return
   }
   let root = temporaryDirectory()
-  try
-    (#"{"payload":{"rate_limits":{"primary":{"used_percent":9,"window_minutes":10080,"resets_at":1788540000}}}}"# + "\n")
-    .write(to: root.appendingPathComponent("rollout-b.jsonl"), atomically: true, encoding: .utf8)
+  let weekly =
+    #"{"payload":{"rate_limits":{"primary":{"used_percent":9,"window_minutes":10080,"#
+    + #""resets_at":1788540000}}}}"#
+  try (weekly + "\n").write(to: root.appendingPathComponent("rollout-b.jsonl"), atomically: true, encoding: .utf8)
   let fallback = await codexProvider(MemoryCodexStore(validCodex), transport: transport, rollouts: root).fetch(
     now: fixedNow, options: FetchOptions())
   #expect(fallback.outcome.snapshot?.windows.map(\.id) == ["weekly"])
@@ -413,7 +415,10 @@ private func stubCodexAnalytics(_ transport: StubTransport) {
   try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
   let stamp = ISODate.string(fixedNow.addingTimeInterval(-600))
   let record =
-    #"{"type":"assistant","uuid":"u1","requestId":"r1","sessionId":"s1","timestamp":"\#(stamp)","message":{"id":"m1","model":"claude-opus-5","content":[],"usage":{"input_tokens":10,"output_tokens":1000000,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}"#
+    #"{"type":"assistant","uuid":"u1","requestId":"r1","sessionId":"s1","#
+    + #""timestamp":"\#(stamp)","message":{"id":"m1","model":"claude-opus-5","content":[],"#
+    + #""usage":{"input_tokens":10,"output_tokens":1000000,"cache_creation_input_tokens":0,"#
+    + #""cache_read_input_tokens":0}}}"#
   try (record + "\n").write(to: project.appendingPathComponent("a.jsonl"), atomically: true, encoding: .utf8)
   let transport = StubTransport()
   transport.on(path: "/api/oauth/usage", .json("claude_usage"))

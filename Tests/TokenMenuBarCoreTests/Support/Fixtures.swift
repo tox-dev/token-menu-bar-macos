@@ -16,6 +16,14 @@ enum Fixtures {
     try! JSONDecoder().decode(JSONValue.self, from: data(name))
   }
 
+  // the fixture stores readable claims; CodexAuth wants them as a token, so sign them on the way out
+  static func codexAuth() -> JSONValue {
+    let document = json("codex_auth")
+    var tokens = document["tokens"]!.objectValue!
+    tokens["id_token"] = .string(makeJWT(tokens.removeValue(forKey: "id_token_claims")!))
+    return document.merging("tokens", .object(tokens))
+  }
+
   static func decode<T: Decodable>(_ type: T.Type, _ name: String) -> T {
     try! JSONDecoder().decode(type, from: data(name))
   }
@@ -54,3 +62,10 @@ final class DateBox: @unchecked Sendable {
 }
 
 struct TestError: Error {}
+
+func makeJWT(_ payload: JSONValue) -> String {
+  let header = Data(#"{"alg":"none"}"#.utf8).base64EncodedString()
+  let body = try! JSONEncoder().encode(payload).base64EncodedString().replacingOccurrences(of: "=", with: "")
+    .replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_")
+  return "\(header).\(body).sig"
+}

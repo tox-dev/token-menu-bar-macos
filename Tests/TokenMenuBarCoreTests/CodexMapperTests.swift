@@ -162,7 +162,7 @@ func codexPlanNames(planType: String?, expected: String) {
 }
 
 @Test func codexIdentityMergesResponseAndAuth() {
-  let auth = CodexAuth(document: Fixtures.json("codex_auth"))!
+  let auth = CodexAuth(document: Fixtures.codexAuth())!
   let response = Fixtures.decode(CodexAPI.UsageResponse.self, "codex_usage")
   let identity = CodexMapper.identity(response, auth: auth)
   #expect(identity.planName == "Pro")

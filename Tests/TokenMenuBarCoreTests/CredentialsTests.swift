@@ -127,7 +127,7 @@ import Testing
 }
 
 @Test func codexAuthParsesTokensAndClaims() {
-  let auth = CodexAuth(document: Fixtures.json("codex_auth"))!
+  let auth = CodexAuth(document: Fixtures.codexAuth())!
   #expect(auth.accessToken == "ACCESS-EXAMPLE")
   #expect(auth.refreshToken == "REFRESH-EXAMPLE")
   #expect(auth.accountID == "00000000-0000-4000-8000-000000000000")
@@ -140,7 +140,7 @@ import Testing
 }
 
 @Test func codexAuthFallsBackToAPIKeyAndClaimAccount() {
-  let claims = JWT.payload(CodexAuth(document: Fixtures.json("codex_auth"))!.idToken!)!
+  let claims = JWT.payload(CodexAuth(document: Fixtures.codexAuth())!.idToken!)!
   let idToken = makeJWT(claims)
   let auth = CodexAuth(
     document: .object(["OPENAI_API_KEY": .string("sk-key"), "tokens": .object(["id_token": .string(idToken)])]))!
@@ -161,7 +161,7 @@ import Testing
 }
 
 @Test func codexAuthRefreshedPreservesUnknownKeysAndStampsTime() {
-  let document = Fixtures.json("codex_auth").merging("custom", .bool(true))
+  let document = Fixtures.codexAuth().merging("custom", .bool(true))
   let auth = CodexAuth(document: document)!
   let refreshed = auth.refreshed(accessToken: "A2", refreshToken: nil, idToken: nil, now: fixedNow)
   #expect(refreshed.accessToken == "A2")
@@ -219,11 +219,4 @@ import Testing
   #expect(ISODate.parse("not a date") == nil)
   #expect(ISODate.parse(nil) == nil)
   #expect(ISODate.string(Date(timeIntervalSince1970: 0)) == "1970-01-01T00:00:00.000Z")
-}
-
-func makeJWT(_ payload: JSONValue) -> String {
-  let header = Data(#"{"alg":"none"}"#.utf8).base64EncodedString()
-  let body = try! JSONEncoder().encode(payload).base64EncodedString().replacingOccurrences(of: "=", with: "")
-    .replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_")
-  return "\(header).\(body).sig"
 }
