@@ -8,12 +8,19 @@ on:
       tag:
         description: Existing tag to build (v1.2.3)
         required: true
+  # Prepare Release calls this after tagging, so the whole release is one run and needs no token of its own.
+  workflow_call:
+    inputs:
+      tag:
+        description: The tag to build
+        required: true
+        type: string
 
 permissions:
   contents: write
 
 env:
-  TAG: ${{ github.event.inputs.tag || github.ref_name }}
+  TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   preflight:

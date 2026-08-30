@@ -14,20 +14,18 @@ on:
         default: ""
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   tag:
     name: Tag the release
     runs-on: ubuntu-24.04
-    # The tag has to be pushed with a token of its own: a push made with GITHUB_TOKEN starts no further workflow, so
-    # Release would never run.
-    environment: release-auth
+    outputs:
+      version: ${{ steps.version.outputs.next }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_PAT }}
           persist-credentials: true
       - name: Work out the version
         id: version
@@ -66,5 +64,17 @@ jobs:
         env:
           NEXT: ${{ steps.version.outputs.next }}
         run: |
-          echo "Tagged v$NEXT. Release now builds the direct download, the cask and the App Store upload." \
+          echo "Tagged v$NEXT. Release builds the direct download, the cask and the App Store upload." \
             >> "$GITHUB_STEP_SUMMARY"
+
+  # A tag pushed with GITHUB_TOKEN starts no workflow of its own, so the release runs here rather than waiting for
+  # the tag event. One run, one place to watch.
+  release:
+    name: Release
+    needs: tag
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: v${{ needs.tag.outputs.version }}
+    permissions:
+      contents: write
+    secrets: inherit
