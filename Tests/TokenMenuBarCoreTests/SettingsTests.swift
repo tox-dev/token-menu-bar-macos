@@ -38,7 +38,7 @@ private func freshDefaults() -> UserDefaults {
   #expect(settings.activeTemplate == "{pct}")
 }
 
-@Test @MainActor func settingsPersistAndReload() {
+@Test @MainActor func menuBarSettingsSurviveAReload() {
   let defaults = freshDefaults()
   let settings = Settings(defaults: defaults)
   let key = WindowKey(provider: .codex, windowID: "weekly")
@@ -51,20 +51,6 @@ private func freshDefaults() -> UserDefaults {
   settings.hideZeroCells = false
   settings.windowOrder = .percent
   settings.shortLabels = [key: "W"]
-  settings.allowTokenRefresh = true
-  settings.notifications = NotificationSettings(
-    enabled: false, thresholds: [50], notifyOnReset: false, notifyOnAuthProblems: false)
-  settings.lastTab = .history
-  settings.historyRange = .month
-  settings.historyRollup = .day
-  settings.historyStacked = true
-  settings.historyUseUTC = true
-  settings.historyHiddenKeys = [key]
-  settings.historyAnalyticsMetric = .turns
-  settings.detailedLogging = true
-  settings.automaticUpdates = false
-  settings.lastLaunchedVersion = "1.2.3"
-  settings.setBookmark(Data([1, 2]), for: ProviderID.codex.sandboxResources[0])
   let reloaded = Settings(defaults: defaults)
   #expect(reloaded.enabledProviders == [.codex])
   #expect(reloaded.selectedWindows == [key])
@@ -75,8 +61,20 @@ private func freshDefaults() -> UserDefaults {
   #expect(!reloaded.hideZeroCells)
   #expect(reloaded.windowOrder == .percent)
   #expect(reloaded.shortLabels == [key: "W"])
-  #expect(reloaded.allowTokenRefresh)
-  #expect(reloaded.notifications.thresholds == [50])
+}
+
+@Test @MainActor func historySettingsSurviveAReload() {
+  let defaults = freshDefaults()
+  let settings = Settings(defaults: defaults)
+  let key = WindowKey(provider: .codex, windowID: "weekly")
+  settings.lastTab = .history
+  settings.historyRange = .month
+  settings.historyRollup = .day
+  settings.historyStacked = true
+  settings.historyUseUTC = true
+  settings.historyHiddenKeys = [key]
+  settings.historyAnalyticsMetric = .turns
+  let reloaded = Settings(defaults: defaults)
   #expect(reloaded.lastTab == .history)
   #expect(reloaded.historyRange == .month)
   #expect(reloaded.historyRollup == .day)
@@ -84,13 +82,42 @@ private func freshDefaults() -> UserDefaults {
   #expect(reloaded.historyUseUTC)
   #expect(reloaded.historyHiddenKeys == [key])
   #expect(reloaded.historyAnalyticsMetric == .turns)
+}
+
+@Test @MainActor func appSettingsSurviveAReload() {
+  let defaults = freshDefaults()
+  let settings = Settings(defaults: defaults)
+  settings.allowTokenRefresh = true
+  settings.notifications = NotificationSettings(
+    enabled: false, thresholds: [50], notifyOnReset: false, notifyOnAuthProblems: false)
+  settings.detailedLogging = true
+  settings.automaticUpdates = false
+  settings.lastLaunchedVersion = "1.2.3"
+  let reloaded = Settings(defaults: defaults)
+  #expect(reloaded.allowTokenRefresh)
+  #expect(
+    reloaded.notifications
+      == NotificationSettings(enabled: false, thresholds: [50], notifyOnReset: false, notifyOnAuthProblems: false))
   #expect(reloaded.detailedLogging)
   #expect(!reloaded.automaticUpdates)
   #expect(reloaded.lastLaunchedVersion == "1.2.3")
+}
+
+@Test @MainActor func clearingTheLastVersionRemovesItFromDefaults() {
+  let defaults = freshDefaults()
+  let settings = Settings(defaults: defaults)
+  settings.lastLaunchedVersion = "1.2.3"
+  settings.lastLaunchedVersion = nil
+  #expect(defaults.object(forKey: "lastLaunchedVersion") == nil)
+}
+
+@Test @MainActor func bookmarksAreStoredPerSandboxResource() {
+  let defaults = freshDefaults()
+  let settings = Settings(defaults: defaults)
+  settings.setBookmark(Data([1, 2]), for: ProviderID.codex.sandboxResources[0])
+  let reloaded = Settings(defaults: defaults)
   #expect(reloaded.bookmark(for: ProviderID.codex.sandboxResources[0]) == Data([1, 2]))
   #expect(reloaded.bookmark(for: ProviderID.gemini.sandboxResources[0]) == nil)
-  reloaded.lastLaunchedVersion = nil
-  #expect(defaults.object(forKey: "lastLaunchedVersion") == nil)
 }
 
 @Test @MainActor func settingsResetRestoresDefaults() {

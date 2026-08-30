@@ -190,7 +190,7 @@ extension QuotaAvailability {
   #expect(noFrame)
 }
 
-@Test func popoverGeometryClampsToScreen() {
+@Test func popoverMaxSizeLeavesAMarginOnEveryEdge() {
   let screen = CGRect(x: 0, y: 0, width: 1440, height: 900)
   let centered = PopoverGeometry.maxSize(anchor: CGRect(x: 700, y: 880, width: 40, height: 20), visibleFrame: screen)
   #expect(centered.height == 880 - PopoverGeometry.margin)
@@ -200,14 +200,21 @@ extension QuotaAvailability {
   let tiny = PopoverGeometry.maxSize(
     anchor: CGRect(x: 10, y: 50, width: 40, height: 20), visibleFrame: CGRect(x: 0, y: 0, width: 300, height: 100))
   #expect(tiny == CGSize(width: PopoverGeometry.minimumWidth, height: PopoverGeometry.minimumHeight))
-  let clamped = PopoverGeometry.clamp(CGSize(width: 200, height: 5000), maximum: CGSize(width: 480, height: 400))
-  #expect(clamped == CGSize(width: PopoverGeometry.minimumWidth, height: 400))
+}
+
+@Test func popoverWidthFollowsTheViewport() {
+  let screen = CGRect(x: 0, y: 0, width: 1440, height: 900)
   #expect(PopoverGeometry.preferredWidth(visibleFrame: nil) == PopoverGeometry.minimumWidth)
   #expect(PopoverGeometry.preferredWidth(visibleFrame: screen) == PopoverGeometry.minimumWidth)
   let wide = CGRect(x: 0, y: 0, width: 3008, height: 1662)
   #expect(PopoverGeometry.preferredWidth(visibleFrame: wide) == 3008 * PopoverGeometry.viewportWidthShare)
   let narrow = CGRect(x: 0, y: 0, width: 600, height: 400)
   #expect(PopoverGeometry.preferredWidth(visibleFrame: narrow) == 600 - 2 * PopoverGeometry.margin)
+}
+
+@Test func popoverCentreHoldsStillNearTheScreenEdges() {
+  let wide = CGRect(x: 0, y: 0, width: 3008, height: 1662)
+  let narrow = CGRect(x: 0, y: 0, width: 600, height: 400)
   #expect(PopoverGeometry.stableCenterX(anchorMidX: 1500, visibleFrame: wide, widestWidth: 1274) == 1500)
   #expect(
     PopoverGeometry.stableCenterX(anchorMidX: 2900, visibleFrame: wide, widestWidth: 1274) == CGFloat(3008 - 12 - 637))
@@ -217,16 +224,29 @@ extension QuotaAvailability {
   #expect(PopoverGeometry.alignedOriginX(centerX: 100, width: 1000, visibleFrame: wide) == 0)
   #expect(PopoverGeometry.alignedOriginX(centerX: 2900, width: 1000, visibleFrame: wide) == 2008)
   #expect(PopoverGeometry.alignedOriginX(centerX: 300, width: 1000, visibleFrame: narrow) == 0)
+}
+
+@Test func popoverTabWidthsGrowWithTheirContent() {
   #expect(
     PopoverGeometry.tabWidth(for: .history) == PopoverGeometry.widestTabWidth + 2 * PopoverGeometry.contentPadding)
   #expect(PopoverGeometry.contentWidth(for: .settings) == PopoverGeometry.minimumWidth)
   #expect(PopoverGeometry.contentWidth(for: .usage) < PopoverGeometry.contentWidth(for: .settings))
+}
+
+@Test func popoverClampKeepsSizesWithinTheMaximum() {
+  #expect(
+    PopoverGeometry.clamp(CGSize(width: 200, height: 5000), maximum: CGSize(width: 480, height: 400))
+      == CGSize(width: PopoverGeometry.minimumWidth, height: 400))
   #expect(
     PopoverGeometry.clamp(CGSize(width: 900, height: 300), maximum: CGSize(width: 800, height: 900))
       == CGSize(width: 800, height: 300))
   #expect(
     PopoverGeometry.clamp(.zero, maximum: .zero)
       == CGSize(width: PopoverGeometry.minimumWidth, height: PopoverGeometry.minimumHeight))
+}
+
+@Test func popoverPinnedOriginStaysInsideTheVisibleFrame() {
+  let screen = CGRect(x: 0, y: 0, width: 1440, height: 900)
   let origin = PopoverGeometry.pinnedOrigin(
     lastTopCenter: CGPoint(x: 1430, y: 890), size: CGSize(width: 400, height: 300), visibleFrame: screen)
   #expect(origin == CGPoint(x: 1040, y: 590))

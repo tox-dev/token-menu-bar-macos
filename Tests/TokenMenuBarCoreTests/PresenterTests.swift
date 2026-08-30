@@ -25,34 +25,51 @@ private func snapshot(source: DataSource = .network) -> ProviderSnapshot {
   )
 }
 
-@Test func usagePresenterBuildsCards() {
+private func presentedCards() -> [ProviderCard] {
   let state: [ProviderID: ProviderState] = [
     .claude: ProviderState(
       snapshot: snapshot(), availability: .current, warnings: ["w"], credentialState: .valid(expiresAt: nil)),
     .codex: ProviderState(availability: .authenticationRequired, lastError: "expired"),
   ]
-  let cards = UsagePresenter.cards(state: state, enabled: [.claude, .codex], samples: [:], now: fixedNow)
-  #expect(cards.map(\.provider) == [.claude, .codex])
-  let claude = cards[0]
+  return UsagePresenter.cards(state: state, enabled: [.claude, .codex], samples: [:], now: fixedNow)
+}
+
+@Test func usagePresenterOrdersCardsByProvider() {
+  #expect(presentedCards().map(\.provider) == [.claude, .codex])
+  #expect(presentedCards()[0].id == .claude)
+}
+
+@Test func usagePresenterBuildsIdentityChips() {
+  let claude = presentedCards()[0]
   #expect(
     claude.chips.map(\.text) == [
       "Max 20x", "user@example.com",
       "Renews \(fixedNow.addingTimeInterval(86400).formatted(date: .abbreviated, time: .omitted))",
     ])
   #expect(claude.chips[0].link == ProviderID.claude.usagePage)
+}
+
+@Test func usagePresenterBuildsWindowRows() {
+  let claude = presentedCards()[0]
   #expect(claude.rows.count == 1)
   #expect(claude.rows[0].percentText == "36%")
   #expect(claude.rows[0].countdown == "1 hr 0 min")
   #expect(claude.rows[0].id == claude.rows[0].key)
   #expect(claude.rows[0].color == UsageColor.color(pace: claude.rows[0].pace.status, percent: 36))
+}
+
+@Test func usagePresenterReportsFreshnessAndWarnings() {
+  let claude = presentedCards()[0]
   #expect(claude.fetchedAge == "30s ago")
   #expect(!claude.isStale)
   #expect(claude.credentialDescription == "Token present")
   #expect(claude.warnings == ["w"])
   #expect(!claude.isRefreshing)
   #expect(claude.notices.count == 1)
-  #expect(claude.id == .claude)
-  let codex = cards[1]
+}
+
+@Test func usagePresenterAsksSignedOutProvidersToSignIn() {
+  let codex = presentedCards()[1]
   #expect(codex.rows.isEmpty)
   #expect(codex.emptyTitle == "Sign in to Codex")
   #expect(codex.emptyDescription == "expired")
@@ -158,7 +175,8 @@ private func sample(_ provider: ProviderID, _ percent: Double, at date: Date) ->
     ], fetchedAt: date)
 }
 
-@Test @MainActor func historyPresenterLoadsSeriesAndAnalytics() async throws {
+@MainActor
+private func loadedPresenter() async throws -> (HistoryPresenter, Settings, HistoryRenderData) {
   let (presenter, history, settings) = try makePresenter()
   try await history.record(
     sample(.claude, 10, at: fixedNow.addingTimeInterval(-3600)), now: fixedNow.addingTimeInterval(-3600))
@@ -178,11 +196,20 @@ private func sample(_ provider: ProviderID, _ percent: Double, at date: Date) ->
   await presenter.waitForLoad()
   guard case .loaded(let data, false, nil) = presenter.state else {
     Issue.record("unexpected state \(presenter.state)")
-    return
+    throw CancellationError()
   }
+  return (presenter, settings, data)
+}
+
+@Test @MainActor func historyPresenterLoadsOneSeriesPerWindow() async throws {
+  let (presenter, _, data) = try await loadedPresenter()
   #expect(data.series.map(\.label) == ["Claude Session", "Codex Session"])
   #expect(presenter.availableWindows.count == 2)
   #expect(presenter.earliest == fixedNow.addingTimeInterval(-3600))
+}
+
+@Test @MainActor func historyPresenterGroupsAnalyticsByMetric() async throws {
+  let (presenter, _, _) = try await loadedPresenter()
   #expect(presenter.analytics[.codex]?.map(\.metric) == [.surfaceUsagePercent, .turns])
   #expect(presenter.analytics[.codex]?[0].totalText == "40%")
   #expect(presenter.analytics[.codex]?[1].totalText == "3")
@@ -190,30 +217,41 @@ private func sample(_ provider: ProviderID, _ percent: Double, at date: Date) ->
   #expect(presenter.analytics[.codex]?[1].id == .turns)
   #expect(presenter.analytics[.codex]?[1].bars.first?.id == "\(DayStamp.string(fixedNow))|m")
   #expect(presenter.analytics[.claude] == nil)
-  let key = WindowKey(provider: .claude, windowID: "session")
+}
+
+@Test @MainActor func historyPresenterReadsTheSelectedPoint() async throws {
+  let (presenter, _, data) = try await loadedPresenter()
   #expect(presenter.value(for: data.series[0]) == "40%")
   presenter.select(x: fixedNow.addingTimeInterval(-3500))
   #expect(presenter.selectedDate == data.series[0].points.first?.date)
   #expect(presenter.value(for: data.series[0]) == "10%")
   presenter.select(x: nil)
   #expect(presenter.selectedDate == nil)
+  #expect(
+    presenter.value(for: HistorySeries(key: WindowKey(provider: .claude, windowID: "session"), label: "x", points: []))
+      == "—")
+}
+
+@Test @MainActor func historyPresenterHidesAndIsolatesWindows() async throws {
+  let (presenter, settings, _) = try await loadedPresenter()
+  let key = WindowKey(provider: .claude, windowID: "session")
+  let codex = WindowKey(provider: .codex, windowID: "session")
   presenter.toggleVisibility(key)
   await presenter.waitForLoad()
   #expect(!presenter.isVisible(key))
-  #expect(presenter.request(now: fixedNow).keys == [WindowKey(provider: .codex, windowID: "session")])
-  presenter.toggleVisibility(WindowKey(provider: .codex, windowID: "session"))
+  #expect(presenter.request(now: fixedNow).keys == [codex])
+  presenter.toggleVisibility(codex)
   await presenter.waitForLoad()
-  #expect(presenter.isVisible(WindowKey(provider: .codex, windowID: "session")))
+  #expect(presenter.isVisible(codex))
   presenter.toggleVisibility(key)
   await presenter.waitForLoad()
   #expect(presenter.isVisible(key))
   presenter.isolate(key)
   await presenter.waitForLoad()
-  #expect(settings.historyHiddenKeys == [WindowKey(provider: .codex, windowID: "session")])
+  #expect(settings.historyHiddenKeys == [codex])
   presenter.isolate(key)
   await presenter.waitForLoad()
   #expect(settings.historyHiddenKeys.isEmpty)
-  #expect(presenter.value(for: HistorySeries(key: key, label: "x", points: [])) == "—")
 }
 
 @Test @MainActor func historyPresenterRangesRollupsAndCustomPaging() async throws {
