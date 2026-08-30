@@ -65,7 +65,6 @@ extension AppIcon {
   public static let productInset: CGFloat = 0.092
   public static let appIconSizes: [Int] = [16, 32, 64, 128, 256, 512, 1024]
 
-  /// The Dock and Finder icon: the brand squircle with the meter bars, drawn rather than shipped as a bitmap.
   public static func drawProduct(in context: CGContext, size: CGFloat) {
     let inset = size * productInset
     let rect = CGRect(x: inset, y: inset, width: size - 2 * inset, height: size - 2 * inset)
@@ -114,7 +113,7 @@ extension AppIcon {
     return rep.representation(using: .png, properties: [:])
   }
 
-  /// Writes an `.iconset` directory; `iconutil` turns it into the `.icns` the bundle ships.
+  /// `iconutil` turns the directory this writes into the `.icns` the bundle ships.
   public static func exportIconSet(to directory: URL) throws {
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     for size in appIconSizes {

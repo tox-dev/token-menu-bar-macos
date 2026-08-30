@@ -10,7 +10,7 @@ let sandboxed = ProcessInfo.processInfo.environment["APP_SANDBOX_CONTAINER_ID"] 
 #else
   let isAppStore = false
 #endif
-// `--export-icon <dir>` renders the branded icon set for Scripts/make-icon.sh; it never starts the UI.
+// Exporting never starts the UI, so the screenshot script can run it while the app is open.
 if let index = CommandLine.arguments.firstIndex(of: "--export-icon"), index + 1 < CommandLine.arguments.count {
   let directory = URL(fileURLWithPath: CommandLine.arguments[index + 1])
   do {
@@ -23,7 +23,6 @@ if let index = CommandLine.arguments.firstIndex(of: "--export-icon"), index + 1 
   }
 }
 
-// `--export-menubar <dir>` renders the demo status item onto a menu-bar strip for the website screenshots.
 if let index = CommandLine.arguments.firstIndex(of: "--export-menubar"), index + 1 < CommandLine.arguments.count {
   let directory = URL(fileURLWithPath: CommandLine.arguments[index + 1])
   let snapshots = Dictionary(
@@ -47,7 +46,7 @@ if let index = CommandLine.arguments.firstIndex(of: "--export-menubar"), index +
   }
 }
 
-// `--export-popover <dir>` renders each tab on demo data for the website, with no shadow or desktop behind it.
+// Demo data, so no account details reach the website.
 if let index = CommandLine.arguments.firstIndex(of: "--export-popover"), index + 1 < CommandLine.arguments.count {
   let directory = URL(fileURLWithPath: CommandLine.arguments[index + 1])
   let defaults = UserDefaults(suiteName: "dev.tox.token-menu-bar.export")!

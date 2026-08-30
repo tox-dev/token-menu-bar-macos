@@ -1,5 +1,4 @@
-// Three-state theme: auto (follow the OS), light, dark. The stored choice is applied by an inline
-// script in <body> before paint; this file only wires the toggle and keeps the icon in step.
+// The stored choice is applied by an inline script in <body> before paint, so this file only wires the toggle.
 (() => {
   const body = document.body;
   const toggle = document.getElementById("theme-toggle");
