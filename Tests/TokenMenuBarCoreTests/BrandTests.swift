@@ -8,9 +8,10 @@ import Testing
   #expect(Brand.gradientEnd.hex == "#9A6BFF")
   #expect(Brand.iris.hex == "#5A46E8")
   #expect(Brand.irisDark.hex == "#A78BFA")
-  #expect(Brand.ink.hex == "#0F1117")
-  #expect(Brand.surface.hex == "#171A22")
-  #expect(Brand.paper.hex == "#FAFAFC")
+  #expect(Brand.pageDark.hex == "#0F1117")
+  #expect(Brand.pageLight.hex == "#FAFAFC")
+  #expect(Brand.card(dark: true).hex == "#171A22")
+  #expect(Brand.card(dark: false).hex == "#FFFFFF")
   #expect(BrandColor(red: -1, green: 2, blue: 0.5).hex == "#00FF80")
   #expect(BrandColor(0xFFFFFF) == BrandColor(red: 1, green: 1, blue: 1))
 }

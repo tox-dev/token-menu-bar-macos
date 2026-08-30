@@ -74,9 +74,7 @@ extension AppIcon {
     context.addPath(path)
     context.clip()
     let space = CGColorSpaceCreateDeviceRGB()
-    let stops = [Brand.gradientStart, Brand.gradientEnd].map {
-      CGColor(srgbRed: $0.red, green: $0.green, blue: $0.blue, alpha: 1)
-    }
+    let stops = [Brand.gradientStart, Brand.gradientEnd].map(\.cgColor)
     if let gradient = CGGradient(colorsSpace: space, colors: stops as CFArray, locations: [0, 1]) {
       context.drawLinearGradient(
         gradient, start: CGPoint(x: rect.minX, y: rect.maxY), end: CGPoint(x: rect.maxX, y: rect.minY), options: [])
@@ -157,7 +155,7 @@ extension Color {
     Color(
       nsColor: NSColor(name: nil) { appearance in
         let brand = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? Brand.irisDark : Brand.iris
-        return NSColor(srgbRed: brand.red, green: brand.green, blue: brand.blue, alpha: 1)
+        return NSColor(cgColor: brand.cgColor)!
       })
   }
 
@@ -187,5 +185,11 @@ public enum ProviderGlyph {
     case .cursor: Color(red: 0.45, green: 0.45, blue: 0.5)
     case .copilot: Color(red: 0.42, green: 0.35, blue: 0.8)
     }
+  }
+}
+
+extension BrandColor {
+  var cgColor: CGColor {
+    CGColor(srgbRed: red, green: green, blue: blue, alpha: 1)
   }
 }

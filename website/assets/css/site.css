@@ -39,8 +39,8 @@ body.theme-auto {
   --dark-ink: #f4f5f9;
   --dark-body: #c2c7d6;
   --dark-muted: #8d94a8;
-  --dark-paper: #0d0f15;
-  --dark-surface: #151822;
+  --dark-paper: #0f1117;
+  --dark-surface: #171a22;
   --dark-raised: #1d2130;
   --dark-line: #272c3b;
 }
@@ -405,6 +405,17 @@ td {
   border: 1px solid var(--line);
   overflow: hidden;
   display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* The hero shows the top of the popover and fades the cut, so the page stays short and the crop reads as deliberate */
+.hero-popover {
+  max-height: 380px;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  -webkit-mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
 }
 
 .shot-bar {
@@ -489,20 +500,91 @@ td {
   height: 17px;
 }
 
-.shots {
+/* One popover at a time, switched by the radios above it, so three tall shots do not stack into a scroll marathon */
+.tabshots {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.4rem;
+  justify-items: center;
+  gap: 1rem;
 }
 
-.shots figure {
+.tabshot-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tabshot-bar {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.tabshot-bar label {
+  padding: 0.4rem 1.15rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 560;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tabshot-bar label:hover {
+  color: var(--ink);
+}
+
+.tabshot-panel {
   margin: 0;
+  display: none;
 }
 
-.shots figcaption {
-  margin-top: 0.55rem;
+/* Each tab is as tall as its own content, so the shot scrolls inside a frame every tab shares */
+.tabshot-frame {
+  max-height: min(70vh, 620px);
+  overflow: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-lg);
+  background: var(--surface);
+}
+
+.tabshot-frame img {
+  display: block;
+  margin-inline: auto;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.tabshot-panel figcaption {
+  margin-top: 0.7rem;
   font-size: 0.88rem;
   color: var(--muted);
+  text-align: center;
+}
+
+#tabshot-usage:checked ~ .tabshot-bar label[for="tabshot-usage"],
+#tabshot-history:checked ~ .tabshot-bar label[for="tabshot-history"],
+#tabshot-settings:checked ~ .tabshot-bar label[for="tabshot-settings"] {
+  background: var(--iris);
+  color: #fff;
+}
+
+#tabshot-usage:focus-visible ~ .tabshot-bar label[for="tabshot-usage"],
+#tabshot-history:focus-visible ~ .tabshot-bar label[for="tabshot-history"],
+#tabshot-settings:focus-visible ~ .tabshot-bar label[for="tabshot-settings"] {
+  outline: 2px solid var(--iris);
+  outline-offset: 2px;
+}
+
+#tabshot-usage:checked ~ .tabshot-panels #panel-usage,
+#tabshot-history:checked ~ .tabshot-panels #panel-history,
+#tabshot-settings:checked ~ .tabshot-panels #panel-settings {
+  display: block;
 }
 
 /* The usage scale is semantic: green through red maps to the thresholds the site documents */

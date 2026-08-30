@@ -59,8 +59,17 @@ public enum ExportRunner {
     for tab in PopoverTab.allCases {
       controller.environment.settings.lastTab = tab
       for (suffix, dark) in [("light", false), ("dark", true)] {
-        let view = RootView(environment: controller.environment, onMeasure: { _, _ in }, onTabChange: { _ in })
-        guard let data = PopoverExporter.png(view, dark: dark) else { continue }
+        let measured = MeasuredSize()
+        let view = RootView(
+          environment: controller.environment, onMeasure: { _, size in measured.value = size },
+          onTabChange: { _ in })
+        // Render once to let the tab report its natural size, then again at that size, so the shot carries the whole
+        // tab rather than the slice the popover would clamp it to. SwiftUI reports the size a run loop turn later.
+        _ = PopoverExporter.image(view, dark: dark, size: shotSize)
+        try? await Task.sleep(for: .milliseconds(50))
+        let size = CGSize(
+          width: max(measured.value.width, shotSize.width), height: max(measured.value.height, shotSize.height))
+        guard let data = PopoverExporter.png(view, dark: dark, size: size) else { continue }
         let url = directory.appendingPathComponent("popover-\(tab.rawValue.lowercased())-\(suffix).png")
         try data.write(to: url)
         written.append(url)
@@ -68,4 +77,19 @@ public enum ExportRunner {
     }
     return written
   }
+
+  /// The popover as it opens on a 14-inch display. A tab taller than this grows to fit, so the website can show the
+  /// whole tab inside a scrolling frame.
+  static var shotSize: CGSize {
+    let screen = CGRect(x: 0, y: 0, width: 1512, height: 944)
+    let anchor = CGRect(x: screen.midX, y: screen.maxY - 24, width: 40, height: 24)
+    return CGSize(
+      width: PopoverGeometry.preferredWidth(visibleFrame: screen),
+      height: min(PopoverGeometry.maxSize(anchor: anchor, visibleFrame: screen).height, 760))
+  }
+}
+
+@MainActor
+final class MeasuredSize {
+  var value: CGSize = .zero
 }

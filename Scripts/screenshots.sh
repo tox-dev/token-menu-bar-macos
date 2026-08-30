@@ -16,8 +16,5 @@ mkdir -p "$out"
 "$binary" --export-menubar "$out"
 "$binary" --export-popover "$out"
 
-magick -delay 250 -loop 0 "$out/popover-usage-dark.png" "$out/popover-history-dark.png" \
-  "$out/popover-settings-dark.png" -resize 1200x "$out/popover-tour.gif"
-
 echo "screenshots written to $out"
 ls -la "$out"

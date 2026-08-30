@@ -38,9 +38,15 @@ public enum Brand {
   public static let gradientEnd = BrandColor(0x9A_6BFF)
   public static let iris = BrandColor(0x5A_46E8)
   public static let irisDark = BrandColor(0xA7_8BFA)
-  public static let ink = BrandColor(0x0F_1117)
-  public static let surface = BrandColor(0x17_1A22)
-  public static let paper = BrandColor(0xFA_FAFC)
+  public static let pageLight = BrandColor(0xFA_FAFC)
+  public static let pageDark = BrandColor(0x0F_1117)
+  public static let cardLight = BrandColor(0xFF_FFFF)
+  public static let cardDark = BrandColor(0x17_1A22)
+
+  /// The card the website draws a screenshot on, so an exported shot sits flush with the page around it.
+  public static func card(dark: Bool) -> BrandColor {
+    dark ? cardDark : cardLight
+  }
 
   public static func gradient(at fraction: Double) -> BrandColor {
     gradientStart.mixed(with: gradientEnd, fraction: fraction)
