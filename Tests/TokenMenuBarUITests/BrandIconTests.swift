@@ -19,14 +19,14 @@ import Testing
   try FileManager.default.removeItem(at: directory)
 }
 
-@Test @MainActor func menuBarStripRendersForBothAppearances() {
-  let model = statusModel()
-  for dark in [true, false] {
-    let image = StatusItemRenderer.stripImage(for: model, dark: dark)
-    #expect(image.size.width == 520)
-    #expect(image.size.height == 28)
-    #expect(StatusItemRenderer.stripData(for: model, dark: dark)?.isEmpty == false)
-  }
+@Test(arguments: [true, false])
+@MainActor func menuBarStripRendersForBothAppearances(dark: Bool) {
+  let image = StatusItemRenderer.stripImage(for: statusModel(), dark: dark)
+  #expect(image.size == CGSize(width: 520, height: 28))
+  #expect(StatusItemRenderer.stripData(for: statusModel(), dark: dark)?.isEmpty == false)
+}
+
+@Test @MainActor func menuBarStripTakesTheRequestedWidth() {
   #expect(StatusItemRenderer.stripImage(for: .empty, dark: false, width: 200).size.width == 200)
 }
 

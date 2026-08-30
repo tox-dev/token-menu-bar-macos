@@ -39,6 +39,10 @@ private func inkFraction<V: View>(_ view: V, width: CGFloat, height: CGFloat) ->
   return Double(inked) / Double(image.width * image.height)
 }
 
+private let populatedEntry = UsageEntry(
+  date: fixedNow,
+  snapshot: WidgetSnapshot(rows: WidgetSnapshot.placeholder.rows, attention: true, updatedAt: fixedNow))
+
 private func temporaryStore() -> WidgetSnapshotStore {
   let root = FileManager.default.temporaryDirectory.appendingPathComponent("tmb-widget-\(UUID().uuidString)")
   return WidgetSnapshotStore(url: root.appendingPathComponent("widget.json"))
@@ -67,15 +71,15 @@ private func temporaryStore() -> WidgetSnapshotStore {
   #expect(UsageTimelineProvider.defaultStore().url.lastPathComponent == WidgetSnapshot.fileName)
 }
 
-@Test @MainActor func widgetViewsHostEveryFamily() {
-  let entry = UsageEntry(
-    date: fixedNow,
-    snapshot: WidgetSnapshot(rows: WidgetSnapshot.placeholder.rows, attention: true, updatedAt: fixedNow))
-  for family in [WidgetFamily.systemSmall, .systemMedium, .systemLarge] {
-    let view = UsageWidgetView(entry: entry, family: family)
-    #expect(view.rows.count == min(view.rowLimit, 3))
-    #expect(inkFraction(view, width: 300, height: 300) > 0)
-  }
+@Test(arguments: [WidgetFamily.systemSmall, .systemMedium, .systemLarge])
+@MainActor func widgetViewsRenderEveryFamily(family: WidgetFamily) {
+  let view = UsageWidgetView(entry: populatedEntry, family: family)
+  #expect(view.rows.count == min(view.rowLimit, 3))
+  #expect(inkFraction(view, width: 300, height: 300) > 0)
+}
+
+@Test @MainActor func widgetViewsHostEntryAndRows() {
+  let entry = populatedEntry
   #expect(UsageWidgetView(entry: entry, family: .systemLarge).rowLimit == 8)
   let empty = UsageWidgetView(
     entry: UsageEntry(date: fixedNow, snapshot: WidgetSnapshot(rows: [], attention: false, updatedAt: fixedNow)),

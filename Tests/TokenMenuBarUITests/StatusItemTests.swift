@@ -4,20 +4,24 @@ import TokenMenuBarCore
 
 @testable import TokenMenuBarUI
 
-@Test @MainActor func appIconDrawsEveryTone() {
-  for tone in [StatusIconTone.normal, .offline, .attention] {
-    for dark in [false, true] {
-      let image = AppIcon.image(height: 18, tone: tone, dark: dark)
-      #expect(image.size == CGSize(width: 18, height: 18))
-      #expect(image.tiffRepresentation != nil)
-      #expect(!image.isTemplate)
-    }
-  }
-  #expect(AppIcon.inkColor(tone: .offline, dark: false) == .systemGray)
-  #expect(AppIcon.inkColor(tone: .attention, dark: true) == .white)
-  #expect(AppIcon.inkColor(tone: .normal, dark: false) == .black)
-  let hosting = host(AppIconView(size: 24, tone: .attention), width: 40, height: 40)
-  #expect(hosting.fittingSize.width > 0)
+@Test(arguments: [StatusIconTone.normal, .offline, .attention], [false, true])
+@MainActor func appIconDrawsEveryTone(tone: StatusIconTone, dark: Bool) {
+  let image = AppIcon.image(height: 18, tone: tone, dark: dark)
+  #expect(image.size == CGSize(width: 18, height: 18))
+  #expect(image.tiffRepresentation != nil)
+  #expect(!image.isTemplate)
+}
+
+@Test(
+  arguments: [
+    (StatusIconTone.offline, false, NSColor.systemGray), (.attention, true, .white), (.normal, false, .black),
+  ])
+func appIconInkFollowsTone(tone: StatusIconTone, dark: Bool, ink: NSColor) {
+  #expect(AppIcon.inkColor(tone: tone, dark: dark) == ink)
+}
+
+@Test @MainActor func appIconViewDraws() {
+  #expect(host(AppIconView(size: 24, tone: .attention), width: 40, height: 40).fittingSize.width > 0)
   #expect(inkFraction(AppIconView(size: 24).environment(\.colorScheme, .dark), width: 40, height: 40) > 0)
 }
 

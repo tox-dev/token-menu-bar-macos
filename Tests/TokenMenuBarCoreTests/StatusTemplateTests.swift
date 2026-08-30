@@ -54,22 +54,20 @@ private func context(
   #expect(StatusTemplate.tokens.count == 13)
 }
 
-@Test func windowTagsAbbreviate() {
-  #expect(StatusTemplate.windowTag(session) == "5h")
-  #expect(
-    StatusTemplate.windowTag(QuotaWindow(id: "weekly", label: "Weekly", group: .weekly, usedPercent: 0, resetsAt: nil))
-      == "7d")
-  #expect(
-    StatusTemplate.windowTag(
-      QuotaWindow(id: "monthly", label: "Monthly", group: .monthly, usedPercent: 0, resetsAt: nil)) == "1mo")
-  #expect(StatusTemplate.windowTag(fable) == "FAB")
-  #expect(
-    StatusTemplate.windowTag(
-      QuotaWindow(id: "code_review:weekly", label: "x", group: .weekly, usedPercent: 0, resetsAt: nil)) == "WEE")
-  #expect(
-    StatusTemplate.windowTag(
-      QuotaWindow(id: "tangelo", label: "x", group: .other, usedPercent: 0, resetsAt: nil, scope: "GPT-5.3 Spark"))
-      == "GPT")
+@Test(
+  arguments: [
+    (session, "5h"),
+    (QuotaWindow(id: "weekly", label: "Weekly", group: .weekly, usedPercent: 0, resetsAt: nil), "7d"),
+    (QuotaWindow(id: "monthly", label: "Monthly", group: .monthly, usedPercent: 0, resetsAt: nil), "1mo"),
+    (fable, "FAB"),
+    (QuotaWindow(id: "code_review:weekly", label: "x", group: .weekly, usedPercent: 0, resetsAt: nil), "WEE"),
+    (
+      QuotaWindow(id: "tangelo", label: "x", group: .other, usedPercent: 0, resetsAt: nil, scope: "GPT-5.3 Spark"),
+      "GPT"
+    ),
+  ])
+func windowTagsAbbreviate(window: QuotaWindow, tag: String) {
+  #expect(StatusTemplate.windowTag(window) == tag)
 }
 
 private func input(

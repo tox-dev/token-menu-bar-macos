@@ -60,11 +60,17 @@ private func event(_ kind: NotificationEvent.Kind, id: String = UUID().uuidStrin
   #expect(log.text.contains("delivery failed"))
 }
 
-@Test func launchAtLoginServiceMapsStatuses() {
-  #expect(LaunchAtLoginService.status(.enabled) == .enabled)
-  #expect(LaunchAtLoginService.status(.notRegistered) == .notRegistered)
-  #expect(LaunchAtLoginService.status(.notFound) == .notFound)
-  #expect(LaunchAtLoginService.status(.requiresApproval) == .requiresApproval)
+@Test(
+  arguments: [
+    (SMAppService.Status.enabled, LaunchAtLoginBackend.Status.enabled), (.notRegistered, .notRegistered),
+    (.notFound, .notFound),
+    (.requiresApproval, .requiresApproval),
+  ])
+func launchAtLoginServiceMapsStatuses(status: SMAppService.Status, expected: LaunchAtLoginBackend.Status) {
+  #expect(LaunchAtLoginService.status(status) == expected)
+}
+
+@Test func launchAtLoginBackendRoundTripsTheLoginItemDatabase() {
   // the real backend reports whatever the login-item database says; assert the mapping it round-trips through
   let backend = LaunchAtLoginService.backend()
   let before = backend.status()

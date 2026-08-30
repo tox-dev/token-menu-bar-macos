@@ -127,23 +127,25 @@ private func makeProvider(_ auth: CursorAuth?, store: MemoryCursorStore? = nil) 
   #expect(notices.map(\.text) == ["This plan has unlimited usage.", "You have used 60% of your plan."])
 }
 
-@Test func cursorBucketPercentPrecedence() {
-  func bucket(
-    _ auto: Double?, _ api: Double?, _ total: Double?, used: Double? = nil, limit: Double? = nil
-  )
-    -> CursorAPI.Bucket
-  {
-    CursorAPI.Bucket(
-      enabled: true, used: used, limit: limit, remaining: nil, autoPercentUsed: auto, apiPercentUsed: api,
-      totalPercentUsed: total)
-  }
-  #expect(bucket(1, 2, 3).percentUsed == 3)
-  #expect(bucket(10, 20, nil).percentUsed == 15)
-  #expect(bucket(10, nil, nil).percentUsed == 10)
-  #expect(bucket(nil, 20, nil).percentUsed == 20)
-  #expect(bucket(nil, nil, nil, used: 25, limit: 100).percentUsed == 25)
-  #expect(bucket(nil, nil, nil, used: 25, limit: 0).percentUsed == nil)
-  #expect(bucket(nil, nil, nil).percentUsed == nil)
+private func cursorBucket(
+  auto: Double? = nil, api: Double? = nil, total: Double? = nil, used: Double? = nil, limit: Double? = nil
+) -> CursorAPI.Bucket {
+  CursorAPI.Bucket(
+    enabled: true, used: used, limit: limit, remaining: nil, autoPercentUsed: auto, apiPercentUsed: api,
+    totalPercentUsed: total)
+}
+
+@Test(
+  arguments: [
+    (cursorBucket(auto: 1, api: 2, total: 3), 3.0), (cursorBucket(auto: 10, api: 20), 15.0),
+    (cursorBucket(auto: 10), 10.0), (cursorBucket(api: 20), 20.0), (cursorBucket(used: 25, limit: 100), 25.0),
+    (cursorBucket(used: 25, limit: 0), nil), (cursorBucket(), nil),
+  ])
+func cursorBucketPercentPrecedence(bucket: CursorAPI.Bucket, percent: Double?) {
+  #expect(bucket.percentUsed == percent)
+}
+
+@Test func cursorSpendReflectsTheOnDemandBucket() {
   let disabledSpend = CursorAPI.UsageSummary(
     billingCycleStart: nil, billingCycleEnd: nil, membershipType: nil, isUnlimited: nil,
     individualUsage: CursorAPI.IndividualUsage(

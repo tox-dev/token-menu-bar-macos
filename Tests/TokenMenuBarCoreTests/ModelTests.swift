@@ -13,15 +13,22 @@ import Testing
   #expect(ProviderID.claude.loginHint.contains("claude"))
 }
 
-@Test func severityParsing() {
-  #expect(Severity(raw: "warning") == .warning)
-  #expect(Severity(raw: "CRITICAL") == .critical)
-  #expect(Severity(raw: "limit_reached") == .critical)
+@Test(arguments: [("warning", Severity.warning), ("CRITICAL", .critical), ("limit_reached", .critical)])
+func severityReadsVendorStrings(raw: String, expected: Severity) {
+  #expect(Severity(raw: raw) == expected)
+}
+
+@Test func severityWithoutARawStringIsNormal() {
   #expect(Severity(raw: nil) == .normal)
-  #expect(Severity(percent: 74) == .normal)
-  #expect(Severity(percent: 75) == .warning)
-  #expect(Severity(percent: 90) == .critical)
-  #expect(WindowGroup.session < .weekly && WindowGroup.weekly < .monthly && WindowGroup.monthly < .other)
+}
+
+@Test(arguments: [(74.0, Severity.normal), (75.0, .warning), (89.9, .warning), (90.0, .critical)])
+func severityThresholdsOnPercent(percent: Double, expected: Severity) {
+  #expect(Severity(percent: percent) == expected)
+}
+
+@Test func windowGroupsSortShortestFirst() {
+  #expect([WindowGroup.other, .monthly, .weekly, .session].sorted() == [.session, .weekly, .monthly, .other])
 }
 
 @Test func quotaWindowClampsAndComputes() {
