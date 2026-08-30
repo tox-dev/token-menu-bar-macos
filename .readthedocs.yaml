@@ -8,5 +8,6 @@ build:
     python: "3.13"
   commands:
     - version=$(python3 -c "import pathlib,tomllib;print(tomllib.loads(pathlib.Path('mise.toml').read_text())['tools']['hugo'])")
-    - curl -fsSL "https://github.com/gohugoio/hugo/releases/download/v${version}/hugo_extended_${version}_linux-amd64.tar.gz" | tar -xz hugo
+    - curl -fsSL "https://github.com/gohugoio/hugo/releases/download/v${version}/hugo_extended_${version}_linux-amd64.tar.gz"
+      | tar -xz hugo
     - ./hugo --source website --gc --minify --baseURL "${READTHEDOCS_CANONICAL_URL}" --destination "${READTHEDOCS_OUTPUT}/html"
