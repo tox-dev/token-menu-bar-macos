@@ -48,7 +48,7 @@ private func makeFeatureDependencies(
   let controller = AppController(dependencies: dependencies)
   #expect(controller.environment.isDemo)
   controller.environment.actions.setDemoMode(true)
-  #expect(dependencies.settings.demoMode)
+  #expect(dependencies.settings.demoMode == true)
   #expect(recorder.relaunched == 1)
   #expect(dependencies.log.text.contains("demo mode on"))
   let tab = SettingsTab(environment: controller.environment)
@@ -201,11 +201,17 @@ private func makeFeatureDependencies(
     LiveDependencies.widgetStore(supportDirectory: root, containerURL: { _ in nil }).url
       == root.appendingPathComponent("widget.json"))
   #expect(LiveDependencies.widgetStore(supportDirectory: root).url.lastPathComponent == "widget.json")
-  let fake = root.appendingPathComponent("Fake.app")
-  try? FileManager.default.createDirectory(at: fake, withIntermediateDirectories: true)
-  let bundle = Bundle(url: fake)!
+  // a stub launcher, so the test never asks macOS to open a bundle
   let terminated = await withCheckedContinuation { continuation in
-    LiveDependencies.relaunch(bundle: bundle, workspace: NSWorkspace.shared) { continuation.resume(returning: true) }
+    LiveDependencies.relaunch(
+      bundle: .main,
+      open: { url, configuration, done in
+        #expect(url == Bundle.main.bundleURL)
+        #expect(configuration.createsNewApplicationInstance)
+        #expect(configuration.environment["TOKEN_MENU_BAR_DEMO"] == nil)
+        done()
+      },
+      then: { continuation.resume(returning: true) })
   }
   #expect(terminated)
 }

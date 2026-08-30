@@ -43,7 +43,7 @@ public enum LiveDependencies {
   ) throws -> AppDependencies {
     let log = LogBuffer(fileURL: paths.supportDirectory.appendingPathComponent("log.json"))
     let settings = TokenMenuBarCore.Settings(defaults: defaults)
-    let isDemo = paths.demoRequested || settings.demoMode
+    let isDemo = settings.demoMode ?? paths.demoRequested
     let history = try UsageHistoryStore(
       url: paths.supportDirectory.appendingPathComponent(isDemo ? "usage-demo.sqlite" : "usage.sqlite"))
     if isDemo { seedDemo(history, log: log) }
@@ -72,7 +72,7 @@ public enum LiveDependencies {
       chooseExportURL: { chosen(exportPanel()) { $0.runModal() } },
       chooseDirectory: { chosen(directoryPanel($0, paths: paths)) { $0.runModal() } },
       terminate: { NSApplication.shared.terminate(nil) },
-      relaunch: { relaunch(bundle: .main, workspace: NSWorkspace.shared) { NSApplication.shared.terminate(nil) } },
+      relaunch: { relaunch(bundle: .main, open: workspaceLauncher) { NSApplication.shared.terminate(nil) } },
       widgetStore: isDemo ? nil : widgetStore(supportDirectory: paths.supportDirectory),
       snapshotCache: SnapshotCache(
         url: paths.supportDirectory.appendingPathComponent(isDemo ? "snapshots-demo.json" : "snapshots.json")),
@@ -171,13 +171,15 @@ public enum LiveDependencies {
 
   @MainActor
   public static func relaunch(
-    bundle: Bundle, workspace: NSWorkspace, then terminate: @escaping @MainActor @Sendable () -> Void
+    bundle: Bundle,
+    open: @MainActor (URL, NSWorkspace.OpenConfiguration, @escaping @Sendable () -> Void) -> Void,
+    then terminate: @escaping @MainActor @Sendable () -> Void
   ) {
     let configuration = NSWorkspace.OpenConfiguration()
     configuration.createsNewApplicationInstance = true
-    workspace.openApplication(at: bundle.bundleURL, configuration: configuration) { _, _ in
-      Task { @MainActor in terminate() }
-    }
+    // Start the replacement without the demo flag this instance may have been launched with.
+    configuration.environment = ProcessInfo.processInfo.environment.filter { $0.key != "TOKEN_MENU_BAR_DEMO" }
+    open(bundle.bundleURL, configuration) { Task { @MainActor in terminate() } }
   }
 
   /// Resolves a home directory the sandbox would otherwise block, using the bookmark the user granted for it.

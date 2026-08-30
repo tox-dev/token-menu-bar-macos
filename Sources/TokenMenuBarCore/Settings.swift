@@ -76,7 +76,9 @@ public final class Settings {
   public var automaticUpdates: Bool { didSet { store(automaticUpdates, key: .automaticUpdates) } }
   public var lastLaunchedVersion: String? { didSet { store(lastLaunchedVersion, key: .lastLaunchedVersion) } }
   public var accessBookmarks: [String: Data] { didSet { storeCodable(accessBookmarks, key: .accessBookmarks) } }
-  public var demoMode: Bool { didSet { store(demoMode, key: .demoMode) } }
+  /// nil follows TOKEN_MENU_BAR_DEMO or --demo; once the user ticks the box their choice wins, so turning demo
+  /// off in an instance the environment started actually leaves demo mode.
+  public var demoMode: Bool? { didSet { store(demoMode, key: .demoMode) } }
 
   public init(defaults: UserDefaults) {
     self.defaults = defaults
@@ -109,7 +111,7 @@ public final class Settings {
     automaticUpdates = defaults.object(forKey: Key.automaticUpdates.rawValue) as? Bool ?? true
     lastLaunchedVersion = defaults.string(forKey: Key.lastLaunchedVersion.rawValue)
     accessBookmarks = Self.loadCodable([String: Data].self, defaults, .accessBookmarks) ?? [:]
-    demoMode = defaults.bool(forKey: Key.demoMode.rawValue)
+    demoMode = defaults.object(forKey: Key.demoMode.rawValue) as? Bool
     loading = false
   }
 

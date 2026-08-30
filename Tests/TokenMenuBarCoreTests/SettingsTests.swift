@@ -134,8 +134,9 @@ private func freshDefaults() -> UserDefaults {
   let name = "flush-\(UUID().uuidString)"
   let defaults = UserDefaults(suiteName: name)!
   let settings = Settings(defaults: defaults)
+  #expect(settings.demoMode == nil)
   settings.demoMode = true
   settings.flush()
-  #expect(Settings(defaults: UserDefaults(suiteName: name)!).demoMode)
+  #expect(Settings(defaults: UserDefaults(suiteName: name)!).demoMode == true)
   defaults.removePersistentDomain(forName: name)
 }
