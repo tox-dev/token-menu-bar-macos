@@ -104,6 +104,21 @@ func host<V: View>(_ view: V, width: CGFloat = 520, height: CGFloat = 700) -> NS
 }
 
 @MainActor
+func inkFraction<V: View>(_ view: V, width: CGFloat = 520, height: CGFloat = 700) -> Double {
+  let hosting = host(view, width: width, height: height)
+  guard let rep = hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds) else { return 0 }
+  hosting.cacheDisplay(in: hosting.bounds, to: rep)
+  guard let image = rep.cgImage, image.width > 0, image.height > 0 else { return 0 }
+  var pixels = [UInt8](repeating: 0, count: image.width * image.height * 4)
+  let context = CGContext(
+    data: &pixels, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: image.width * 4,
+    space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+  context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+  let inked = stride(from: 3, to: pixels.count, by: 4).count { pixels[$0] > 8 }
+  return Double(inked) / Double(image.width * image.height)
+}
+
+@MainActor
 func statusModel(format: StatusFormat = .stacked) -> StatusItemModel {
   let snapshots: [ProviderID: ProviderSnapshot] = [
     .claude: sampleSnapshot(.claude), .codex: sampleSnapshot(.codex, percent: 80),

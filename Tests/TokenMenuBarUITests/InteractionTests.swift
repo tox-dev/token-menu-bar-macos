@@ -5,8 +5,10 @@ import TokenMenuBarCore
 
 @testable import TokenMenuBarUI
 
-@Test @MainActor func uiActionsDefaultsAreNoOps() {
+@Test @MainActor func uiActionsDefaultsChangeNothing() {
   let actions = UIActions()
+  let environment = try! makeEnvironment()
+  let before = environment.settings.demoMode
   actions.refresh()
   actions.openURL(URL(string: "https://example.com")!)
   actions.copy("x")
@@ -22,6 +24,10 @@ import TokenMenuBarCore
   actions.checkForUpdates()
   actions.quit()
   actions.settingsChanged()
+  actions.setDemoMode(true)
+  // the defaults are placeholders: none of them may reach settings, the log or the pasteboard
+  #expect(environment.settings.demoMode == before)
+  #expect(environment.log.text.isEmpty)
 }
 
 @Test @MainActor func hoverStatePresentsAfterDelayAndToggles() async {
@@ -60,7 +66,7 @@ import TokenMenuBarCore
     provider: .claude, state: ProviderState(snapshot: sampleSnapshot(.claude), availability: .current), samples: [:],
     now: fixedNow)
   for row in card.rows {
-    _ = host(WindowHelpView(row: row), width: 300, height: 200)
+    #expect(inkFraction(WindowHelpView(row: row), width: 300, height: 200) > 0)
   }
   let environment = try! makeEnvironment()
   var opened: [URL] = []
@@ -131,9 +137,9 @@ import TokenMenuBarCore
   #expect(presenter.selectedDate == nil)
   chart.pick(CGPoint(x: 20, y: 0), in: plot) { _ in fixedNow }
   #expect(presenter.selectedDate != nil)
-  _ = host(chart, width: 400, height: 240)
-  _ = host(EmptyHistoryView(), width: 300, height: 200)
-  _ = host(UpdatingBadge(), width: 100, height: 30)
+  #expect(inkFraction(chart, width: 400, height: 240) > 0)
+  #expect(inkFraction(EmptyHistoryView(), width: 300, height: 200) > 0)
+  #expect(inkFraction(UpdatingBadge(), width: 100, height: 30) > 0)
 }
 
 @Test @MainActor func historyTabShowsEmptyAndUpdatingStates() async throws {
@@ -142,13 +148,13 @@ import TokenMenuBarCore
   presenter.reload()
   await presenter.waitForLoad()
   #expect(presenter.state.data?.isEmpty == true)
-  _ = host(HistoryTab(environment: environment), width: 700, height: 600)
+  #expect(inkFraction(HistoryTab(environment: environment), width: 700, height: 600) > 0)
   presenter.reload()
   guard case .loaded(_, true, _) = presenter.state else {
     Issue.record("expected refreshing state")
     return
   }
-  _ = host(HistoryTab(environment: environment), width: 700, height: 600)
+  #expect(inkFraction(HistoryTab(environment: environment), width: 700, height: 600) > 0)
   await presenter.waitForLoad()
 }
 

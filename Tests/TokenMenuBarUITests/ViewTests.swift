@@ -30,7 +30,7 @@ import TokenMenuBarCore
 @Test @MainActor func tabPickerRoundTrips() {
   var selection = PopoverTab.usage
   let binding = Binding(get: { selection }, set: { selection = $0 })
-  _ = host(TabPicker(selection: binding), width: 300, height: 40)
+  #expect(inkFraction(TabPicker(selection: binding), width: 300, height: 40) > 0)
   let coordinator = TabPicker.Coordinator(selection: binding)
   let control = NSSegmentedControl(
     labels: PopoverTab.allCases.map(\.rawValue), trackingMode: .selectOne, target: nil, action: nil)
@@ -47,25 +47,25 @@ import TokenMenuBarCore
 
 @Test @MainActor func usageTabRendersCardsAndEmptyStates() throws {
   let environment = try makeEnvironment()
-  _ = host(UsageTab(environment: environment))
+  #expect(inkFraction(UsageTab(environment: environment)) > 0)
   environment.settings.enabledProviders = []
   environment.state.remove(.claude)
   environment.state.remove(.codex)
-  _ = host(UsageTab(environment: environment))
+  #expect(inkFraction(UsageTab(environment: environment)) > 0)
   let empty = try makeEnvironment(populate: false)
   empty.state.update(.claude) {
     $0.availability = .authenticationRequired
     $0.credentialState = .expired(fixedNow)
   }
   empty.state.update(.codex) { $0.availability = .networkUnavailable }
-  _ = host(UsageTab(environment: empty))
+  #expect(inkFraction(UsageTab(environment: empty)) > 0)
   let stale = try makeEnvironment(populate: false)
   stale.state.update(.claude) {
     $0.snapshot = sampleSnapshot(.claude)
     $0.availability = .stale
     $0.lastError = "network down"
   }
-  _ = host(UsageTab(environment: stale))
+  #expect(inkFraction(UsageTab(environment: stale)) > 0)
   let card = ProviderCardView(card: empty.cards[0], environment: empty)
   #expect(card.icon(for: .authenticationRequired) == "person.crop.circle.badge.exclamationmark")
   #expect(card.icon(for: .networkUnavailable) == "wifi.slash")
@@ -80,7 +80,7 @@ import TokenMenuBarCore
     provider: .claude, state: ProviderState(snapshot: snapshot, availability: .current), samples: [:], now: fixedNow)
   for row in card.rows {
     let view = WindowRowView(row: row, now: fixedNow)
-    _ = host(view, width: 400, height: 120)
+    #expect(inkFraction(view, width: 400, height: 120) > 0)
   }
   let ahead = WindowRow(
     key: card.rows[0].key, window: card.rows[0].window,
@@ -98,13 +98,17 @@ import TokenMenuBarCore
     pace: PaceEstimate(status: .onTrack, expectedPercent: 30, ratio: 1, projectedExhaustion: nil), countdown: "1h",
     resetClock: "x")
   #expect(WindowRowView(row: onTrack, now: fixedNow).paceColor == .green)
-  _ = host(SpendView(spend: snapshot.spend!, provider: .claude, now: fixedNow), width: 400, height: 200)
-  _ = host(
-    SpendView(spend: SpendControl(enabled: false, disabledReason: "off"), provider: .codex, now: fixedNow), width: 400,
-    height: 200)
-  _ = host(CreditsView(credits: snapshot.credits, resetCredits: snapshot.resetCredits), width: 400, height: 200)
-  _ = host(CreditsView(credits: nil, resetCredits: nil), width: 400, height: 200)
-  _ = host(LocalUsageView(usage: snapshot.localUsage!), width: 400, height: 200)
+  #expect(inkFraction(SpendView(spend: snapshot.spend!, provider: .claude, now: fixedNow), width: 400, height: 200) > 0)
+  #expect(
+    inkFraction(
+      SpendView(spend: SpendControl(enabled: false, disabledReason: "off"), provider: .codex, now: fixedNow),
+      width: 400,
+      height: 200) > 0)
+  #expect(
+    inkFraction(CreditsView(credits: snapshot.credits, resetCredits: snapshot.resetCredits), width: 400, height: 200)
+      > 0)
+  #expect(inkFraction(CreditsView(credits: nil, resetCredits: nil), width: 400, height: 200) == 0)
+  #expect(inkFraction(LocalUsageView(usage: snapshot.localUsage!), width: 400, height: 200) > 0)
   #expect(LocalUsageView.money(3.456) == "$3.46")
   #expect(LocalUsageView.money(42.4) == "$42")
 }
@@ -126,15 +130,15 @@ import TokenMenuBarCore
     ProviderAnalytics(
       provider: .codex, points: [AnalyticsPoint(day: DayStamp.string(fixedNow), metric: .turns, series: "m", value: 3)],
       fetchedAt: fixedNow))
-  _ = host(HistoryTab(environment: environment), width: 700, height: 800)
+  #expect(inkFraction(HistoryTab(environment: environment), width: 700, height: 800) > 0)
   let presenter = environment.historyPresenter
   presenter.reload()
   await presenter.waitForLoad()
-  _ = host(HistoryTab(environment: environment), width: 700, height: 800)
+  #expect(inkFraction(HistoryTab(environment: environment), width: 700, height: 800) > 0)
   environment.settings.historyRange = .custom
   environment.settings.historyStacked = true
   environment.settings.historyRollup = .day
-  _ = host(HistoryTab(environment: environment), width: 700, height: 800)
+  #expect(inkFraction(HistoryTab(environment: environment), width: 700, height: 800) > 0)
   let data = presenter.state.data!
   let chart = UsageChart(data: data, presenter: presenter, stacked: false, timeZone: .current)
   #expect(chart.opacity(data.series[0].key) == 1)
@@ -145,19 +149,22 @@ import TokenMenuBarCore
     UsageChart.axisFormat(for: fixedNow...fixedNow.addingTimeInterval(3600))
       != UsageChart.axisFormat(for: fixedNow...fixedNow.addingTimeInterval(5 * 86400)))
   presenter.select(x: fixedNow)
-  _ = host(UsageChart(data: data, presenter: presenter, stacked: true, timeZone: .current), width: 400, height: 240)
-  _ = host(HistoryInspector(environment: environment), width: 240, height: 300)
+  #expect(
+    inkFraction(
+      UsageChart(data: data, presenter: presenter, stacked: true, timeZone: .current), width: 400, height: 240) > 0)
+  #expect(inkFraction(HistoryInspector(environment: environment), width: 240, height: 300) > 0)
   environment.settings.historyHiddenKeys = [data.series[0].key]
-  _ = host(HistoryInspector(environment: environment), width: 240, height: 300)
+  #expect(inkFraction(HistoryInspector(environment: environment), width: 240, height: 300) > 0)
   presenter.reload()
   await presenter.waitForLoad()
-  _ = host(
-    AnalyticsSectionsView(provider: .codex, sections: presenter.analytics[.codex]!, environment: environment),
-    width: 500, height: 300)
+  #expect(
+    inkFraction(
+      AnalyticsSectionsView(provider: .codex, sections: presenter.analytics[.codex]!, environment: environment),
+      width: 500, height: 300) > 0)
   try await history.breakDatabase()
   presenter.reload()
   await presenter.waitForLoad()
-  _ = host(HistoryTab(environment: environment), width: 700, height: 800)
+  #expect(inkFraction(HistoryTab(environment: environment), width: 700, height: 800) > 0)
 }
 
 @Test @MainActor func settingsTabRendersAndMutates() throws {
@@ -166,11 +173,11 @@ import TokenMenuBarCore
   environment.actions.settingsChanged = { changes += 1 }
   environment.settings.statusFormat = .custom
   environment.settings.customTemplate = "{label} {pct}"
-  _ = host(SettingsTab(environment: environment), width: 520, height: 1200)
+  #expect(inkFraction(SettingsTab(environment: environment), width: 520, height: 1200) > 0)
   environment.launchAtLoginStatus = .enabled
   environment.canCheckForUpdates = false
   environment.isSandboxed = false
-  _ = host(SettingsTab(environment: environment), width: 520, height: 1200)
+  #expect(inkFraction(SettingsTab(environment: environment), width: 520, height: 1200) > 0)
   let list = WindowSelectionList(environment: environment)
   #expect(list.rows.count == 6)
   let key = WindowKey(provider: .claude, windowID: "session")
@@ -187,11 +194,11 @@ import TokenMenuBarCore
   list.setLabel(key, "")
   #expect(environment.settings.shortLabels[key] == nil)
   #expect(changes == 6)
-  _ = host(WindowSelectionList(environment: environment), width: 400, height: 300)
+  #expect(inkFraction(WindowSelectionList(environment: environment), width: 400, height: 300) > 0)
   let empty = try makeEnvironment(populate: false)
-  _ = host(WindowSelectionList(environment: empty), width: 400, height: 100)
-  _ = host(StatusPreview(model: statusModel()), width: 300, height: 40)
-  _ = host(LogSection(environment: environment), width: 400, height: 300)
+  #expect(inkFraction(WindowSelectionList(environment: empty), width: 400, height: 100) > 0)
+  #expect(inkFraction(StatusPreview(model: statusModel()), width: 300, height: 40) > 0)
+  #expect(inkFraction(LogSection(environment: environment), width: 400, height: 300) > 0)
 }
 
 @Test @MainActor func logTextViewUpdatesInPlace() {
@@ -220,8 +227,8 @@ func findScrollView(_ view: NSView) -> NSScrollView? {
 }
 
 @Test @MainActor func componentsRender() {
-  _ = host(Banner("see https://example.com/docs now", tone: .info), width: 300, height: 60)
-  _ = host(Banner("plain"), width: 300, height: 60)
+  #expect(inkFraction(Banner("see https://example.com/docs now", tone: .info), width: 300, height: 60) > 0)
+  #expect(inkFraction(Banner("plain"), width: 300, height: 60) > 0)
   let attributed = LinkifiedText.attributed("a https://x.y/z) b")
   #expect(attributed.runs.contains { $0.link != nil })
   var copied: [String] = []
@@ -229,23 +236,26 @@ func findScrollView(_ view: NSView) -> NSScrollView? {
   let chip = ChipView(
     chip: Chip(text: "Max", link: URL(string: "https://claude.ai")!), onCopy: { copied.append($0) },
     onOpen: { opened.append($0) })
-  _ = host(chip, width: 200, height: 40)
-  _ = host(
-    ChipView(chip: Chip(text: "plain"), onCopy: { copied.append($0) }, onOpen: { opened.append($0) }), width: 200,
-    height: 40)
-  _ = host(UsageBar(percent: 150, color: .red), width: 200, height: 10)
-  _ = host(MetricCell(title: "t", value: "v", help: "h"), width: 200, height: 40)
-  _ = host(WrappingHStack { ForEach(0..<12, id: \.self) { Text("chip \($0)").padding(4) } }, width: 200, height: 200)
+  #expect(inkFraction(chip, width: 200, height: 40) > 0)
+  #expect(
+    inkFraction(
+      ChipView(chip: Chip(text: "plain"), onCopy: { copied.append($0) }, onOpen: { opened.append($0) }), width: 200,
+      height: 40) > 0)
+  #expect(inkFraction(UsageBar(percent: 150, color: .red), width: 200, height: 10) > 0)
+  #expect(inkFraction(MetricCell(title: "t", value: "v", help: "h"), width: 200, height: 40) > 0)
+  #expect(
+    inkFraction(
+      WrappingHStack { ForEach(0..<12, id: \.self) { Text("chip \($0)").padding(4) } }, width: 200, height: 200) > 0)
   let layout = WrappingHStack()
   #expect(layout.horizontalSpacing == 6)
   var size = CGSize.zero
   SizeKey.reduce(value: &size) { CGSize(width: 1, height: 2) }
   SizeKey.reduce(value: &size) { .zero }
   #expect(size == CGSize(width: 1, height: 2))
-  _ = host(Color.red.frame(width: 10, height: 10).measureSize { _ in }, width: 20, height: 20)
-  _ = host(ScrollingTab { Text("x") }, width: 200, height: 200)
+  #expect(inkFraction(Color.red.frame(width: 10, height: 10).measureSize { _ in }, width: 20, height: 20) > 0)
+  #expect(inkFraction(ScrollingTab { Text("x") }, width: 200, height: 200) > 0)
   #expect(Color(HSBColor(hue: 0.3, saturation: 0.5, brightness: 0.5)) != Color.clear)
-  _ = host(Text("help").hoverHelp { Text("tip") }, width: 100, height: 40)
+  #expect(inkFraction(Text("help").hoverHelp { Text("tip") }, width: 100, height: 40) > 0)
   let plain = NSView(frame: .zero)
   ScrollerStyler.apply(from: plain)
   let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 100, height: 100))

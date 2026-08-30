@@ -18,7 +18,7 @@ import TokenMenuBarCore
   #expect(AppIcon.inkColor(tone: .normal, dark: false) == .black)
   let hosting = host(AppIconView(size: 24, tone: .attention), width: 40, height: 40)
   #expect(hosting.fittingSize.width > 0)
-  _ = host(AppIconView(size: 24).environment(\.colorScheme, .dark), width: 40, height: 40)
+  #expect(inkFraction(AppIconView(size: 24).environment(\.colorScheme, .dark), width: 40, height: 40) > 0)
 }
 
 @Test @MainActor func providerGlyphs() {

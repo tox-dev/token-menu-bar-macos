@@ -52,9 +52,9 @@ private func makeFeatureDependencies(
   #expect(recorder.relaunched == 1)
   #expect(dependencies.log.text.contains("demo mode on"))
   let tab = SettingsTab(environment: controller.environment)
-  _ = host(tab, width: 760, height: 900)
+  #expect(inkFraction(tab, width: 760, height: 900) > 0)
   let usage = UsageTab(environment: controller.environment)
-  _ = host(usage, width: 760, height: 600)
+  #expect(inkFraction(usage, width: 760, height: 600) > 0)
 }
 
 @Test @MainActor func widgetSnapshotsArePublishedOnStatusRebuild() async throws {
@@ -236,10 +236,13 @@ private func makeFeatureDependencies(
 }
 
 @Test @MainActor func helperViewsHost() {
-  _ = host(
-    HelpText("A fairly long explanation that needs to wrap across several lines inside the popover."), width: 300,
-    height: 100)
-  _ = host(EmptyStateView(title: "Nothing", systemImage: "hourglass", description: "Waiting"), width: 300, height: 100)
+  #expect(
+    inkFraction(
+      HelpText("A fairly long explanation that needs to wrap across several lines inside the popover."), width: 300,
+      height: 100) > 0)
+  #expect(
+    inkFraction(
+      EmptyStateView(title: "Nothing", systemImage: "hourglass", description: "Waiting"), width: 300, height: 100) > 0)
   var measured: [(String, CGSize)] = []
   let environment = try! makeEnvironment()
   let root = RootView(environment: environment, onMeasure: { measured.append(($0, $1)) }, onTabChange: { _ in })

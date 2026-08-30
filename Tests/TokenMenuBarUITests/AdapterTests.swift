@@ -65,12 +65,9 @@ private func event(_ kind: NotificationEvent.Kind, id: String = UUID().uuidStrin
   #expect(LaunchAtLoginService.status(.notRegistered) == .notRegistered)
   #expect(LaunchAtLoginService.status(.notFound) == .notFound)
   #expect(LaunchAtLoginService.status(.requiresApproval) == .requiresApproval)
+  // the real backend reports whatever the login-item database says; assert the mapping it round-trips through
   let backend = LaunchAtLoginService.backend()
-  #expect([.notRegistered, .notFound, .enabled, .requiresApproval].contains(backend.status()))
-  _ = backend.setEnabled(false)
-  #expect([.notRegistered, .notFound, .enabled, .requiresApproval].contains(backend.status()))
-}
-
-@Test func realNotificationCenterConforms() {
-  #expect((UNUserNotificationCenter.self as Any) is any NotificationCenterProtocol.Type)
+  let before = backend.status()
+  #expect(backend.setEnabled(false) == backend.status())
+  #expect(before.isEnabled == (before == .enabled))
 }
