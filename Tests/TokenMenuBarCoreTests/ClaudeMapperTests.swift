@@ -1,191 +1,171 @@
 import Foundation
 import Testing
+import TokenMenuBarCore
 
-@testable import TokenMenuBarCore
-
-@Test func claudeUsageDecodesLimitsAndWindows() {
-  let response = Fixtures.decode(ClaudeAPI.UsageResponse.self, "claude_usage")
-  #expect(response.limits.map(\.kind) == ["session", "weekly_scoped"])
-  #expect(Set(response.windows.keys) == ["five_hour", "nimbus_quill"])
-  #expect(response.spend?.canToggle == false)
-  #expect(response.extraUsage?.disabledReason == "org_level_disabled_until")
+@MainActor
+private func claudeSnapshot(
+  usage: StubTransport.Response, profile: StubTransport.Response = .json("claude_profile"),
+  credentials: ClaudeOAuthCredentials = validClaude
+) async -> ProviderSnapshot? {
+  let transport = StubTransport()
+  transport.on(path: "/api/oauth/usage", usage)
+  transport.on(path: "/api/oauth/profile", profile)
+  let provider = claudeProvider(MemoryClaudeStore(credentials), transport: transport)
+  guard case .success(let snapshot) = await provider.fetch(now: fixedNow, options: FetchOptions()).outcome else {
+    Issue.record("expected a snapshot")
+    return nil
+  }
+  return snapshot
 }
 
-@Test func claudeDynamicKeysIgnoreIntegers() {
-  #expect(ClaudeAPI.UsageResponse.DynamicKey(intValue: 1) == nil)
-  #expect(ClaudeAPI.UsageResponse.DynamicKey(stringValue: "x").intValue == nil)
+/// A credential that names no plan, so the profile decides the identity rather than the Keychain entry
+private let plainClaude = ClaudeOAuthCredentials(
+  accessToken: "tok", refreshToken: nil, expiresAt: fixedNow.addingTimeInterval(86400))
+
+/// The usage response carries a vendor-chosen key per window, so the decoder reads string keys and refuses integers.
+@Test func claudeWindowKeysAreStringsOnly() async throws {
+  let usage = #"{"12": {"utilization": 5}, "five_hour": {"utilization": 12}}"#
+  let snapshot = try #require(await claudeSnapshot(usage: .text(usage)))
+  #expect(snapshot.windows.map(\.id).sorted() == ["12", "session"])
 }
 
-@Test func claudeWindowsPreferLimitsArray() {
-  let windows = ClaudeMapper.windows(Fixtures.decode(ClaudeAPI.UsageResponse.self, "claude_usage"))
-  #expect(windows.map(\.id) == ["session", "weekly:fable"])
-  #expect(windows[0].usedPercent == 36)
-  #expect(windows[0].isActive == false)
-  #expect(windows[0].duration == 18000)
-  #expect(windows[1].label == "Fable")
-  #expect(windows[1].scope == "Fable")
-  #expect(windows[1].resetsAt == ISODate.parse("2026-09-01T14:59:59.522121+00:00"))
+@Test func claudeReportsTheLimitsArrayAsWindows() async throws {
+  let snapshot = try #require(await claudeSnapshot(usage: .json("claude_usage")))
+  #expect(snapshot.windows.map(\.id) == ["session", "weekly:fable"])
+  #expect(snapshot.windows[0].usedPercent == 36)
+  #expect(snapshot.windows[0].isActive == false)
+  #expect(snapshot.windows[0].duration == 18000)
+  #expect(snapshot.windows[1].label == "Fable")
+  #expect(snapshot.windows[1].scope == "Fable")
+  #expect(snapshot.windows[1].resetsAt == ISODate.parse("2026-09-01T14:59:59.522121+00:00"))
 }
 
-@Test func claudeWindowsFallBackToFlatKeys() {
-  let response = ClaudeAPI.UsageResponse(
-    limits: [],
-    windows: [
-      "five_hour": .init(utilization: 12, resetsAt: "2026-08-29T18:00:00Z"),
-      "seven_day_opus": .init(utilization: 40, resetsAt: nil),
-      "seven_day_mystery": .init(utilization: 5, resetsAt: nil),
-      "tangelo": .init(utilization: 1, resetsAt: nil),
-    ],
-    spend: nil,
-    extraUsage: nil
-  )
-  let windows = ClaudeMapper.windows(response).sorted { $0.id < $1.id }
-  #expect(windows.map(\.id) == ["session", "seven_day_mystery", "tangelo", "weekly:opus"])
+@Test func claudeFallsBackToTheFlatWindowKeys() async throws {
+  let usage = #"""
+    {"five_hour": {"utilization": 12, "resets_at": "2026-08-29T18:00:00Z"},
+     "seven_day_opus": {"utilization": 40}, "seven_day_mystery": {"utilization": 5}, "tangelo": {"utilization": 1}}
+    """#
+  let windows = try #require(await claudeSnapshot(usage: .text(usage))).windows
+  #expect(windows.map(\.id).sorted() == ["session", "seven_day_mystery", "tangelo", "weekly:opus"])
   #expect(windows.first { $0.id == "seven_day_mystery" }?.label == "Seven Day Mystery")
   #expect(windows.first { $0.id == "seven_day_mystery" }?.group == .weekly)
   #expect(windows.first { $0.id == "tangelo" }?.group == .other)
   #expect(windows.first { $0.id == "weekly:opus" }?.duration == 604_800)
 }
 
-private let limitCases: [(String, String?, String?, String, String)] = [
-  ("session", nil, nil, "session", "Current session"),
-  ("weekly_all", nil, nil, "weekly", "All models"),
-  ("weekly_scoped", "Opus 4", nil, "weekly:opus-4", "Opus 4"),
-  ("weekly_scoped", nil, "cowork", "weekly:cowork", "cowork"),
-  ("daily_scoped", "Sonnet", nil, "daily_scoped:sonnet", "Daily Scoped Sonnet"),
-  ("monthly", nil, nil, "monthly", "Monthly"),
-]
-
-@Test(arguments: limitCases)
-func claudeLimitKindsMapToWindowIDs(kind: String, model: String?, surface: String?, id: String, label: String) {
-  let limit = ClaudeAPI.Limit(
-    kind: kind, group: kind == "monthly" ? "monthly" : nil, percent: 10, severity: "warning", resetsAt: nil,
-    scope: model == nil && surface == nil
-      ? nil : .init(model: model.map { .init(id: nil, displayName: $0) }, surface: surface),
-    isActive: nil
-  )
-  let window = ClaudeMapper.window(limit)
-  #expect(window.id == id)
-  #expect(window.label == label)
-  #expect(window.severity == .warning)
-  #expect(window.isActive)
-  if kind == "monthly" { #expect(window.group == .monthly) }
+@Test(
+  arguments: [
+    (#"{"kind": "session", "percent": 10, "severity": "warning"}"#, "session", "Current session"),
+    (#"{"kind": "weekly_all", "percent": 10, "severity": "warning"}"#, "weekly", "All models"),
+    (
+      #"{"kind": "weekly_scoped", "percent": 10, "severity": "warning", "scope": {"model": {"display_name": "Opus 4"}}}"#,
+      "weekly:opus-4", "Opus 4"
+    ),
+    (
+      #"{"kind": "weekly_scoped", "percent": 10, "severity": "warning", "scope": {"surface": "cowork"}}"#,
+      "weekly:cowork", "cowork"
+    ),
+    (
+      #"{"kind": "daily_scoped", "percent": 10, "severity": "warning", "scope": {"model": {"display_name": "Sonnet"}}}"#,
+      "daily_scoped:sonnet", "Daily Scoped Sonnet"
+    ),
+    (#"{"kind": "monthly", "group": "monthly", "percent": 10, "severity": "warning"}"#, "monthly", "Monthly"),
+  ])
+func claudeNamesAWindowAfterItsLimitKind(limit: String, id: String, label: String) async throws {
+  let snapshot = try #require(await claudeSnapshot(usage: .text(#"{"limits": [\#(limit)]}"#)))
+  #expect(snapshot.windows.map(\.id) == [id])
+  #expect(snapshot.windows[0].label == label)
+  #expect(snapshot.windows[0].severity == .warning)
+  #expect(snapshot.windows[0].isActive)
 }
 
-@Test func claudeSpendUsesSpendBlockAndMonthReset() {
-  let response = Fixtures.decode(ClaudeAPI.UsageResponse.self, "claude_usage")
-  var calendar = Calendar(identifier: .gregorian)
-  calendar.timeZone = TimeZone(identifier: "UTC")!
-  let spend = ClaudeMapper.spend(response, now: fixedNow, calendar: calendar)!
-  #expect(spend.enabled == false)
-  #expect(spend.used?.amountMinor == 0)
-  #expect(spend.limit?.currency == "USD")
-  #expect(spend.disabledReason == "org_level_disabled_until")
-  #expect(spend.autoReload == nil)
-  #expect(spend.resetsAt == DayStamp.date("2026-09-01"))
+@Test func claudeReportsTheSpendBlockAndItsMonthlyReset() async throws {
+  let snapshot = try #require(await claudeSnapshot(usage: .json("claude_usage")))
+  #expect(snapshot.spend?.enabled == false)
+  #expect(snapshot.spend?.used?.amountMinor == 0)
+  #expect(snapshot.spend?.limit?.currency == "USD")
+  #expect(snapshot.spend?.disabledReason == "org_level_disabled_until")
+  #expect(snapshot.spend?.autoReload == nil)
+  #expect(
+    snapshot.spend?.resetsAt == Calendar.current.date(from: DateComponents(year: 2026, month: 9, day: 1)))
 }
 
-@Test func claudeSpendDerivesFromExtraUsageWhenSpendMissing() {
-  let response = ClaudeAPI.UsageResponse(
-    limits: [], windows: [:], spend: nil,
-    extraUsage: .init(
-      isEnabled: true, monthlyLimit: 80, usedCredits: 24.45, utilization: nil, currency: "EUR", decimalPlaces: 2,
-      disabledReason: nil, spendLimitReached: true)
-  )
-  let spend = ClaudeMapper.spend(response, now: fixedNow)!
+@Test func claudeDerivesSpendFromExtraUsageWhenTheBlockIsMissing() async throws {
+  let usage = #"""
+    {"extra_usage": {"is_enabled": true, "monthly_limit": 80, "used_credits": 24.45, "currency": "EUR",
+     "decimal_places": 2, "spend_limit_reached": true}}
+    """#
+  let snapshot = try #require(await claudeSnapshot(usage: .text(usage)))
+  let spend = try #require(snapshot.spend)
   #expect(spend.enabled)
   #expect(spend.used == Money(amountMinor: 2445, currency: "EUR"))
   #expect(spend.limit == Money(amountMinor: 8000, currency: "EUR"))
   #expect(spend.percent.map { Int($0.rounded()) } == 31)
   #expect(spend.limitReached)
   #expect(spend.disabledReason == nil)
-  #expect(spend.autoReload == nil)
 }
 
-@Test func claudeSpendIsNilWithoutSpendData() {
-  #expect(
-    ClaudeMapper.spend(ClaudeAPI.UsageResponse(limits: [], windows: [:], spend: nil, extraUsage: nil), now: fixedNow)
-      == nil)
+@Test func claudeReportsNoSpendWithoutSpendData() async throws {
+  let snapshot = try #require(await claudeSnapshot(usage: .text("{}")))
+  #expect(snapshot.spend == nil)
 }
 
-@Test func claudeSpendPercentIsZeroWhenLimitIsZero() {
-  let response = ClaudeAPI.UsageResponse(
-    limits: [], windows: [:], spend: nil,
-    extraUsage: .init(
-      isEnabled: false, monthlyLimit: 0, usedCredits: 0, utilization: nil, currency: nil, decimalPlaces: nil,
-      disabledReason: "x", spendLimitReached: nil)
-  )
-  let spend = ClaudeMapper.spend(response, now: fixedNow)!
+@Test func claudeReportsZeroPercentAgainstAZeroLimit() async throws {
+  let usage = #"""
+    {"extra_usage": {"is_enabled": false, "monthly_limit": 0, "used_credits": 0, "disabled_reason": "x"}}
+    """#
+  let snapshot = try #require(await claudeSnapshot(usage: .text(usage)))
+  let spend = try #require(snapshot.spend)
   #expect(spend.percent == 0)
   #expect(spend.used?.currency == "USD")
   #expect(spend.disabledReason == "x")
 }
 
-@Test func claudeIdentityFromProfile() {
-  let profile = Fixtures.decode(ClaudeAPI.ProfileResponse.self, "claude_profile")
-  let identity = ClaudeMapper.identity(profile: profile, credentials: nil, local: nil)
+@Test func claudeReadsIdentityFromTheProfile() async throws {
+  let snapshot = try #require(await claudeSnapshot(usage: .json("claude_usage")))
+  let identity = try #require(snapshot.identity)
   #expect(identity.planName == "Max 20x")
   #expect(identity.tier == "default_claude_max_20x")
   #expect(identity.email == "user@example.com")
   #expect(identity.organization == "user@example.com's Organization")
 }
 
-private let planNameCases: [(String, String?, String)] = [
-  ("claude_pro", "default_claude_pro", "Pro"),
-  ("claude_team", nil, "Team"),
-  ("claude_enterprise", nil, "Enterprise"),
-  ("claude_free", nil, "Free"),
-  ("claude_max", "default_claude_max_5x", "Max 5x"),
-]
-
-@Test(arguments: planNameCases)
-func claudeIdentityPlanNames(type: String, tier: String?, expected: String) {
-  let profile = ClaudeAPI.ProfileResponse(
-    account: nil,
-    organization: .init(
-      name: nil, organizationType: type, rateLimitTier: tier, hasExtraUsageEnabled: nil, subscriptionStatus: nil)
-  )
-  #expect(ClaudeMapper.identity(profile: profile, credentials: nil, local: nil).planName == expected)
+@Test(
+  arguments: [
+    (#"{"organization_type": "claude_pro", "rate_limit_tier": "default_claude_pro"}"#, "Pro"),
+    (#"{"organization_type": "claude_team"}"#, "Team"),
+    (#"{"organization_type": "claude_enterprise"}"#, "Enterprise"),
+    (#"{"organization_type": "claude_free"}"#, "Free"),
+    (#"{"organization_type": "claude_max", "rate_limit_tier": "default_claude_max_5x"}"#, "Max 5x"),
+  ])
+func claudeNamesThePlanFromTheOrganization(organization: String, expected: String) async throws {
+  let profile = #"{"organization": \#(organization)}"#
+  let snapshot = try #require(
+    await claudeSnapshot(usage: .json("claude_usage"), profile: .text(profile), credentials: plainClaude))
+  #expect(snapshot.identity?.planName == expected)
 }
 
-@Test func claudeIdentityFallsBackToCredentialsAndLocalAccount() {
-  let credentials = ClaudeOAuthCredentials(
-    accessToken: "t", refreshToken: nil, expiresAt: nil, subscriptionType: "max",
-    rateLimitTier: "default_claude_max_20x")
-  let local = ClaudeLocalAccount(
-    email: "local@example.com", organizationName: "Local Org", rateLimitTier: "default_claude_max_5x",
-    hasExtraUsageEnabled: true)
-  let identity = ClaudeMapper.identity(profile: nil, credentials: credentials, local: local)
-  #expect(identity.planName == "Max 20x")
-  #expect(identity.email == "local@example.com")
-  #expect(identity.organization == "Local Org")
-  #expect(ClaudeMapper.identity(profile: nil, credentials: nil, local: local).planName == "Claude 5x")
+@Test(
+  arguments: [
+    (#"{"account": {"has_claude_max": true, "has_claude_pro": false}}"#, "Max"),
+    (#"{"account": {"has_claude_max": false, "has_claude_pro": true}}"#, "Pro"),
+  ])
+func claudeNamesThePlanFromTheAccountFlags(profile: String, expected: String) async throws {
+  let snapshot = try #require(
+    await claudeSnapshot(usage: .json("claude_usage"), profile: .text(profile), credentials: plainClaude))
+  #expect(snapshot.identity?.planName == expected)
 }
 
-@Test func claudeIdentityUsesAccountFlagsWithoutOrganizationType() {
-  let max = ClaudeAPI.ProfileResponse(
-    account: .init(email: nil, displayName: nil, hasClaudeMax: true, hasClaudePro: false), organization: nil)
-  let pro = ClaudeAPI.ProfileResponse(
-    account: .init(email: nil, displayName: nil, hasClaudeMax: false, hasClaudePro: true), organization: nil)
-  #expect(ClaudeMapper.identity(profile: max, credentials: nil, local: nil).planName == "Max")
-  #expect(ClaudeMapper.identity(profile: pro, credentials: nil, local: nil).planName == "Pro")
-  #expect(ClaudeMapper.identity(profile: nil, credentials: nil, local: nil).planName == "Claude")
-}
-
-@Test func claudeNoticesReportSpendLimitAndCriticalWindows() {
-  let response = ClaudeAPI.UsageResponse(
-    limits: [
-      .init(
-        kind: "session", group: nil, percent: 100, severity: "critical", resetsAt: "2026-08-29T18:00:00Z", scope: nil,
-        isActive: true)
-    ],
-    windows: [:], spend: nil,
-    extraUsage: .init(
-      isEnabled: true, monthlyLimit: 1, usedCredits: 1, utilization: 100, currency: "USD", decimalPlaces: 2,
-      disabledReason: nil, spendLimitReached: true)
-  )
-  let notices = ClaudeMapper.notices(response)
+@Test func claudeNoticesReportSpendLimitAndExhaustedWindows() async throws {
+  let usage = #"""
+    {"limits": [{"kind": "session", "percent": 100, "severity": "critical",
+     "resets_at": "2026-08-29T18:00:00Z", "is_active": true}],
+     "extra_usage": {"is_enabled": true, "monthly_limit": 1, "used_credits": 1, "utilization": 100,
+     "currency": "USD", "decimal_places": 2, "spend_limit_reached": true}}
+    """#
+  let notices = try #require(await claudeSnapshot(usage: .text(usage))).notices
   #expect(notices.map(\.kind) == [.spendControl, .limitReached])
   #expect(notices[1].text.contains("Current session"))
-  #expect(ClaudeMapper.notices(Fixtures.decode(ClaudeAPI.UsageResponse.self, "claude_usage")).isEmpty)
+  let clean = try #require(await claudeSnapshot(usage: .json("claude_usage")))
+  #expect(clean.notices.isEmpty)
 }

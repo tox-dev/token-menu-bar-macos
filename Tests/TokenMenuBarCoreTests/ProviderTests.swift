@@ -32,13 +32,13 @@ import Testing
   #expect(transport.requests(matching: "/api/oauth/profile").count == 2)
 }
 
-private let validClaude = ClaudeOAuthCredentials(
+let validClaude = ClaudeOAuthCredentials(
   accessToken: "tok", refreshToken: "ref", expiresAt: fixedNow.addingTimeInterval(86400), subscriptionType: "max",
   rateLimitTier: "default_claude_max_20x")
 private let expiredClaude = ClaudeOAuthCredentials(
   accessToken: "old", refreshToken: "ref", expiresAt: fixedNow.addingTimeInterval(-10))
 
-private func claudeProvider(
+func claudeProvider(
   _ store: any ClaudeCredentialStore, transport: StubTransport, allowRefresh: Bool = false, localAccount: URL? = nil,
   transcripts: URL? = nil
 ) -> ClaudeProvider {
@@ -200,11 +200,11 @@ private func claudeProvider(
   #expect(breakdown.contains("start_date=2026-08-23&end_date=2026-08-29"))
 }
 
-private let validCodex = CodexAuth(
+let validCodex = CodexAuth(
   accessToken: "codex-tok", refreshToken: "codex-ref",
   idToken: CodexAuth(document: Fixtures.codexAuth())!.idToken, accountID: "acct")
 
-private func codexProvider(
+func codexProvider(
   _ store: any CodexAuthStore, transport: StubTransport, allowRefresh: Bool = false, rollouts: URL? = nil
 ) -> CodexProvider {
   CodexProvider(

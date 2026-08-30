@@ -125,42 +125,24 @@ enum ClaudeAPI {
     let spend: Spend?
     let extraUsage: ExtraUsage?
 
-    struct DynamicKey: CodingKey {
-      var stringValue: String
-      var intValue: Int? { nil }
-      init(stringValue: String) { self.stringValue = stringValue }
-      init?(intValue: Int) { nil }
-    }
-
+    // The response mixes known blocks with a window per vendor-chosen key, so it decodes as a JSON object and each
+    // unrecognised key becomes a window.
     init(from decoder: any Decoder) throws {
-      let container = try decoder.container(keyedBy: DynamicKey.self)
-      var windows: [String: Window] = [:]
-      var limits: [Limit] = []
-      var spend: Spend?
-      var extraUsage: ExtraUsage?
-      for key in container.allKeys {
-        switch key.stringValue {
-        case "limits": limits = try container.decodeIfPresent([Limit].self, forKey: key) ?? []
-        case "spend": spend = try container.decodeIfPresent(Spend.self, forKey: key)
-        case "extra_usage": extraUsage = try container.decodeIfPresent(ExtraUsage.self, forKey: key)
-        case "member_dashboard_available": continue
-        default:
-          if let window = try? container.decodeIfPresent(Window.self, forKey: key), window.utilization != nil {
-            windows[key.stringValue] = window
-          }
-        }
+      let document = try JSONValue(from: decoder)
+      let fields = document.objectValue ?? [:]
+      let decoder = JSONDecoder()
+      func decode<Value: Decodable>(_ type: Value.Type, _ key: String) -> Value? {
+        guard let field = fields[key], !field.isNull, let data = try? JSONEncoder().encode(field) else { return nil }
+        return try? decoder.decode(type, from: data)
       }
-      self.limits = limits
+      limits = decode([Limit].self, "limits") ?? []
+      spend = decode(Spend.self, "spend")
+      extraUsage = decode(ExtraUsage.self, "extra_usage")
+      var windows: [String: Window] = [:]
+      for key in fields.keys where !["limits", "spend", "extra_usage", "member_dashboard_available"].contains(key) {
+        if let window = decode(Window.self, key), window.utilization != nil { windows[key] = window }
+      }
       self.windows = windows
-      self.spend = spend
-      self.extraUsage = extraUsage
-    }
-
-    init(limits: [Limit], windows: [String: Window], spend: Spend?, extraUsage: ExtraUsage?) {
-      self.limits = limits
-      self.windows = windows
-      self.spend = spend
-      self.extraUsage = extraUsage
     }
   }
 
