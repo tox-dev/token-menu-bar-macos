@@ -31,11 +31,6 @@ url = "/start/"
 weight = 1
 
 [[menu.main]]
-name = "How-to guides"
-url = "/guides/"
-weight = 2
-
-[[menu.main]]
 name = "Reference"
 url = "/reference/"
 weight = 3
@@ -45,10 +40,15 @@ name = "Explanation"
 url = "/explanation/"
 weight = 4
 
+[[menu.main]]
+name = "Contributing"
+url = "/contributing/"
+weight = 5
+
 [outputs]
 home = ["HTML", "llms"]
 page = ["HTML", "md"]
-section = ["HTML"]
+section = ["HTML", "md"]
 
 # Format defined at llmstxt.org.
 [outputFormats.llms]
@@ -70,11 +70,13 @@ startLevel = 2
 endLevel = 3
 
 [imaging]
-quality = 90
+quality = 92
+resampleFilter = "Lanczos"
 
+# "drawing" keeps the flat panels and hairlines of a UI screenshot crisp; "picture" softens them.
 [imaging.webp]
-quality = 90
-hint = "picture"
+quality = 92
+hint = "drawing"
 
 [minify]
 minifyOutput = true

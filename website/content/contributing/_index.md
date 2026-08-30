@@ -1,7 +1,8 @@
 ---
-title: Work on the app
-description: Build the targets, run the gate, add a provider, refresh the screenshots.
+title: Contributing
+description: Build the targets, run the gate, add a provider, refresh the screenshots, cut a release.
 weight: 5
+aliases: [/guides/, /guides/contributing/]
 ---
 
 The repository is a SwiftPM package with three targets:
@@ -10,15 +11,21 @@ The repository is a SwiftPM package with three targets:
 - `TokenMenuBarUI`: status item rendering, popover, the three tabs, app composition. Renders Core value types only.
 - `TokenMenuBar`: the executable that bootstraps the app.
 
-`Scripts/coverage.sh` fails when a line in Core or UI never runs during the suite.
+## Build it yourself
 
 ```sh
+git clone https://github.com/tox-dev/token-menu-bar-macos
+cd token-menu-bar-macos
 swift build
 swift test
-Scripts/coverage.sh
-Scripts/bundle-dev.sh --run     # ad-hoc .app for machines without Xcode
-cd App && xcodegen generate     # Xcode project with Direct and AppStore schemes
+Scripts/coverage.sh              # tests plus the line gate
+Scripts/bundle-dev.sh --run      # ad-hoc signed .app in dist/
+cd App && xcodegen generate      # Xcode project with the Direct and AppStore schemes
 ```
+
+`Scripts/coverage.sh` fails when a line in Core or UI never runs during the suite. `swift test` needs a toolchain that
+ships swift-testing (Xcode, or a swift.org toolchain through `swiftly`). Ad-hoc builds take a new code signature each
+time, so macOS repeats the Keychain prompt after every rebuild.
 
 ## Adding a provider
 
@@ -27,6 +34,9 @@ Add a case to `ProviderID` (name, tag, usage page, sign-in hint), a `PollingPoli
 vendor's response to `QuotaWindow`s, and to `ProviderAnalytics` when the vendor reports any. The menu bar, popover,
 history, widgets and notifications then pick the provider up on their own. Add a sample snapshot to `DemoData` for the
 new case, which keeps demo mode and the screenshots whole.
+
+The signed builds carry the widget extension; an ad-hoc development bundle has none, so widgets need a Direct or
+AppStore build to appear.
 
 ## Refreshing the docs screenshots
 

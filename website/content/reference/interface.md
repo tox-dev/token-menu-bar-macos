@@ -6,7 +6,7 @@ weight: 2
 
 ## Menu bar
 
-{{< shot name="menubar" alt="Menubar" caption="Menu bar cells for the selected windows." >}}
+{{< shot name="menubar" scale="3" alt="Menubar" caption="Menu bar cells for the selected windows." >}}
 
 One cell per selected window. The label is the provider tag (`CC`, `CX`); when a provider shows more than one window the
 window tag joins it (`CC 5h`, `CC FAB`, `CX 7d`) to keep the two apart. The percent takes a traffic-light colour from

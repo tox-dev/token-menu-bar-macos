@@ -8,7 +8,7 @@
       <div class="hero-actions">
         <a class="button button-primary" href="{{ .Site.Params.latestRelease }}">
           Download for {{ .Site.Params.minimumOS }}</a>
-        <a class="button button-secondary" href="{{ "start/install/" | relURL }}">Install options</a>
+        <a class="button button-secondary" href="{{ "start/" | relURL }}">Install options</a>
       </div>
       <p class="hero-note">
         Reads the tokens the CLIs keep on your Mac. It holds no account, sends no telemetry, and leaves your machine
@@ -18,15 +18,24 @@
     <div class="hero-media">
       {{ range $variant := (slice "light" "dark") }}
         {{ with resources.Get (printf "images/menubar-%s.png" $variant) }}
-          <img class="shot shot-bar only-{{ $variant }}" src="{{ .RelPermalink }}" width="{{ .Width }}"
-               height="{{ .Height }}" alt="Menu bar showing Claude and Codex usage cells" fetchpriority="high"
+          {{ $one := .Resize "520x webp" }}
+          {{ $two := .Resize "1040x webp" }}
+          <img class="shot shot-bar only-{{ $variant }}" src="{{ $one.RelPermalink }}"
+               srcset="{{ $one.RelPermalink }} 1x, {{ $two.RelPermalink }} 2x" width="{{ $one.Width }}"
+               height="{{ $one.Height }}" alt="Menu bar showing Claude and Codex usage cells" fetchpriority="high"
                decoding="async">
         {{ end }}
       {{ end }}
-      {{ with resources.Get "images/popover-tour.gif" }}
-        <img class="shot" src="{{ .RelPermalink }}" width="{{ .Width }}" height="{{ .Height }}"
-             alt="The popover cycling through the Usage, History and Settings tabs" decoding="async">
-      {{ end }}
+      <div class="hero-popover">
+        {{ range $variant := (slice "light" "dark") }}
+          {{ with resources.Get (printf "images/popover-usage-%s.png" $variant) }}
+            {{ $webp := .Resize (printf "%dx webp" .Width) }}
+            <img class="shot only-{{ $variant }}" src="{{ $webp.RelPermalink }}"
+                 width="{{ div $webp.Width 2 }}" height="{{ div $webp.Height 2 }}"
+                 alt="The Usage tab listing each plan window" decoding="async">
+          {{ end }}
+        {{ end }}
+      </div>
     </div>
   </div>
 </section>
@@ -78,27 +87,41 @@
   <div class="wrap">
     <div class="section-head">
       <h2>One popover, three tabs</h2>
-      <p>It sizes itself to the screen and keeps its position when you switch tabs.</p>
+      <p>It sizes itself to the screen and holds its position when you switch tabs.</p>
     </div>
-    <div class="shots">
-      {{ $usage := dict "name" "popover-usage" "alt" "Usage tab with provider cards"
-        "caption" "Usage: each window with percent, reset countdown and pace." }}
-      {{ $history := dict "name" "popover-history" "alt" "History tab with usage charts"
-        "caption" "History: 60 days of samples, reset cliffs and vendor analytics." }}
-      {{ $settings := dict "name" "popover-settings" "alt" "Settings tab"
-        "caption" "Settings: menu bar format, providers, data, notifications and the log." }}
-      {{ range $shot := (slice $usage $history $settings) }}
-      <figure>
-        {{ range $variant := (slice "light" "dark") }}
-          {{ with resources.Get (printf "images/%s-%s.png" $shot.name $variant) }}
-            {{ $scaled := .Resize "900x webp" }}
-            <img class="shot only-{{ $variant }}" src="{{ $scaled.RelPermalink }}" width="{{ $scaled.Width }}"
-                 height="{{ $scaled.Height }}" alt="{{ $shot.alt }}" loading="lazy" decoding="async">
-          {{ end }}
-        {{ end }}
-        <figcaption>{{ $shot.caption }}</figcaption>
-      </figure>
+    <div class="tabshots">
+      {{ $shots := slice
+        (dict "id" "usage" "name" "Usage" "alt" "Usage tab with provider cards"
+          "caption" "Each window with percent, reset countdown and pace.")
+        (dict "id" "history" "name" "History" "alt" "History tab with usage charts"
+          "caption" "Sixty days of samples, reset cliffs and vendor analytics.")
+        (dict "id" "settings" "name" "Settings" "alt" "Settings tab"
+          "caption" "Menu bar format, providers, data, notifications and the log.") }}
+      {{ range $index, $shot := $shots }}
+        <input class="tabshot-input" type="radio" name="tabshot" id="tabshot-{{ $shot.id }}"
+               {{ if eq $index 0 }}checked{{ end }}>
       {{ end }}
+      <div class="tabshot-bar">
+        {{ range $shots }}<label for="tabshot-{{ .id }}">{{ .name }}</label>{{ end }}
+      </div>
+      <div class="tabshot-panels">
+        {{ range $shots }}
+          <figure class="tabshot-panel" id="panel-{{ .id }}">
+            {{ $shot := . }}
+            <div class="tabshot-frame">
+              {{ range $variant := (slice "light" "dark") }}
+                {{ with resources.Get (printf "images/popover-%s-%s.png" $shot.id $variant) }}
+                  {{ $webp := .Resize (printf "%dx webp" .Width) }}
+                  <img class="shot only-{{ $variant }}" src="{{ $webp.RelPermalink }}"
+                       width="{{ div $webp.Width 2 }}" height="{{ div $webp.Height 2 }}" alt="{{ $shot.alt }}"
+                       loading="lazy" decoding="async">
+                {{ end }}
+              {{ end }}
+            </div>
+            <figcaption>{{ .caption }}</figcaption>
+          </figure>
+        {{ end }}
+      </div>
     </div>
   </div>
 </section>

@@ -12,5 +12,5 @@ title: Token Menu Bar
 ## Where to go next
 
 Pick the door that matches what you need. [Get started](/start/) walks the install through to your first numbers.
-[How-to guides](/guides/) covers one task at a time. [Reference](/reference/) describes each screen and option.
-[Explanation](/explanation/) covers what the app reads and why it polls at the pace it does.
+[Reference](/reference/) describes each screen and option. [Explanation](/explanation/) covers what the app reads and
+why it polls at the pace it does. [Contributing](/contributing/) is for working on the app itself.
