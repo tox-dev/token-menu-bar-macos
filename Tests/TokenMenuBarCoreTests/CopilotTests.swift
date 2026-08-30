@@ -1,7 +1,6 @@
 import Foundation
 import Testing
-
-@testable import TokenMenuBarCore
+import TokenMenuBarCore
 
 @Test func copilotFileStoreFindsGitHubEntries() throws {
   let root = temporaryDirectory()
@@ -32,69 +31,96 @@ import Testing
 
 private let validCopilot = CopilotAuth(token: "gho_test", user: "octocat")
 
-@Test func copilotMapperReadsPaidPlans() {
-  let user = Fixtures.json("copilot_user")
-  let windows = CopilotMapper.windows(user)
-  #expect(windows.map(\.id) == ["premium_interactions", "completions"])
-  #expect(windows[0].label == "Premium requests")
-  #expect(windows[0].usedPercent == 100)
-  #expect(windows[0].resetsAt == DayStamp.date("2026-09-01"))
-  #expect(windows[1].usedPercent == 75)
-  let identity = CopilotMapper.identity(user, auth: validCopilot)
-  #expect(identity.planName == "Pro Plus")
-  #expect(identity.tier == "copilot_pro_seat")
-  #expect(identity.email == "octocat")
-  let notices = CopilotMapper.notices(user)
+@MainActor
+private func copilotSnapshot(
+  _ response: StubTransport.Response, auth: CopilotAuth = validCopilot
+) async
+  -> ProviderSnapshot?
+{
+  let (provider, transport) = makeProvider(auth)
+  transport.on(path: "/copilot_internal/user", response)
+  guard case .success(let snapshot) = await provider.fetch(now: fixedNow, options: FetchOptions()).outcome else {
+    Issue.record("expected a snapshot")
+    return nil
+  }
+  return snapshot
+}
+
+@Test func copilotReportsAPaidPlanAsMonthlyWindows() async throws {
+  let snapshot = try #require(await copilotSnapshot(.json("copilot_user")))
+  #expect(snapshot.windows.map(\.id) == ["completions", "premium_interactions"])
+  #expect(snapshot.windows.map(\.label) == ["Completions", "Premium requests"])
+  #expect(snapshot.windows.map(\.usedPercent) == [75, 100])
+  #expect(snapshot.windows.allSatisfy { $0.resetsAt == DayStamp.date("2026-09-01") })
+  #expect(snapshot.identity?.planName == "Pro Plus")
+  #expect(snapshot.identity?.tier == "copilot_pro_seat")
+  #expect(snapshot.identity?.email == "octocat")
+}
+
+@Test func copilotReportsBillingAndOverageAsNotices() async throws {
+  let snapshot = try #require(await copilotSnapshot(.json("copilot_user")))
   #expect(
-    notices.map(\.text) == [
+    snapshot.notices.map(\.text) == [
       "Token-based billing: 33 credits used this cycle.", "Premium requests: quota exceeded, 15 overage requests.",
     ])
-  #expect(notices[1].kind == .info)
-  #expect(CopilotMapper.date("2026-09-01T10:00:00Z") == ISODate.parse("2026-09-01T10:00:00Z"))
-  #expect(CopilotMapper.date(nil) == nil)
-  #expect(CopilotMapper.date("garbage") == nil)
-  #expect(CopilotMapper.label("chat") == "Chat")
+  #expect(snapshot.notices[1].kind == .info)
 }
 
-@Test func copilotMapperReadsFreePlans() {
-  let user = Fixtures.json("copilot_user_free")
-  let windows = CopilotMapper.windows(user)
-  #expect(windows.map(\.id) == ["premium_interactions", "free:chat", "free:completions"])
-  #expect(windows[0].usedPercent == 60)
-  #expect(abs(windows[1].usedPercent - 18) < 0.001)
-  #expect(windows[1].resetsAt == DayStamp.date("2026-09-11"))
-  #expect(windows[2].usedPercent == 0)
-  #expect(CopilotMapper.identity(user, auth: CopilotAuth(token: "t")).planName == "Individual")
-  #expect(CopilotMapper.notices(user).isEmpty)
-  let overage = JSONValue.object([
-    "quota_snapshots": .object([
-      "chat": .object(["percent_remaining": .number(-10), "overage_permitted": .bool(false)]),
-      "premium_interactions": .object(["entitlement": .number(0), "remaining": .number(0)]),
-    ])
-  ])
-  #expect(CopilotMapper.notices(overage).map(\.kind) == [.limitReached])
-  #expect(CopilotMapper.windows(overage).map(\.id) == ["chat"])
-  #expect(CopilotMapper.identity(.object([:]), auth: CopilotAuth(token: "t")).planName == "Copilot")
-  #expect(CopilotMapper.windows(.object([:])).isEmpty)
+@Test func copilotReportsAFreePlanFromItsMonthlyAllowances() async throws {
+  let snapshot = try #require(await copilotSnapshot(.json("copilot_user_free")))
+  #expect(snapshot.windows.map(\.id) == ["free:chat", "free:completions", "premium_interactions"])
+  #expect(snapshot.windows.map(\.label) == ["Chat", "Completions", "Premium requests"])
+  #expect(abs(snapshot.windows[0].usedPercent - 18) < 0.001)
+  #expect(snapshot.windows[0].resetsAt == DayStamp.date("2026-09-11"))
+  #expect(snapshot.windows[1].usedPercent == 0)
+  #expect(snapshot.windows[2].usedPercent == 60)
+  #expect(snapshot.identity?.planName == "Individual")
+  #expect(snapshot.notices.isEmpty)
 }
 
-@Test func copilotProviderFetchesUsage() async {
+@Test func copilotCallsAnExhaustedQuotaWithoutOverageALimit() async throws {
+  let body = #"""
+    {"quota_snapshots": {"chat": {"percent_remaining": -10, "overage_permitted": false},
+     "premium_interactions": {"entitlement": 0, "remaining": 0}}}
+    """#
+  let snapshot = try #require(await copilotSnapshot(.text(body), auth: CopilotAuth(token: "t")))
+  #expect(snapshot.notices.map(\.kind) == [.limitReached])
+  #expect(snapshot.windows.map(\.id) == ["chat"])
+  #expect(snapshot.identity?.planName == "Copilot")
+}
+
+@Test func copilotLeavesTheResetOpenWhenTheDateMakesNoSense() async throws {
+  let body = #"{"quota_reset_date": "whenever", "quota_snapshots": {"chat": {"percent_remaining": 40}}}"#
+  let snapshot = try #require(await copilotSnapshot(.text(body), auth: CopilotAuth(token: "t")))
+  #expect(snapshot.windows.map(\.resetsAt) == [nil])
+  #expect(snapshot.windows.map(\.usedPercent) == [60])
+}
+
+@Test func copilotReportsNoWindowsWhenTheAccountHasNoQuota() async throws {
+  let snapshot = try #require(await copilotSnapshot(.text("{}"), auth: CopilotAuth(token: "t")))
+  #expect(snapshot.windows.isEmpty)
+  #expect(snapshot.notices.isEmpty)
+}
+
+@Test func copilotProviderIdentifiesItselfAsAnEditor() async {
   let (provider, transport) = makeProvider(validCopilot)
   transport.on(path: "/copilot_internal/user", .json("copilot_user"))
   #expect(provider.credentialDescription == "memory")
   #expect(provider.credentialState(now: fixedNow) == .valid(expiresAt: nil))
-  guard case .success(let snapshot) = await provider.fetch(now: fixedNow, options: FetchOptions()).outcome else {
-    Issue.record("expected success")
-    return
-  }
-  #expect(snapshot.windows.count == 2)
-  #expect(snapshot.identity?.planName == "Pro Plus")
+  _ = await provider.fetch(now: fixedNow, options: FetchOptions())
   let request = transport.requests(matching: "/copilot_internal/user").first!
   #expect(request.url?.host() == "api.github.com")
   #expect(request.value(forHTTPHeaderField: "Authorization") == "token gho_test")
-  #expect(request.value(forHTTPHeaderField: "Editor-Version") == CopilotAPI.editorVersion)
-  #expect(
-    CopilotAPI.userURL(host: "ghe.example.com").absoluteString == "https://api.ghe.example.com/copilot_internal/user")
+  // GitHub answers this endpoint for editor clients, so the request carries an editor and plugin version
+  #expect(request.value(forHTTPHeaderField: "Editor-Version")?.hasPrefix("vscode/") == true)
+  #expect(request.value(forHTTPHeaderField: "Editor-Plugin-Version")?.isEmpty == false)
+}
+
+@Test func copilotProviderAsksTheEnterpriseHost() async {
+  let (provider, transport) = makeProvider(CopilotAuth(token: "gho_ent", user: "ent", host: "ghe.example.com"))
+  transport.on(path: "/copilot_internal/user", .json("copilot_user"))
+  _ = await provider.fetch(now: fixedNow, options: FetchOptions())
+  #expect(transport.requests.first?.url?.host() == "api.ghe.example.com")
 }
 
 private func makeProvider(_ auth: CopilotAuth?, store: MemoryCopilotStore? = nil) -> (CopilotProvider, StubTransport) {
