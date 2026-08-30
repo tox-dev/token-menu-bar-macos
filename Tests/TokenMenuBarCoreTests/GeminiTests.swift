@@ -303,6 +303,8 @@ func geminiPlanNames(tier: String, hosted: String?, expected: String) {
   #expect(GeminiOAuthConfig.resolve(environment: [:], home: home, read: { _ in nil }) == nil)
   #expect(
     GeminiOAuthConfig.searchRoots(environment: ["NPM_CONFIG_PREFIX": "/custom"], home: home).first?.path == "/custom")
+  // the default reader hits the filesystem; on a machine without the CLI it simply finds nothing
+  _ = GeminiOAuthConfig.resolve(environment: [:], home: home)
 }
 
 @Test func geminiRefreshNeedsTheCLIOAuthClient() async {
@@ -314,4 +316,17 @@ func geminiPlanNames(tier: String, hosted: String?, expected: String) {
     return
   }
   #expect(reason.contains("OAuth client could not be read"))
+}
+
+@Test func geminiResolvesItsOAuthClientFromTheInstalledCLIByDefault() async {
+  let stale = GeminiAuth(accessToken: "old", refreshToken: "r", expiresAt: fixedNow.addingTimeInterval(-10))
+  let provider = GeminiProvider(
+    auth: MemoryGeminiStore(stale), client: APIClient(transport: StubTransport(), log: makeLog(), clock: testClock),
+    log: makeLog(), allowRefresh: { true })
+  guard case .notAuthenticated(let reason) = await provider.fetch(now: fixedNow, options: FetchOptions()).outcome
+  else {
+    Issue.record("expected notAuthenticated")
+    return
+  }
+  #expect(reason.contains("refresh failed"))
 }

@@ -40,9 +40,16 @@ public final class RefreshCoordinator {
   private var lastAnalytics: [ProviderID: Date] = [:]
   private var lastAttempt: [ProviderID: Date] = [:]
   private var rateLimitStrikes: [ProviderID: Int] = [:]
-  private var lastWidgetRows: [WidgetRow]?
+  private var lastWidget: WidgetSnapshot?
   private let cache: SnapshotCache
-  public var widgetSink: ((WidgetSnapshot) -> Void)?
+  public var widgetSink: ((WidgetSnapshot) -> Void)? {
+    didSet {
+      // The status model is built during init, before AppController attaches the sink, so publish what is already
+      // known rather than suppressing it as unchanged.
+      guard let widget = lastWidget else { return }
+      widgetSink?(widget)
+    }
+  }
 
   public init(
     registry: ProviderRegistry,
@@ -280,9 +287,10 @@ public final class RefreshCoordinator {
     state.setStatusLadder(
       settings.adaptiveWidth ? StatusItemBuilder.candidates(input) : [StatusItemBuilder.build(input)])
     let widget = WidgetSnapshot.build(
-      snapshots: snapshots, availability: state.availability, selectedKeys: selection, now: input.now)
-    if widget.rows != lastWidgetRows {
-      lastWidgetRows = widget.rows
+      snapshots: snapshots, availability: state.availability, selectedKeys: selection,
+      now: snapshots.values.map(\.fetchedAt).max() ?? input.now)
+    if widget != lastWidget {
+      lastWidget = widget
       widgetSink?(widget)
     }
   }

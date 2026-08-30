@@ -24,7 +24,11 @@ public struct StatusItemProbe: Equatable, Sendable {
   }
 
   public var summary: String {
-    "visible=\(isVisible) buttonHidden=\(buttonHidden) window=\(windowVisible.map(String.init) ?? "-") occlusion=\(occlusionVisible.map(String.init) ?? "-") length=\(Int(length)) width=\(Int(buttonWidth)) front=\(frontmostApp ?? "-")"
+    """
+    visible=\(isVisible) buttonHidden=\(buttonHidden) window=\(windowVisible.map(String.init) ?? "-") \
+    occlusion=\(occlusionVisible.map(String.init) ?? "-") length=\(Int(length)) width=\(Int(buttonWidth)) \
+    front=\(frontmostApp ?? "-")
+    """
   }
 }
 

@@ -32,13 +32,16 @@ private func temporaryStore() -> WidgetSnapshotStore {
 @Test func timelineProviderReadsStoreOrPlaceholder() throws {
   let store = temporaryStore()
   let provider = UsageTimelineProvider(store: store, now: { fixedNow })
-  #expect(provider.entry().snapshot == .placeholder)
+  // a live timeline must never show the sample percentages
+  #expect(provider.entry().snapshot == .unavailable)
+  #expect(!provider.entry().snapshot.hasData)
   let snapshot = WidgetSnapshot(
     rows: Array(WidgetSnapshot.placeholder.rows.prefix(1)), attention: true, updatedAt: fixedNow)
   try store.write(snapshot)
   #expect(provider.entry().snapshot.rows.count == 1)
   #expect(provider.entry().date == fixedNow)
   #expect(provider.placeholderEntry().snapshot == .placeholder)
+  #expect(WidgetSnapshot.placeholder.hasData)
   let timeline = provider.timeline()
   #expect(timeline.entries.count == 1)
   #expect(timeline.entries[0].snapshot.attention)

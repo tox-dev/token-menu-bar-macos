@@ -46,7 +46,7 @@ public struct UsageTimelineProvider: Sendable {
   }
 
   public func entry() -> UsageEntry {
-    UsageEntry(date: now(), snapshot: store.read() ?? .placeholder)
+    UsageEntry(date: now(), snapshot: store.read() ?? .unavailable)
   }
 }
 
@@ -79,10 +79,14 @@ public struct UsageWidgetView: View {
         if entry.snapshot.attention {
           Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange).font(.caption)
         }
-        Text(entry.snapshot.updatedAt, style: .relative).font(.caption2).foregroundStyle(.secondary)
+        if entry.snapshot.hasData {
+          Text(entry.snapshot.updatedAt, style: .relative).font(.caption2).foregroundStyle(.secondary)
+        }
       }
       if rows.isEmpty {
-        Text("Open Token Menu Bar to pick windows.").font(.caption).foregroundStyle(.secondary)
+        Text(entry.snapshot.hasData ? "Open Token Menu Bar to pick windows." : "Open Token Menu Bar to start tracking.")
+          .font(.caption)
+          .foregroundStyle(.secondary)
       }
       ForEach(rows) { row in
         WidgetRowView(row: row, now: entry.date, compact: family == .systemSmall)

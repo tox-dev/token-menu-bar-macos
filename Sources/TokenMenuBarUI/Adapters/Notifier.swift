@@ -17,6 +17,7 @@ public final class Notifier {
   private let log: LogBuffer
   private(set) var authorized = false
   private(set) var delivered: [NotificationEvent] = []
+  private(set) var pending: [NotificationEvent] = []
 
   public init(center: (any NotificationCenterProtocol)?, log: LogBuffer) {
     self.center = center
@@ -31,11 +32,22 @@ public final class Notifier {
     } catch {
       log.logError("notification authorization failed: \(error.localizedDescription)")
     }
+    let queued = pending
+    pending = []
+    guard authorized, !queued.isEmpty else { return }
+    log.logDebug("flushing \(queued.count) notifications held during authorization")
+    await deliver(queued)
   }
 
   public func deliver(_ events: [NotificationEvent]) async {
+    guard let center else { return }
+    guard authorized else {
+      // The refresh loop starts before the permission prompt is answered; holding the events means the first
+      // threshold crossing still arrives once the user allows notifications.
+      pending += events
+      return
+    }
     delivered += events
-    guard let center, authorized else { return }
     for event in events {
       let content = UNMutableNotificationContent()
       content.title = event.title
@@ -48,9 +60,9 @@ public final class Notifier {
         log.logError("notification delivery failed: \(error.localizedDescription)")
       }
     }
-    let resets = events.filter { $0.kind == .reset }.map(\.provider)
-    if !resets.isEmpty {
-      let stale = delivered.filter { $0.kind == .threshold && resets.contains($0.provider) }.map(\.id)
+    let reset = Set(events.filter { $0.kind == .reset }.compactMap(\.window))
+    if !reset.isEmpty {
+      let stale = delivered.filter { $0.kind == .threshold && $0.window.map(reset.contains) == true }.map(\.id)
       center.removeDeliveredNotifications(withIdentifiers: stale)
       delivered.removeAll { stale.contains($0.id) }
     }

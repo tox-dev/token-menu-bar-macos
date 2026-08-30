@@ -15,8 +15,11 @@ public struct AdaptiveWidthPlanner: Sendable, Equatable {
 
   public init() {}
 
+  /// Starts one tier wider than the tier that last fit for this context: menu bar space comes back when the user
+  /// quits an app or drops a window, and a planner that only narrowed would stay collapsed until a screen change.
   public mutating func begin(context: String, ladderCount: Int) -> Int {
-    index = min(remembered[context] ?? 0, max(ladderCount - 1, 0))
+    let remembered = min(remembered[context] ?? 0, max(ladderCount - 1, 0))
+    index = max(remembered - 1, 0)
     return index
   }
 

@@ -152,6 +152,19 @@ public struct AppIconView: View {
   }
 }
 
+extension Color {
+  /// The brand iris, resolved per appearance so it holds contrast on both popover materials.
+  public static var brandAccent: Color {
+    Color(
+      nsColor: NSColor(name: nil) { appearance in
+        let dark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let brand = dark ? Brand.irisDark : Brand.iris
+        return NSColor(srgbRed: brand.red, green: brand.green, blue: brand.blue, alpha: 1)
+      })
+  }
+
+}
+
 public enum ProviderGlyph {
   public static func image(_ provider: ProviderID, pointSize: CGFloat) -> NSImage {
     let configuration = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .semibold)

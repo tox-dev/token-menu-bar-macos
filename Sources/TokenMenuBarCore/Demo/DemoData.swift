@@ -161,7 +161,7 @@ public enum DemoData {
   ) -> QuotaWindow {
     let resetsAt = boundary(now: now, duration: duration, offset: offset)
     let elapsed = 1 - resetsAt.timeIntervalSince(now) / duration
-    let wobble = 0.03 * sin(now.timeIntervalSince1970 / 900 + Double(id.count))
+    let wobble = 0.02 * sin(now.timeIntervalSince1970 / 36000 + Double(id.count))
     return QuotaWindow(
       id: id, label: label, group: group, usedPercent: min(100, max(0, (elapsed * pace + wobble) * 100)),
       resetsAt: resetsAt, duration: duration, scope: scope)

@@ -303,25 +303,29 @@ public struct AnalyticsSectionsView: View {
     self.environment = environment
   }
 
+  /// Each provider reports its own metrics, so a selection that this provider does not publish falls back to its
+  /// first section instead of leaving the picker blank.
+  var metric: Binding<AnalyticsMetric> {
+    Binding(
+      get: {
+        let selected = environment.settings.historyAnalyticsMetric
+        return sections.contains { $0.metric == selected } ? selected : sections.first?.metric ?? selected
+      },
+      set: { environment.settings.historyAnalyticsMetric = $0 })
+  }
+
   public var body: some View {
     VStack(alignment: .leading, spacing: 8) {
       HStack {
         Text("\(provider.displayName) analytics").font(.headline)
         Spacer()
-        Picker(
-          "Metric",
-          selection: Binding(
-            get: { environment.settings.historyAnalyticsMetric },
-            set: { environment.settings.historyAnalyticsMetric = $0 })
-        ) {
+        Picker("Metric", selection: metric) {
           ForEach(sections) { Text($0.metric.title).tag($0.metric) }
         }
         .labelsHidden()
         .frame(maxWidth: 200)
       }
-      if let section = sections.first(where: { $0.metric == environment.settings.historyAnalyticsMetric })
-        ?? sections.first
-      {
+      if let section = sections.first(where: { $0.metric == metric.wrappedValue }) {
         HStack(alignment: .firstTextBaseline) {
           Text(section.totalText).font(.title2.monospacedDigit().weight(.semibold))
           Text(section.metric == .surfaceUsagePercent ? "average daily usage" : "total \(section.metric.unit)")

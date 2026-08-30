@@ -32,6 +32,7 @@ public struct RootView: View {
     .onPreferenceChange(ChromeSizeKey.self) { size in Task { @MainActor in chromeHeight = size.height } }
     .frame(minWidth: PopoverGeometry.minimumWidth)
     .font(.body)
+    .tint(.brandAccent)
     .background(.regularMaterial)
     .onReceive(timer) { _ in environment.tick() }
     .task { await environment.loadRecentSamples() }

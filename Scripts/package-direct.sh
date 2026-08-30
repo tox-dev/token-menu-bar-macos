@@ -14,7 +14,8 @@ ditto -c -k --keepParent --sequesterRsrc "$app" "$out/TokenMenuBar.zip"
 staging="$(mktemp -d)"
 cp -R "$app" "$staging/"
 ln -s /Applications "$staging/Applications"
-hdiutil create -volname "Token Menu Bar $version" -srcfolder "$staging" -ov -format UDZO -fs HFS+ "$out/TokenMenuBar.dmg" >/dev/null
+hdiutil create -volname "Token Menu Bar $version" -srcfolder "$staging" -ov -format UDZO -fs HFS+ \
+  "$out/TokenMenuBar.dmg" >/dev/null
 rm -rf "$staging"
 
 if codesign -dv "$app" 2>&1 | grep -q "Developer ID Application"; then

@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import Testing
 
 @testable import TokenMenuBarCore
@@ -27,4 +28,11 @@ import Testing
     #expect(StatusItemRenderer.stripData(for: model, dark: dark)?.isEmpty == false)
   }
   #expect(StatusItemRenderer.stripImage(for: .empty, dark: false, width: 200).size.width == 200)
+}
+
+@Test @MainActor func popoverExporterRendersAViewToPNG() {
+  let view = Text("Token Menu Bar").padding()
+  #expect(PopoverExporter.height(view, width: 200) > 0)
+  #expect(PopoverExporter.image(view, size: CGSize(width: 200, height: 60), dark: true)?.size.width == 200)
+  #expect(PopoverExporter.png(view, size: CGSize(width: 200, height: 60), dark: false)?.isEmpty == false)
 }

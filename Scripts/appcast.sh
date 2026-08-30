@@ -8,9 +8,13 @@ version="${1:?usage: appcast.sh <semver>}"
 out="dist/direct"
 download_prefix="https://github.com/tox-dev/token-menu-bar-macos/releases/download/v${version}/"
 
-sparkle_bin="$(find ~/Library/Developer/Xcode/DerivedData "$PWD/App" -path '*artifacts/sparkle/Sparkle/bin' -type d 2>/dev/null | head -1 || true)"
+sparkle_bin="$(
+  find ~/Library/Developer/Xcode/DerivedData "$PWD/App" -path '*artifacts/sparkle/Sparkle/bin' -type d 2>/dev/null |
+    head -1 || true
+)"
 if [[ -n "$sparkle_bin" && -n "${SPARKLE_PRIVATE_ED_KEY:-}" ]]; then
-  echo "$SPARKLE_PRIVATE_ED_KEY" | "$sparkle_bin/generate_appcast" --ed-key-file - --download-url-prefix "$download_prefix" "$out"
+  echo "$SPARKLE_PRIVATE_ED_KEY" |
+    "$sparkle_bin/generate_appcast" --ed-key-file - --download-url-prefix "$download_prefix" "$out"
   exit 0
 fi
 

@@ -142,7 +142,7 @@ import Testing
   let auth = CodexAuth(
     document: .object(["OPENAI_API_KEY": .string("sk-key"), "tokens": .object(["id_token": .string(idToken)])]))!
   #expect(auth.accessToken == "sk-key")
-  #expect(auth.accountID == "00000000-0000-4000-8000-000000000000")
+  #expect(auth.accountID == claims["https://api.openai.com/auth"]?["chatgpt_account_id"]?.stringValue)
   #expect(CodexAuth(document: .object(["tokens": .object([:])])) == nil)
   #expect(CodexAuth(document: .object(["OPENAI_API_KEY": .null])) == nil)
 }

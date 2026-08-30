@@ -32,7 +32,7 @@ private func makeFeatureDependencies(
     copyToPasteboard: { _ in },
     revealInFinder: { _ in },
     chooseExportURL: { nil },
-    chooseCodexHome: { nil },
+    chooseDirectory: { _ in nil },
     terminate: {},
     relaunch: { recorder.relaunched += 1 },
     widgetStore: widgetStore,
@@ -63,11 +63,13 @@ private func makeFeatureDependencies(
   let provider = StaticProvider(id: .claude, result: ProviderFetchResult(outcome: .success(sampleSnapshot(.claude))))
   let (dependencies, recorder) = try makeFeatureDependencies(providers: [provider], widgetStore: store)
   let controller = AppController(dependencies: dependencies)
+  // one publish when the sink attaches to the empty model, one when the refresh lands
+  #expect(recorder.reloadedWidgets == 1)
   await controller.coordinator.refresh(RefreshRequest(force: true))
   #expect(store.read()?.rows.isEmpty == false)
-  #expect(recorder.reloadedWidgets == 1)
+  #expect(recorder.reloadedWidgets == 2)
   controller.coordinator.rebuildStatus()
-  #expect(recorder.reloadedWidgets == 1)
+  #expect(recorder.reloadedWidgets == 2)
   controller.publishWidget(WidgetSnapshot(rows: [], attention: false, updatedAt: fixedNow))
   #expect(store.read()?.rows.isEmpty == true)
   let unwritable = WidgetSnapshotStore(url: URL(fileURLWithPath: "/dev/null/widget.json"))
@@ -115,11 +117,13 @@ private func makeFeatureDependencies(
   #expect(controller.checkFit())
   controller.visibleItemFrame = { _ in nil }
   controller.layoutChanged(forgetting: false)
-  await controller.settleFitCheck()
+  // each failed fit schedules the next check, so wait for the ladder to settle rather than a single tick
+  for _ in 0..<50 where controller.model == ladder[0] { await controller.settleFitCheck() }
   #expect(controller.model != ladder[0])
+  // space came back, so the next layout pass probes a wider tier again
   controller.visibleItemFrame = { _ in CGRect(x: 500, y: 0, width: 80, height: 30) }
   controller.layoutChanged(forgetting: false)
-  #expect(controller.model == ladder[0])
+  #expect(controller.checkFit())
   controller.layoutChanged(forgetting: true)
   #expect(controller.model == ladder[0])
   await controller.settleFitCheck()
@@ -212,7 +216,7 @@ private func makeFeatureDependencies(
     log: makeLog(), registry: ProviderRegistry([]), notifier: Notifier(center: nil, log: makeLog()),
     launchAtLogin: LaunchAtLoginBackend(status: { .notRegistered }, register: {}, unregister: {}),
     openURL: { _ in }, copyToPasteboard: { _ in }, revealInFinder: { _ in }, chooseExportURL: { nil },
-    chooseCodexHome: { nil }, terminate: {}, rebuildProviders: { _ in ProviderRegistry([]) },
+    chooseDirectory: { _ in nil }, terminate: {}, rebuildProviders: { _ in ProviderRegistry([]) },
     screenVisibleFrame: { nil })
   dependencies.relaunch()
   dependencies.reloadWidgets()

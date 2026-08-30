@@ -5,7 +5,7 @@
     <h1 class="page-title">404</h1>
     <p class="page-lede">That page does not exist.</p>
     <ul>
-      <li><a href="{{ "/" | relURL }}">Home</a></li>
+      <li><a href="{{ .Site.Home.RelPermalink }}">Home</a></li>
       {{ range .Site.Menus.main }}<li><a href="{{ .URL | relLangURL }}">{{ .Name }}</a></li>{{ end }}
     </ul>
   </div>

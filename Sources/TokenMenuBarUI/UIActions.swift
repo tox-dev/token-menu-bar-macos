@@ -14,7 +14,7 @@ public struct UIActions {
   public var showFullLog: () -> Void
   public var setLaunchAtLogin: (Bool) -> Void
   public var openLoginItems: () -> Void
-  public var grantCodexAccess: () -> Void
+  public var grantAccess: (SandboxResource) -> Void
   public var checkForUpdates: () -> Void
   public var quit: () -> Void
   public var setDemoMode: (Bool) -> Void
@@ -32,7 +32,7 @@ public struct UIActions {
     showFullLog: @escaping () -> Void = {},
     setLaunchAtLogin: @escaping (Bool) -> Void = { _ in },
     openLoginItems: @escaping () -> Void = {},
-    grantCodexAccess: @escaping () -> Void = {},
+    grantAccess: @escaping (SandboxResource) -> Void = { _ in },
     checkForUpdates: @escaping () -> Void = {},
     quit: @escaping () -> Void = {},
     setDemoMode: @escaping (Bool) -> Void = { _ in },
@@ -49,7 +49,7 @@ public struct UIActions {
     self.showFullLog = showFullLog
     self.setLaunchAtLogin = setLaunchAtLogin
     self.openLoginItems = openLoginItems
-    self.grantCodexAccess = grantCodexAccess
+    self.grantAccess = grantAccess
     self.checkForUpdates = checkForUpdates
     self.quit = quit
     self.setDemoMode = setDemoMode

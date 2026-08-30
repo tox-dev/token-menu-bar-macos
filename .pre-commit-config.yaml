@@ -25,8 +25,9 @@ repos:
       - id: mdformat
         args: ["--wrap", "120", "--number"]
         # website/layouts holds Hugo templates rather than prose, and reflowing a shortcode breaks the build
-        exclude: ^website/(layouts|content/install\.md)
+        exclude: ^(website/(layouts|content/install\.md)|review\.md)
         additional_dependencies:
+          - mdformat-gfm>=0.4
           - mdformat-hugo>=0.1
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.12

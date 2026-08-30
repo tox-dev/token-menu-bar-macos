@@ -75,7 +75,7 @@ public final class Settings {
   public var detailedLogging: Bool { didSet { store(detailedLogging, key: .detailedLogging) } }
   public var automaticUpdates: Bool { didSet { store(automaticUpdates, key: .automaticUpdates) } }
   public var lastLaunchedVersion: String? { didSet { store(lastLaunchedVersion, key: .lastLaunchedVersion) } }
-  public var codexHomeBookmark: Data? { didSet { store(codexHomeBookmark, key: .codexHomeBookmark) } }
+  public var accessBookmarks: [String: Data] { didSet { storeCodable(accessBookmarks, key: .accessBookmarks) } }
   public var demoMode: Bool { didSet { store(demoMode, key: .demoMode) } }
 
   public init(defaults: UserDefaults) {
@@ -108,9 +108,17 @@ public final class Settings {
     detailedLogging = defaults.bool(forKey: Key.detailedLogging.rawValue)
     automaticUpdates = defaults.object(forKey: Key.automaticUpdates.rawValue) as? Bool ?? true
     lastLaunchedVersion = defaults.string(forKey: Key.lastLaunchedVersion.rawValue)
-    codexHomeBookmark = defaults.data(forKey: Key.codexHomeBookmark.rawValue)
+    accessBookmarks = Self.loadCodable([String: Data].self, defaults, .accessBookmarks) ?? [:]
     demoMode = defaults.bool(forKey: Key.demoMode.rawValue)
     loading = false
+  }
+
+  public func bookmark(for resource: SandboxResource) -> Data? {
+    accessBookmarks[resource.id]
+  }
+
+  public func setBookmark(_ data: Data, for resource: SandboxResource) {
+    accessBookmarks[resource.id] = data
   }
 
   public func flush() {
@@ -149,7 +157,7 @@ public final class Settings {
     detailedLogging = fresh.detailedLogging
     automaticUpdates = fresh.automaticUpdates
     lastLaunchedVersion = fresh.lastLaunchedVersion
-    codexHomeBookmark = fresh.codexHomeBookmark
+    accessBookmarks = fresh.accessBookmarks
     demoMode = fresh.demoMode
   }
 
@@ -163,7 +171,7 @@ public final class Settings {
     case percentDecimals, hideZeroCells, adaptiveWidth, windowOrder, shortLabels, allowTokenRefresh, notifications,
       lastTab
     case historyRange, historyRollup, historyStacked, historyUseUTC, historyHiddenKeys, historyAnalyticsMetric
-    case detailedLogging, automaticUpdates, lastLaunchedVersion, codexHomeBookmark, demoMode
+    case detailedLogging, automaticUpdates, lastLaunchedVersion, accessBookmarks, demoMode
   }
 
   private func store(_ value: (any Sendable)?, key: Key) {

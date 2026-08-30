@@ -8,6 +8,14 @@ history, desktop widgets, and the Codex and Claude analytics charts.
 It reads the tokens the `claude`, `codex`, `gemini`, Cursor and Copilot clients already store on your Mac; it never asks
 you to sign in again and only talks to the vendors' own endpoints.
 
+| Provider                                                                                    | Reads                                           | Windows it reports                              |
+| ------------------------------------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------- |
+| <img src="website/static/brand/providers/claude.svg" width="16" alt=""> **Claude**          | Keychain `Claude Code-credentials`, `~/.claude` | 5-hour session, weekly per model, usage credits |
+| <img src="website/static/brand/providers/codex.svg" width="16" alt=""> **Codex**            | `~/.codex/auth.json`                            | 5-hour, weekly, per-model, code review, credits |
+| <img src="website/static/brand/providers/gemini.svg" width="16" alt=""> **Gemini CLI**      | `~/.gemini/oauth_creds.json`                    | daily request buckets per model                 |
+| <img src="website/static/brand/providers/cursor.svg" width="16" alt=""> **Cursor**          | Cursor's `state.vscdb`, `~/.cursor`             | plan usage, on-demand spend, team pool          |
+| <img src="website/static/brand/providers/copilot.svg" width="16" alt=""> **GitHub Copilot** | `~/.config/github-copilot`                      | premium requests, chat and completions          |
+
 Website with screenshots and a feature tour: <https://tox-dev.github.io/token-menu-bar-macos/>. Refresh the screenshots
 with `Scripts/screenshots.sh`.
 

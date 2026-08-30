@@ -110,8 +110,8 @@ public struct ChipView: View {
     .font(.callout)
     .background(Color.primary.opacity(0.08), in: Capsule())
     .contextMenu {
-      if let link = chip.link { Button("Open") { onOpen(link) } }
-      Button("Copy") { copyAction() }
+      if let link = chip.link { Button("Open", systemImage: "arrow.up.right.square") { onOpen(link) } }
+      Button("Copy", systemImage: "doc.on.doc") { copyAction() }
     }
   }
 

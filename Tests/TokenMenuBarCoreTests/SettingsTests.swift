@@ -64,7 +64,7 @@ private func freshDefaults() -> UserDefaults {
   settings.detailedLogging = true
   settings.automaticUpdates = false
   settings.lastLaunchedVersion = "1.2.3"
-  settings.codexHomeBookmark = Data([1, 2])
+  settings.setBookmark(Data([1, 2]), for: ProviderID.codex.sandboxResources[0])
   let reloaded = Settings(defaults: defaults)
   #expect(reloaded.enabledProviders == [.codex])
   #expect(reloaded.selectedWindows == [key])
@@ -87,11 +87,10 @@ private func freshDefaults() -> UserDefaults {
   #expect(reloaded.detailedLogging)
   #expect(!reloaded.automaticUpdates)
   #expect(reloaded.lastLaunchedVersion == "1.2.3")
-  #expect(reloaded.codexHomeBookmark == Data([1, 2]))
+  #expect(reloaded.bookmark(for: ProviderID.codex.sandboxResources[0]) == Data([1, 2]))
+  #expect(reloaded.bookmark(for: ProviderID.gemini.sandboxResources[0]) == nil)
   reloaded.lastLaunchedVersion = nil
-  reloaded.codexHomeBookmark = nil
   #expect(defaults.object(forKey: "lastLaunchedVersion") == nil)
-  #expect(defaults.data(forKey: "codexHomeBookmark") == nil)
 }
 
 @Test @MainActor func settingsResetRestoresDefaults() {

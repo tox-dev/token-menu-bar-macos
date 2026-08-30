@@ -35,7 +35,11 @@ jobs:
     runs-on: macos-26
     strategy:
       matrix:
-        scheme: [TokenMenuBar-Direct, TokenMenuBar-AppStore]
+        include:
+          - scheme: TokenMenuBar-Direct
+            configuration: Release
+          - scheme: TokenMenuBar-AppStore
+            configuration: AppStore
     steps:
       - uses: actions/checkout@v4
       - name: Select Xcode
@@ -45,6 +49,10 @@ jobs:
       - name: Generate project
         run: cd App && xcodegen generate
       - name: Build
+        env:
+          SCHEME: ${{ matrix.scheme }}
+          CONFIGURATION: ${{ matrix.configuration }}
         run: |
-          xcodebuild -project App/TokenMenuBar.xcodeproj -scheme ${{ matrix.scheme }} -configuration Debug \
-            -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" build | tail -30
+          xcodebuild -project App/TokenMenuBar.xcodeproj -scheme "$SCHEME" -configuration "$CONFIGURATION" \
+            -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" ENABLE_APP_SANDBOX=NO \
+            build | tail -30

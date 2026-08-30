@@ -255,3 +255,23 @@ struct FakeProvider: UsageProvider {
   func credentialState(now: Date) -> CredentialState { credentials }
   func fetch(now: Date, options: FetchOptions) async -> ProviderFetchResult { result }
 }
+
+@Test(arguments: [
+  ("claude.home", ["CLAUDE_CONFIG_DIR": "/cfg/claude"], "/cfg/claude"),
+  ("codex.home", ["CODEX_HOME": "/cfg/codex"], "/cfg/codex"),
+  ("gemini.home", ["GEMINI_CLI_HOME": "/cfg"], "/cfg/.gemini"),
+  ("copilot.config", ["XDG_CONFIG_HOME": "/xdg"], "/xdg/github-copilot"),
+  ("cursor.home", [:], "/home/.cursor"),
+])
+func sandboxResourcesFollowTheirConfiguredLocation(id: String, environment: [String: String], expected: String) {
+  let resource = ProviderID.allSandboxResources.first { $0.id == id }!
+  #expect(resource.configuredURL(environment: environment, home: URL(fileURLWithPath: "/home")).path == expected)
+  #expect(resource.configuredURL(environment: [:], home: URL(fileURLWithPath: "/home")).path.hasPrefix("/home"))
+}
+
+@Test func sandboxResourcesDescribeEveryProviderPath() {
+  #expect(ProviderID.allSandboxResources.count == 7)
+  #expect(ProviderID.claude.sandboxResources.map(\.kind) == [.directory, .file])
+  #expect(ProviderID.allSandboxResources.allSatisfy { $0.label.hasPrefix("~/") })
+  #expect(Set(ProviderID.allSandboxResources.map(\.id)).count == 7)
+}

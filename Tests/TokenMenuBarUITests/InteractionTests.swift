@@ -18,7 +18,7 @@ import TokenMenuBarCore
   actions.showFullLog()
   actions.setLaunchAtLogin(true)
   actions.openLoginItems()
-  actions.grantCodexAccess()
+  actions.grantAccess(ProviderID.codex.sandboxResources[0])
   actions.checkForUpdates()
   actions.quit()
   actions.settingsChanged()
@@ -74,6 +74,8 @@ import TokenMenuBarCore
   var changes = 0
   environment.actions.settingsChanged = { changes += 1 }
   let tab = SettingsTab(environment: environment)
+  tab.openRepository()
+  tab.grantAccess(ProviderID.codex.sandboxResources[0])
   tab.setting(\.allowTokenRefresh).wrappedValue = true
   #expect(environment.settings.allowTokenRefresh)
   #expect(tab.setting(\.allowTokenRefresh).wrappedValue)
@@ -157,7 +159,16 @@ import TokenMenuBarCore
   let export = LiveDependencies.exportPanel()
   #expect(export.nameFieldStringValue == "token-menu-bar-history.csv")
   #expect(export.allowedContentTypes == [.commaSeparatedText])
-  let codex = LiveDependencies.codexHomePanel(default: URL(fileURLWithPath: "/tmp"))
+  let codex = LiveDependencies.directoryPanel(
+    resource: ProviderID.codex.sandboxResources[0], default: URL(fileURLWithPath: "/tmp"))
+  let configured = LiveDependencies.directoryPanel(
+    ProviderID.codex.sandboxResources[0], paths: LiveDependencies.Paths(environment: ["CODEX_HOME": "/tmp/cx"]))
+  #expect(configured.directoryURL?.path == "/tmp/cx")
+  let accountFile = LiveDependencies.directoryPanel(
+    ProviderID.claude.sandboxResources[1], paths: LiveDependencies.Paths())
+  #expect(accountFile.canChooseFiles)
+  #expect(!accountFile.canChooseDirectories)
+  #expect(accountFile.directoryURL?.lastPathComponent != ".claude.json")
   #expect(codex.canChooseDirectories)
   #expect(!codex.canChooseFiles)
   #expect(codex.showsHiddenFiles)

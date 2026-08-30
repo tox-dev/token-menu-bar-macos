@@ -91,7 +91,7 @@
     },
     "balance": null,
     "auto_reload": null,
-    "disclaimer": "Usage credits cover you when you hit your plan limits. [Learn more](https://support.claude.com/articles/12429409)",
+    "disclaimer": "Usage credits cover you when you hit your plan limits. [Learn",
     "can_purchase_credits": false,
     "can_toggle": false
   },

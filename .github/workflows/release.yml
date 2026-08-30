@@ -31,17 +31,34 @@ jobs:
         run: brew install xcodegen
       - name: Stamp version
         run: Scripts/stamp-version.sh "${TAG#v}"
+      - name: Require release credentials
+        # A tag must never publish an app Gatekeeper rejects or a feed Sparkle cannot verify, so the job stops here
+        # rather than falling back to an ad-hoc build. Use the ad-hoc workflow_dispatch build for unsigned testing.
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_KEY_BASE64 }}
+          SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
+          SPARKLE_PRIVATE_ED_KEY: ${{ secrets.SPARKLE_PRIVATE_ED_KEY }}
+        run: |
+          missing=""
+          for name in CERTIFICATE_BASE64 CERTIFICATE_PASSWORD TEAM_ID APP_STORE_CONNECT_KEY_ID \
+            APP_STORE_CONNECT_ISSUER_ID APP_STORE_CONNECT_KEY_BASE64 SPARKLE_PUBLIC_ED_KEY SPARKLE_PRIVATE_ED_KEY; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Cannot publish a release without:$missing"
+            exit 1
+          fi
       - name: Import Developer ID certificate
         id: identity
         env:
           CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 }}
           CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
         run: |
-          if [ -z "$CERTIFICATE_BASE64" ]; then
-            echo "signed=false" >> "$GITHUB_OUTPUT"
-            echo "No Developer ID certificate configured; producing an ad-hoc signed build."
-            exit 0
-          fi
           Scripts/import-certificate.sh
           echo "signed=true" >> "$GITHUB_OUTPUT"
       - name: Generate project
@@ -67,6 +84,23 @@ jobs:
         run: Scripts/appcast.sh "${TAG#v}"
       - name: Update Homebrew cask file
         run: Scripts/update-cask.sh "${TAG#v}" dist/direct/TokenMenuBar.dmg
+      - name: Commit the cask back to the default branch
+        # The checked-in cask carries a placeholder checksum until a release fills it in, so a checkout of main
+        # would otherwise never install.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git stash push -- Casks/token-menu-bar.rb
+          git checkout main
+          git stash pop
+          if ! git diff --quiet -- Casks/token-menu-bar.rb; then
+            git add Casks/token-menu-bar.rb
+            git commit -m "Update Homebrew cask for ${TAG}"
+            git push origin main
+          fi
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:

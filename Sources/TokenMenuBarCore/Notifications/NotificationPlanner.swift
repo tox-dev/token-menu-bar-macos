@@ -30,13 +30,17 @@ public struct NotificationEvent: Sendable, Hashable, Identifiable {
   public let id: String
   public let kind: Kind
   public let provider: ProviderID
+  public let window: WindowKey?
   public let title: String
   public let body: String
 
-  public init(id: String, kind: Kind, provider: ProviderID, title: String, body: String) {
+  public init(
+    id: String, kind: Kind, provider: ProviderID, window: WindowKey? = nil, title: String, body: String
+  ) {
     self.id = id
     self.kind = kind
     self.provider = provider
+    self.window = window
     self.title = title
     self.body = body
   }
@@ -91,6 +95,7 @@ public enum NotificationPlanner {
             "\(current.provider.rawValue):\(window.id):\(highest):\(Int(window.resetsAt?.timeIntervalSince1970 ?? 0))",
           kind: .threshold,
           provider: current.provider,
+          window: WindowKey(current.provider, window),
           title: "\(current.provider.displayName) \(window.label) at \(Format.percent(window.usedPercent))",
           body: highest >= 100
             ? "Limit reached.\(resets)" : "Crossed \(highest)% of the \(window.label.lowercased()) limit.\(resets)"
@@ -111,6 +116,7 @@ public enum NotificationPlanner {
         id: "\(current.provider.rawValue):\(window.id):reset:\(Int(window.resetsAt?.timeIntervalSince1970 ?? 0))",
         kind: .reset,
         provider: current.provider,
+        window: WindowKey(current.provider, window),
         title: "\(current.provider.displayName) \(window.label) reset",
         body: "Usage is back to \(Format.percent(window.usedPercent))."
       )

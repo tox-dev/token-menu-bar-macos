@@ -30,7 +30,7 @@ private func makeDependencies(
     copyToPasteboard: { recorder.copied.append($0) },
     revealInFinder: { recorder.revealed.append($0) },
     chooseExportURL: { recorder.exportURL },
-    chooseCodexHome: { recorder.codexHome },
+    chooseDirectory: { _ in recorder.codexHome },
     terminate: { recorder.terminated += 1 },
     rebuildProviders: { _ in
       recorder.rebuilt += 1
@@ -149,16 +149,17 @@ final class Recorder {
   #expect(controller.environment.launchAtLoginStatus == .notRegistered)
   actions.openLoginItems()
   #expect(recorder.openedLoginItems == 1)
-  actions.grantCodexAccess()
+  let codexHome = ProviderID.codex.sandboxResources[0]
+  actions.grantAccess(codexHome)
   #expect(recorder.rebuilt == 0)
   recorder.codexHome = FileManager.default.temporaryDirectory
-  actions.grantCodexAccess()
+  actions.grantAccess(codexHome)
   #expect(recorder.rebuilt == 1)
-  #expect(dependencies.settings.codexHomeBookmark != nil)
+  #expect(dependencies.settings.bookmark(for: codexHome) != nil)
   #expect(controller.environment.credentialDescriptions == [.codex: "static codex"])
   recorder.codexHome = URL(fileURLWithPath: "/nonexistent/path/\(UUID().uuidString)")
-  actions.grantCodexAccess()
-  #expect(dependencies.log.text.contains("bookmark failed"))
+  actions.grantAccess(codexHome)
+  #expect(dependencies.log.text.contains("bookmark for ~/.codex failed"))
   actions.refresh()
   actions.settingsChanged()
 }
@@ -209,20 +210,43 @@ final class Recorder {
     appInfo: testAppInfo, paths: paths, defaults: defaults, notificationCenter: nil, isSandboxed: true)
   #expect(sandboxed.isSandboxed)
   let log = makeLog()
-  #expect(LiveDependencies.codexHome(paths: paths, bookmark: nil, log: log).path.hasSuffix(".codex"))
-  #expect(LiveDependencies.codexHome(paths: paths, bookmark: Data([1, 2, 3]), log: log).path.hasSuffix(".codex"))
+  let codexHome = ProviderID.codex.sandboxResources[0]
+  let fallback = codexHome.configuredURL(environment: paths.environment, home: paths.home)
+  #expect(LiveDependencies.resolve(bookmark: nil, fallback: fallback, log: log).path.hasSuffix(".codex"))
+  #expect(LiveDependencies.resolve(bookmark: Data([1, 2, 3]), fallback: fallback, log: log) == fallback)
   #expect(log.text.contains("could not be resolved"))
   let bookmark = try (FileManager.default.temporaryDirectory as NSURL).bookmarkData(
     options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
   #expect(
-    LiveDependencies.codexHome(paths: paths, bookmark: bookmark, log: log).path.contains(
+    LiveDependencies.resolve(bookmark: bookmark, fallback: fallback, log: log).path.contains(
       FileManager.default.temporaryDirectory.lastPathComponent))
+  let settings = makeSettings()
+  #expect(
+    LiveDependencies.directory(codexHome, paths: paths, settings: settings, isSandboxed: false, log: log) == fallback)
+  settings.setBookmark(bookmark, for: codexHome)
+  #expect(
+    LiveDependencies.directory(codexHome, paths: paths, settings: settings, isSandboxed: true, log: log) != fallback)
+  // an explicit CODEX_HOME still wins over the bookmark
+  let configured = LiveDependencies.Paths(home: root, environment: ["CODEX_HOME": "/tmp/cx"], userName: "tester")
+  let sandboxedGraph = try LiveDependencies.make(
+    appInfo: testAppInfo, paths: configured, defaults: UserDefaults(suiteName: "cfg-\(UUID().uuidString)")!,
+    notificationCenter: nil, isSandboxed: true)
+  #expect(sandboxedGraph.registry[.codex]?.credentialDescription == "/tmp/cx/auth.json")
+  #expect(
+    ProviderID.claude.sandboxResources[1].configuredURL(environment: [:], home: root).lastPathComponent
+      == ".claude.json")
+  // a stored bookmark replaces the configured path when the build is sandboxed
+  let bookmarked = makeSettings()
+  bookmarked.setBookmark(bookmark, for: codexHome)
+  let redirected = LiveDependencies.providers(
+    paths: paths, client: APIClient(transport: URLSession.shared, log: log), log: log, settings: bookmarked,
+    isSandboxed: true)
+  #expect(redirected[.codex]?.credentialDescription.hasSuffix("/auth.json") == true)
+  #expect(redirected[.codex]?.credentialDescription.contains(paths.home.path) == false)
   let home = LiveDependencies.Paths()
   #expect(home.userName == NSUserName())
-  #expect(
-    LiveDependencies.codexHome(
-      paths: LiveDependencies.Paths(home: root, environment: ["CODEX_HOME": "/tmp/cx"]), bookmark: nil, log: log
-    ).path == "/tmp/cx")
+  #expect(ProviderID.allSandboxResources.count >= ProviderID.allCases.count)
+  #expect(ProviderID.cursor.sandboxResources.map(\.label).contains("~/.cursor"))
 }
 
 @Test @MainActor func appRunnerBootstrapsAgainstTemporaryDefaults() throws {

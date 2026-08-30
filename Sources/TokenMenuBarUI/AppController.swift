@@ -28,7 +28,7 @@ public struct AppDependencies {
   public var copyToPasteboard: (String) -> Void
   public var revealInFinder: (URL) -> Void
   public var chooseExportURL: () -> URL?
-  public var chooseCodexHome: () -> URL?
+  public var chooseDirectory: (SandboxResource) -> URL?
   public var terminate: () -> Void
   public var relaunch: () -> Void
   public var widgetStore: WidgetSnapshotStore?
@@ -56,7 +56,7 @@ public struct AppDependencies {
     copyToPasteboard: @escaping (String) -> Void,
     revealInFinder: @escaping (URL) -> Void,
     chooseExportURL: @escaping () -> URL?,
-    chooseCodexHome: @escaping () -> URL?,
+    chooseDirectory: @escaping (SandboxResource) -> URL?,
     terminate: @escaping () -> Void,
     relaunch: @escaping () -> Void = {},
     widgetStore: WidgetSnapshotStore? = nil,
@@ -83,7 +83,7 @@ public struct AppDependencies {
     self.copyToPasteboard = copyToPasteboard
     self.revealInFinder = revealInFinder
     self.chooseExportURL = chooseExportURL
-    self.chooseCodexHome = chooseCodexHome
+    self.chooseDirectory = chooseDirectory
     self.terminate = terminate
     self.relaunch = relaunch
     self.widgetStore = widgetStore
@@ -162,7 +162,7 @@ public final class AppController {
       showFullLog: { [weak self] in self?.showFullLog() },
       setLaunchAtLogin: { [weak self] in self?.setLaunchAtLogin($0) },
       openLoginItems: { [weak self] in self?.dependencies.launchAtLogin.openSettings() },
-      grantCodexAccess: { [weak self] in self?.grantCodexAccess() },
+      grantAccess: { [weak self] in self?.grantAccess(to: $0) },
       checkForUpdates: { [weak self] in self?.dependencies.updater?.checkForUpdates() },
       quit: { [weak self] in self?.dependencies.terminate() },
       setDemoMode: { [weak self] in self?.setDemoMode($0) },
@@ -363,16 +363,18 @@ public final class AppController {
     dependencies.log.log("launch at login \(enabled ? "on" : "off") -> \(environment.launchAtLoginStatus.rawValue)")
   }
 
-  public func grantCodexAccess() {
-    guard let url = dependencies.chooseCodexHome() else { return }
+  public func grantAccess(to resource: SandboxResource) {
+    guard let url = dependencies.chooseDirectory(resource) else { return }
     do {
-      dependencies.settings.codexHomeBookmark = try (url as NSURL).bookmarkData(
+      let bookmark = try (url as NSURL).bookmarkData(
         options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
-      dependencies.log.log("codex home access granted: \(url.lastPathComponent)")
+      dependencies.settings.setBookmark(bookmark, for: resource)
+      dependencies.settings.flush()
+      dependencies.log.log("\(resource.label) access granted: \(url.lastPathComponent)")
       replaceProviders(dependencies.rebuildProviders(dependencies.settings))
       refreshNow()
     } catch {
-      dependencies.log.logError("bookmark failed: \(error)")
+      dependencies.log.logError("bookmark for \(resource.label) failed: \(error)")
     }
   }
 
@@ -388,6 +390,35 @@ public final class AppController {
     coordinator.registry = registry
     environment.credentialDescriptions = Dictionary(
       uniqueKeysWithValues: registry.providers.map { ($0.id, $0.credentialDescription) })
+  }
+}
+
+/// Renders the popover tabs straight to PNG for the website. A screen capture of the live popover picks up its
+/// shadow and whatever sits behind it; hosting the same view offscreen yields exactly the content and nothing else.
+@MainActor
+public enum PopoverExporter {
+  public static func image(_ view: some View, size: CGSize, dark: Bool) -> NSImage? {
+    let hosting = NSHostingView(rootView: view.frame(width: size.width, height: size.height))
+    hosting.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+    hosting.frame = CGRect(origin: .zero, size: size)
+    hosting.layoutSubtreeIfNeeded()
+    guard let rep = hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds) else { return nil }
+    hosting.cacheDisplay(in: hosting.bounds, to: rep)
+    let image = NSImage(size: size)
+    image.addRepresentation(rep)
+    return image
+  }
+
+  /// The natural height of the view at a fixed width, so an exported tab is exactly as tall as its content.
+  public static func height(_ view: some View, width: CGFloat) -> CGFloat {
+    NSHostingView(rootView: view.frame(width: width)).fittingSize.height
+  }
+
+  public static func png(_ view: some View, size: CGSize, dark: Bool) -> Data? {
+    guard let image = image(view, size: size, dark: dark),
+      let rep = image.representations.first as? NSBitmapImageRep
+    else { return nil }
+    return rep.representation(using: .png, properties: [:])
   }
 }
 

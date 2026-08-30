@@ -48,6 +48,10 @@ public struct WidgetSnapshot: Codable, Sendable, Hashable {
     self.updatedAt = updatedAt
   }
 
+  /// Shown until the app writes its first snapshot. Empty on purpose: `placeholder` carries sample percentages
+  /// and would otherwise read as the viewer's own quota.
+  public static let unavailable = WidgetSnapshot(rows: [], attention: false, updatedAt: .distantPast)
+
   public static let placeholder = WidgetSnapshot(
     rows: [
       WidgetRow(
@@ -73,6 +77,10 @@ public struct WidgetSnapshot: Codable, Sendable, Hashable {
     }
     return WidgetSnapshot(
       rows: rows, attention: availability.values.contains(.authenticationRequired), updatedAt: now)
+  }
+
+  public var hasData: Bool {
+    updatedAt != .distantPast
   }
 
   public var isStale: Bool {

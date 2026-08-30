@@ -26,11 +26,13 @@ if [[ "$signed" == "true" ]]; then
 </dict>
 </plist>
 PLIST
-  xcodebuild -exportArchive -archivePath "$archive" -exportOptionsPlist "$out/export.plist" -exportPath "$out" | tail -20
+  xcodebuild -exportArchive -archivePath "$archive" -exportOptionsPlist "$out/export.plist" \
+    -exportPath "$out" | tail -20
 else
   xcodebuild -project App/TokenMenuBar.xcodeproj -scheme TokenMenuBar-Direct -configuration Release \
     -destination 'platform=macOS' -archivePath "$archive" \
-    CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" SPARKLE_PUBLIC_ED_KEY="${SPARKLE_PUBLIC_ED_KEY:-}" archive | tail -20
+    CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="" \
+    SPARKLE_PUBLIC_ED_KEY="${SPARKLE_PUBLIC_ED_KEY:-}" archive | tail -20
   cp -R "$archive/Products/Applications/Token Menu Bar.app" "$out/"
   codesign --force --deep --sign - "$out/Token Menu Bar.app"
 fi

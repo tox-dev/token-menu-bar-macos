@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Notarizes every .app, .dmg and .zip in the given directory with an App Store Connect API key, then staples the apps and DMGs.
+# Notarizes the .app, .dmg and .zip files in the given directory with an App Store Connect API key,
+# then staples the result.
 set -euo pipefail
 
 directory="${1:?usage: notarize.sh <directory>}"
@@ -10,7 +11,8 @@ key="$RUNNER_TEMP/AuthKey.p8"
 echo "$APP_STORE_CONNECT_KEY_BASE64" | base64 --decode > "$key"
 
 notarize() {
-  xcrun notarytool submit "$1" --key "$key" --key-id "$APP_STORE_CONNECT_KEY_ID" --issuer "$APP_STORE_CONNECT_ISSUER_ID" --wait
+  xcrun notarytool submit "$1" --key "$key" --key-id "$APP_STORE_CONNECT_KEY_ID" \
+    --issuer "$APP_STORE_CONNECT_ISSUER_ID" --wait
 }
 
 for app in "$directory"/*.app; do

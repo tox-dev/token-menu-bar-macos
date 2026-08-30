@@ -80,6 +80,20 @@ public struct SettingsTab: View {
       set: { settings.setRefreshInterval($0 * 60, for: provider) })
   }
 
+  /// Sandboxed builds cannot read these paths until the user picks them, so Settings offers one button per
+  /// directory the provider still needs.
+  public func missingAccess(_ provider: ProviderID) -> [SandboxResource] {
+    provider.sandboxResources.filter { settings.bookmark(for: $0) == nil }
+  }
+
+  public func openRepository() {
+    environment.actions.openURL(environment.appInfo.repository)
+  }
+
+  public func grantAccess(_ resource: SandboxResource) {
+    environment.actions.grantAccess(resource)
+  }
+
   public func provider(_ provider: ProviderID) -> Binding<Bool> {
     Binding(get: { settings.enabledProviders.contains(provider) }, set: { setProvider(provider, enabled: $0) })
   }
@@ -96,21 +110,21 @@ public struct SettingsTab: View {
           isOn: Binding(
             get: { environment.launchAtLoginStatus.isEnabled }, set: { environment.actions.setLaunchAtLogin($0) }))
         if environment.launchAtLoginStatus == .requiresApproval {
-          Button("Open Login Items") { environment.actions.openLoginItems() }
+          Button("Open Login Items", systemImage: "person.badge.key") { environment.actions.openLoginItems() }
         }
-        Button("Reset Defaults") { resetDefaults() }
+        Button("Reset Defaults", systemImage: "arrow.counterclockwise") { resetDefaults() }
       }
       if let explanation = environment.launchAtLoginStatus.explanation {
         Text(explanation).font(.caption).foregroundStyle(.secondary)
       }
       HStack(spacing: 8) {
-        Button("Copy Diagnostics") { environment.actions.copyDiagnostics() }
-        Button("Report Issue") { environment.actions.reportIssue() }
-        Button("Source") { environment.actions.openURL(environment.appInfo.repository) }
+        Button("Copy Diagnostics", systemImage: "doc.on.doc") { environment.actions.copyDiagnostics() }
+        Button("Report Issue", systemImage: "exclamationmark.bubble") { environment.actions.reportIssue() }
+        Button("Source", systemImage: "chevron.left.forwardslash.chevron.right", action: openRepository)
         Spacer()
         if environment.canCheckForUpdates {
           Toggle("Check for updates automatically", isOn: menuBarSetting(\.automaticUpdates))
-          Button("Check Now") { environment.actions.checkForUpdates() }
+          Button("Check Now", systemImage: "arrow.down.circle") { environment.actions.checkForUpdates() }
         }
       }
     }
@@ -159,8 +173,10 @@ public struct SettingsTab: View {
             in: Int(PollingPolicy.defaults(for: provider).minimumInterval) / 60...TokenMenuBarCore.Settings
               .maximumRefreshSeconds / 60
           )
-          if provider == .codex, environment.isSandboxed {
-            Button("Grant access to ~/.codex") { environment.actions.grantCodexAccess() }
+          if environment.isSandboxed {
+            ForEach(missingAccess(provider)) { resource in
+              Button("Grant \(resource.label)", systemImage: "folder.badge.plus") { grantAccess(resource) }
+            }
           }
         }
       }
@@ -187,11 +203,11 @@ public struct SettingsTab: View {
         .lineLimit(1)
         .help(environment.history.location?.path ?? "")
       Spacer()
-      Button("Open") { environment.actions.revealHistory() }
-      Button("Export…") { environment.actions.exportHistory() }
-      Button("Clear…", role: .destructive) { confirmClear = true }
+      Button("Open", systemImage: "folder") { environment.actions.revealHistory() }
+      Button("Export…", systemImage: "square.and.arrow.up") { environment.actions.exportHistory() }
+      Button("Clear…", systemImage: "trash", role: .destructive) { confirmClear = true }
         .confirmationDialog("Clear all stored history?", isPresented: $confirmClear) {
-          Button("Clear History", role: .destructive) { environment.actions.clearHistory() }
+          Button("Clear History", systemImage: "trash", role: .destructive) { environment.actions.clearHistory() }
         }
     }
   }
@@ -312,9 +328,9 @@ public struct LogSection: View {
   public var body: some View {
     VStack(alignment: .leading, spacing: 6) {
       HStack(spacing: 8) {
-        Button("Copy") { environment.actions.copy(environment.log.text) }
-        Button("Clear") { environment.log.clear() }
-        Button("Show Full Log") { environment.actions.showFullLog() }
+        Button("Copy", systemImage: "doc.on.doc") { environment.actions.copy(environment.log.text) }
+        Button("Clear", systemImage: "trash") { environment.log.clear() }
+        Button("Show Full Log", systemImage: "text.alignleft") { environment.actions.showFullLog() }
         Spacer()
         Toggle(
           "Demo data",
