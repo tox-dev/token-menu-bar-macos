@@ -63,6 +63,14 @@ site:
 site-serve:
     hugo server --source website
 
+# Build the website the way Read the Docs does, into the directory it serves
+site-readthedocs:
+    : "${READTHEDOCS_CANONICAL_URL:?}"
+    : "${READTHEDOCS_OUTPUT:?}"
+    mkdir -p "$READTHEDOCS_OUTPUT/html"
+    hugo --source website --gc --minify --baseURL "$READTHEDOCS_CANONICAL_URL" \
+      --destination "$READTHEDOCS_OUTPUT/html"
+
 # Generate the Xcode project from App/project.yml
 xcode:
     cd App && xcodegen generate

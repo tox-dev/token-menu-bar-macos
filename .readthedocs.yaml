@@ -1,5 +1,5 @@
-# Read the Docs builds the Hugo site itself: the version comes from mise.toml, so the docs host and a laptop run the
-# same Hugo. https://docs.readthedocs.com/platform/stable/build-customization.html
+# Read the Docs builds the site the same way a laptop does: mise provides the pinned tools, just runs the recipe.
+# https://docs.readthedocs.com/platform/stable/build-customization.html
 version: 2
 
 build:
@@ -7,7 +7,6 @@ build:
   tools:
     python: "3.13"
   commands:
-    - version=$(python3 -c "import pathlib,tomllib;print(tomllib.loads(pathlib.Path('mise.toml').read_text())['tools']['hugo'])")
-    - curl -fsSL "https://github.com/gohugoio/hugo/releases/download/v${version}/hugo_extended_${version}_linux-amd64.tar.gz"
-      | tar -xz hugo
-    - ./hugo --source website --gc --minify --baseURL "${READTHEDOCS_CANONICAL_URL}" --destination "${READTHEDOCS_OUTPUT}/html"
+    - curl --fail --location https://mise.run | sh
+    - MISE_SAFE=1 ~/.local/bin/mise install --locked hugo just
+    - MISE_EXEC_AUTO_INSTALL=0 MISE_SAFE=1 ~/.local/bin/mise exec -- just site-readthedocs
