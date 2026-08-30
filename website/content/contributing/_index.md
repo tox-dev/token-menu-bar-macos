@@ -152,5 +152,10 @@ zip, DMG, checksums and [Sparkle](https://sparkle-project.org) appcast, refreshe
 [Homebrew cask](https://docs.brew.sh/Cask-Cookbook), and uploads the App Store flavour when the `APP_STORE_ENABLED`
 variable is set. The signed builds carry the widget extension; an ad-hoc development bundle has none.
 
+Secrets the workflow understands: `DEVELOPER_ID_CERTIFICATE_BASE64`, `DEVELOPER_ID_CERTIFICATE_PASSWORD`,
+`APPLE_DISTRIBUTION_CERTIFICATE_BASE64`, `APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD`,
+`APP_STORE_PROVISIONING_PROFILE_BASE64`, `APPLE_TEAM_ID`, `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`,
+`APP_STORE_CONNECT_KEY_BASE64`, `SPARKLE_PUBLIC_ED_KEY`, `SPARKLE_PRIVATE_ED_KEY`.
+
 [Renovate](https://docs.renovatebot.com) opens a grouped pull request each week for the pinned tools, the action digests
 and the Swift packages. The docs deploy to GitHub Pages on every push to `main`.

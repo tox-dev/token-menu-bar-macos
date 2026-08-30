@@ -3,9 +3,9 @@ name: Website
 on:
   push:
     branches: [main]
-    paths: ["website/**", ".github/workflows/docs.yml"]
+    paths: ["website/**", "mise.toml", "mise.lock", ".readthedocs.yaml", ".github/workflows/docs.yml"]
   pull_request:
-    paths: ["website/**", ".github/workflows/docs.yml"]
+    paths: ["website/**", "mise.toml", "mise.lock", ".readthedocs.yaml", ".github/workflows/docs.yml"]
   workflow_dispatch:
 
 permissions:
@@ -17,52 +17,21 @@ concurrency:
 
 jobs:
   build:
+    name: Build the site
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: website
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
       - uses: jdx/mise-action@v2
-        with:
-          working_directory: .
-      - uses: actions/configure-pages@v5
-        id: pages
-        if: github.ref == 'refs/heads/main'
-        with:
-          enablement: true
+      # Read the Docs publishes the site; this only has to fail when a template or a shortcode breaks.
       - name: Build
-        # The site is plain CSS and templates, so the Hugo binary is the entire toolchain.
-        env:
-          BASE_URL: ${{ steps.pages.outputs.base_url || 'https://tox-dev.github.io/token-menu-bar-macos/' }}
-        run: hugo --gc --minify --baseURL "$BASE_URL"
+        run: just site
       - name: Check the generated pages
         run: |
+          cd website
           test -s public/index.html
           test -s public/llms.txt
           test -s public/sitemap.xml
           test -s public/robots.txt
           test -s public/start/index.md
-      - uses: actions/upload-pages-artifact@v3
-        if: github.ref == 'refs/heads/main'
-        with:
-          path: website/public
-
-  deploy:
-    needs: build
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    concurrency:
-      group: pages
-      cancel-in-progress: false
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4

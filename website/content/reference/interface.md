@@ -71,3 +71,17 @@ sessions and tool calls per day).
 {{< shot name="popover-settings" alt="Settings" caption="Settings tab: menu bar, providers, data and the log." >}}
 
 [Settings](/reference/settings/) describes each option.
+
+## Where the numbers come from
+
+| Provider                                                       | Token                                                                     | Endpoints                                                                                                                           |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| [Claude](https://docs.claude.com/en/docs/claude-code/overview) | Keychain item `Claude Code-credentials`, or `~/.claude/.credentials.json` | `GET api.anthropic.com/api/oauth/usage`, `GET api.anthropic.com/api/oauth/profile`                                                  |
+| [Codex](https://developers.openai.com/codex/cli/)              | `~/.codex/auth.json` (`CODEX_HOME` honoured)                              | `chatgpt.com/backend-api/wham/usage`, `wham/rate-limit-reset-credits`, `wham/usage/daily-token-usage-breakdown`, `wham/analytics/*` |
+| [Gemini](https://github.com/google-gemini/gemini-cli)          | `~/.gemini/oauth_creds.json` (`GEMINI_CLI_HOME` honoured)                 | `cloudcode-pa.googleapis.com/v1internal:loadCodeAssist`, then `:retrieveUserQuota`                                                  |
+| [Cursor](https://cursor.com/docs)                              | Cursor's `state.vscdb`, or `~/.cursor/auth.json` from `cursor-agent`      | `cursor.com/api/usage-summary`, `/api/auth/me`, falling back to `api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage` |
+| [Copilot](https://docs.github.com/en/copilot)                  | `~/.config/github-copilot/hosts.json` or `apps.json`                      | `api.github.com/copilot_internal/user`                                                                                              |
+
+Google ended Login with Google for personal accounts in June 2026, so quota reaches Workspace and Code Assist Standard
+or Enterprise accounts alone; the app says so rather than looping on a sign-in prompt. When Codex is offline or signed
+out, the app falls back to the last `rate_limits` event in `~/.codex/sessions`.

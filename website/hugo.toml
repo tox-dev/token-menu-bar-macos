@@ -1,4 +1,4 @@
-baseURL = "https://tox-dev.github.io/token-menu-bar-macos/"
+baseURL = "https://token-menu-bar-macos.readthedocs.io/en/latest/"
 locale = "en-US"
 defaultContentLanguage = "en"
 title = "Token Menu Bar"
