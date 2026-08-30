@@ -257,3 +257,24 @@ private func makeFeatureDependencies(
   ChromeSizeKey.reduce(value: &value) { CGSize(width: 2, height: 2) }
   #expect(value == CGSize(width: 2, height: 2))
 }
+
+@Test @MainActor func exportRunnerWritesIconsAndMenuBarStrips() async throws {
+  let directory = FileManager.default.temporaryDirectory.appendingPathComponent("tmb-export-\(UUID().uuidString)")
+  let icons = try await ExportRunner.run(.icons, directory: directory)
+  #expect(icons.contains { $0.lastPathComponent == "icon_512x512@2x.png" })
+  let strips = try await ExportRunner.run(.menuBar, directory: directory, now: fixedNow)
+  #expect(strips.map(\.lastPathComponent) == ["menubar-light.png", "menubar-dark.png"])
+  #expect(try Data(contentsOf: strips[0]).isEmpty == false)
+  try FileManager.default.removeItem(at: directory)
+}
+
+@Test @MainActor func exportRunnerWritesOnePopoverShotPerTabAndAppearance() async throws {
+  let directory = FileManager.default.temporaryDirectory.appendingPathComponent("tmb-export-\(UUID().uuidString)")
+  let shots = try await ExportRunner.run(.popover, directory: directory, settle: .zero)
+  #expect(
+    shots.map(\.lastPathComponent)
+      == PopoverTab.allCases.flatMap {
+        ["popover-\($0.rawValue.lowercased())-light.png", "popover-\($0.rawValue.lowercased())-dark.png"]
+      })
+  try FileManager.default.removeItem(at: directory)
+}

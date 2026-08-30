@@ -282,3 +282,20 @@ func sandboxResourcesFollowTheirConfiguredLocation(id: String, environment: [Str
   #expect(ProviderID.allSandboxResources.allSatisfy { $0.label.hasPrefix("~/") })
   #expect(Set(ProviderID.allSandboxResources.map(\.id)).count == 7)
 }
+
+@Test(
+  arguments: [
+    (["app", "--export-icon", "/tmp/a"], ExportCommand.icons), (["--export-menubar", "/tmp/a"], .menuBar),
+    (["--export-popover", "/tmp/a"], .popover),
+  ])
+func exportCommandParsesItsFlag(arguments: [String], command: ExportCommand) {
+  let parsed = ExportCommand.parse(arguments)
+  #expect(parsed?.command == command)
+  #expect(parsed?.directory.path == "/tmp/a")
+  #expect(!command.failureMessage.isEmpty)
+}
+
+@Test(arguments: [["app"], ["app", "--export-icon"], []])
+func exportCommandNeedsAFlagAndADirectory(arguments: [String]) {
+  #expect(ExportCommand.parse(arguments) == nil)
+}
