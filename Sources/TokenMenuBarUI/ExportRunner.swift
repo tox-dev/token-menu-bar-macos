@@ -44,14 +44,27 @@ public enum ExportRunner {
     let suite = "dev.tox.token-menu-bar.export"
     let defaults = UserDefaults(suiteName: suite)!
     defaults.removePersistentDomain(forName: suite)
+    // A leftover history file would freeze the shots at whatever the demo generated on an earlier run
+    let support = FileManager.default.temporaryDirectory.appendingPathComponent("tmb-export")
+    try? FileManager.default.removeItem(at: support)
     let delegate = try AppRunner.bootstrap(
       isAppStore: false, notificationCenter: nil, updater: nil, isSandboxed: false,
-      paths: LiveDependencies.Paths(
-        supportDirectory: FileManager.default.temporaryDirectory.appendingPathComponent("tmb-export"),
-        environment: ["TOKEN_MENU_BAR_DEMO": "1"]),
+      paths: LiveDependencies.Paths(supportDirectory: support, environment: ["TOKEN_MENU_BAR_DEMO": "1"]),
       defaults: defaults)
     let controller = delegate.controller
+    // A month of daily buckets shows the weekly rhythm; the default "today" view has nothing to draw yet
+    controller.environment.settings.historyRange = .month
+    controller.environment.settings.historyRollup = .day
+    // Demo history seeds on a background task, and an empty chart makes for a poor screenshot
+    for _ in 0..<200 where (try? await controller.environment.history.stats().sampleCount) ?? 0 == 0 {
+      try? await Task.sleep(for: .milliseconds(100))
+    }
     await controller.coordinator.refresh(RefreshRequest(force: true, analytics: true))
+    // Five-hour windows reset around thirty times across a week, which reads as noise next to the weekly lines
+    controller.environment.settings.historyHiddenKeys = Set(
+      controller.environment.state.snapshots.flatMap { provider, snapshot in
+        snapshot.windows.filter { $0.group == .session }.map { WindowKey(provider, $0) }
+      })
     controller.environment.historyPresenter.reload()
     try? await Task.sleep(for: settle)
     await controller.environment.loadRecentSamples()

@@ -347,9 +347,9 @@ td {
 .hero .wrap {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-  gap: 3rem;
-  align-items: center;
+  gap: 2rem;
+  justify-items: start;
+  max-width: 780px;
 }
 
 .eyebrow {
@@ -396,7 +396,7 @@ td {
 .hero-media {
   display: grid;
   gap: 0.9rem;
-  justify-items: center;
+  width: 100%;
 }
 
 .shot {
@@ -409,17 +409,9 @@ td {
   height: auto;
 }
 
-/* The hero shows the top of the popover and fades the cut, so the page stays short and the crop reads as deliberate */
-.hero-popover {
-  max-height: 380px;
-  overflow: hidden;
-  border-radius: var(--radius-lg);
-  -webkit-mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 76%, transparent 100%);
-}
 
 .shot-bar {
-  max-width: 420px;
+  max-width: 520px;
   border-radius: var(--radius);
 }
 
@@ -542,22 +534,10 @@ td {
   display: none;
 }
 
-/* Each tab is as tall as its own content, so the shot scrolls inside a frame every tab shares */
-.tabshot-frame {
-  max-height: min(70vh, 620px);
-  overflow: auto;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow-lg);
-  background: var(--surface);
-}
-
+/* One tab at a time, each shown whole: no crop, no inner scrollbar */
 .tabshot-frame img {
   display: block;
   margin-inline: auto;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
 }
 
 .tabshot-panel figcaption {
@@ -709,11 +689,6 @@ h3:hover .anchor,
 }
 
 @media (max-width: 900px) {
-  .hero .wrap {
-    grid-template-columns: 1fr;
-    gap: 2rem;
-  }
-
   .hero {
     padding-top: 2.6rem;
   }

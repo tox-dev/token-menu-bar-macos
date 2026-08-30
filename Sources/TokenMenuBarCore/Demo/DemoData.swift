@@ -2,7 +2,8 @@ import Foundation
 
 public enum DemoData {
   public static let email = "you@example.com"
-  public static let historyDays = 7
+  public static let historyDays = 30
+  static let seedInterval: TimeInterval = 1800
 
   public static func snapshot(_ provider: ProviderID, now: Date) -> ProviderSnapshot {
     switch provider {
@@ -160,11 +161,46 @@ public enum DemoData {
     now: Date, scope: String? = nil
   ) -> QuotaWindow {
     let resetsAt = boundary(now: now, duration: duration, offset: offset)
-    let elapsed = 1 - resetsAt.timeIntervalSince(now) / duration
-    let wobble = 0.02 * sin(now.timeIntervalSince1970 / 36000 + Double(id.count))
+    let start = resetsAt.addingTimeInterval(-duration)
     return QuotaWindow(
-      id: id, label: label, group: group, usedPercent: min(100, max(0, (elapsed * pace + wobble) * 100)),
-      resetsAt: resetsAt, duration: duration, scope: scope)
+      id: id, label: label, group: group,
+      usedPercent: min(100, max(0, burned(from: start, to: now, of: duration) * pace * 100)), resetsAt: resetsAt,
+      duration: duration, scope: scope)
+  }
+
+  /// Quota burns while someone works, so the demo curve climbs through office hours and flattens overnight and at
+  /// weekends. A flat ramp reads as synthetic the moment it lands on a chart. Sampling a fixed number of steps keeps
+  /// this cheap enough to run for every point the seeded history holds.
+  static func burned(from start: Date, to now: Date, of duration: TimeInterval) -> Double {
+    let step = max(duration / 48, 900)
+    var spent = 0.0
+    var total = 0.0
+    for offset in stride(from: 0.0, to: duration, by: step) {
+      let moment = start.addingTimeInterval(offset)
+      let weight = intensity(at: moment)
+      total += weight
+      if moment <= now { spent += weight }
+    }
+    return total > 0 ? spent / total : 0
+  }
+
+  /// Hour and weekday from the epoch rather than Calendar: the seed asks for this hundreds of thousands of times.
+  static func intensity(at date: Date) -> Double {
+    let seconds = date.timeIntervalSince1970
+    let day = (seconds / 86400).rounded(.down)
+    let hour = (seconds - day * 86400) / 3600
+    let workday =
+      switch hour {
+      case 9..<12, 14..<18: 1.0
+      case 12..<14: 0.55
+      case 18..<22: 0.35
+      case 8..<9: 0.5
+      default: 0.05
+      }
+    // 1 January 1970 was a Thursday, so index 0 lands on Sunday
+    let weekday = Int(day.truncatingRemainder(dividingBy: 7) + 4).quotientAndRemainder(dividingBy: 7).remainder
+    let weekend = weekday == 0 || weekday == 6
+    return workday * (weekend ? 0.3 : 1)
   }
 
   static func boundary(now: Date, duration: TimeInterval, offset: TimeInterval) -> Date {
@@ -176,10 +212,10 @@ public enum DemoData {
     let start = now.addingTimeInterval(-Double(historyDays) * 86400)
     var snapshots: [(ProviderSnapshot, Date)] = []
     for provider in providers {
-      for stamp in stride(from: start, to: now, by: UsageHistoryStore.sampleInterval) {
+      for stamp in stride(from: start, to: now, by: seedInterval) {
         snapshots.append((snapshot(provider, now: stamp), stamp))
       }
-      if let analytics = analytics(provider, now: now, days: 30) { try await history.record(analytics) }
+      if let analytics = analytics(provider, now: now, days: historyDays) { try await history.record(analytics) }
     }
     try await history.seed(snapshots)
   }
