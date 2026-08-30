@@ -213,7 +213,7 @@ func codexProvider(
     allowRefresh: { allowRefresh })
 }
 
-private func stubCodexAnalytics(_ transport: StubTransport) {
+func stubCodexAnalytics(_ transport: StubTransport) {
   transport.on(path: "daily-token-usage-breakdown", .json("codex_daily_token_usage"))
   transport.on(path: "daily-workspace-usage-counts", .json("codex_daily_workspace_usage"))
   transport.on(path: "daily-skill-usage-metrics", .json("codex_daily_skills"))

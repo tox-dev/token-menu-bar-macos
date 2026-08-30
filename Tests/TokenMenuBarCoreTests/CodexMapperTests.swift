@@ -1,260 +1,286 @@
 import Foundation
 import Testing
+import TokenMenuBarCore
 
-@testable import TokenMenuBarCore
-
-@Test func codexUsageDecodesFixture() {
-  let response = Fixtures.decode(CodexAPI.UsageResponse.self, "codex_usage")
-  #expect(response.planType == "pro")
-  #expect(response.rateLimit?.primaryWindow?.limitWindowSeconds == 604_800)
-  #expect(response.rateLimit?.secondaryWindow == nil)
-  #expect(response.additionalRateLimits?.first?.limitName == "GPT-5.3-Codex-Spark")
-  #expect(response.credits?.balance == "0")
-  #expect(response.rateLimitResetCredits?.availableCount == 0)
-  #expect(response.promo == nil)
+@MainActor
+private func codexFetch(
+  usage: StubTransport.Response, analytics: Bool = false, stub: (StubTransport) -> Void = { _ in }
+) async -> (result: ProviderFetchResult, transport: StubTransport) {
+  let transport = StubTransport()
+  transport.on(path: "/wham/usage", usage)
+  transport.on(path: "rate-limit-reset-credits", .json("codex_reset_credits"))
+  stub(transport)
+  let provider = codexProvider(MemoryCodexStore(validCodex), transport: transport)
+  let options = FetchOptions(includeAnalytics: analytics, analyticsDays: 7)
+  return (await provider.fetch(now: fixedNow, options: options), transport)
 }
 
-@Test func codexWindowsCoverPrimaryAdditionalAndCodeReview() {
-  var response = Fixtures.decode(CodexAPI.UsageResponse.self, "codex_usage")
-  let windows = CodexMapper.windows(response)
+@MainActor
+private func codexSnapshot(usage: StubTransport.Response) async -> ProviderSnapshot? {
+  guard case .success(let snapshot) = await codexFetch(usage: usage).result.outcome else {
+    Issue.record("expected a snapshot")
+    return nil
+  }
+  return snapshot
+}
+
+@Test func codexReportsPrimaryAdditionalAndCodeReviewWindows() async throws {
+  let snapshot = try #require(await codexSnapshot(usage: .json("codex_usage")))
   #expect(
-    windows.map(\.id) == ["weekly", "additional:gpt-5-3-codex-spark:session", "additional:gpt-5-3-codex-spark:weekly"])
-  #expect(windows[0].label == "Weekly")
-  #expect(windows[0].usedPercent == 62)
-  #expect(windows[0].resetsAt == Date(timeIntervalSince1970: 1_788_558_705))
-  #expect(windows[1].label == "GPT-5.3-Codex-Spark 5-hour")
-  #expect(windows[1].scope == "GPT-5.3-Codex-Spark")
-  #expect(windows[1].group == .session)
-  response = CodexAPI.UsageResponse(
-    email: nil, planType: nil,
-    rateLimit: .init(
-      allowed: false, limitReached: true,
-      primaryWindow: .init(usedPercent: 100, limitWindowSeconds: 18000, resetAfterSeconds: 10, resetAt: 1),
-      secondaryWindow: .init(usedPercent: 40, limitWindowSeconds: 2_592_000, resetAfterSeconds: nil, resetAt: nil)),
-    codeReviewRateLimit: .init(
-      allowed: true, limitReached: false,
-      primaryWindow: .init(usedPercent: 5, limitWindowSeconds: 3600, resetAfterSeconds: nil, resetAt: nil),
-      secondaryWindow: nil),
-    additionalRateLimits: nil, credits: nil, spendControl: nil, rateLimitReachedType: nil, promo: nil,
-    rateLimitResetCredits: nil
-  )
-  let more = CodexMapper.windows(response)
-  #expect(more.map(\.id) == ["session", "monthly", "code_review:window-3600"])
-  #expect(more[0].severity == .critical)
-  #expect(more[1].group == .monthly)
-  #expect(more[2].label == "Code review 1h")
-  #expect(more[2].group == .other)
-  #expect(
-    CodexMapper.windows(
-      CodexAPI.UsageResponse(
-        email: nil, planType: nil, rateLimit: nil, codeReviewRateLimit: nil, additionalRateLimits: nil, credits: nil,
-        spendControl: nil, rateLimitReachedType: nil, promo: nil, rateLimitResetCredits: nil)
-    ).isEmpty)
+    snapshot.windows.map(\.id) == [
+      "additional:gpt-5-3-codex-spark:session", "additional:gpt-5-3-codex-spark:weekly", "weekly",
+    ])
+  #expect(snapshot.window("weekly")?.label == "Weekly")
+  #expect(snapshot.window("weekly")?.usedPercent == 62)
+  #expect(snapshot.window("weekly")?.resetsAt == Date(timeIntervalSince1970: 1_788_558_705))
+  let spark = try #require(snapshot.window("additional:gpt-5-3-codex-spark:session"))
+  #expect(spark.label == "GPT-5.3-Codex-Spark 5-hour")
+  #expect(spark.scope == "GPT-5.3-Codex-Spark")
+  #expect(spark.group == .session)
 }
 
-@Test func codexWindowDefaultsToSessionWithoutDuration() {
-  let limit = CodexAPI.RateLimit(
-    allowed: nil, limitReached: nil,
-    primaryWindow: .init(usedPercent: 3, limitWindowSeconds: nil, resetAfterSeconds: nil, resetAt: nil),
-    secondaryWindow: nil)
-  let windows = CodexMapper.rateLimitWindows(limit, idPrefix: "", labelPrefix: "")
-  #expect(windows.map(\.id) == ["session"])
-  #expect(windows[0].duration == 18000)
+@Test func codexReportsMonthlyAndCodeReviewWindows() async throws {
+  let usage = #"""
+    {"rate_limit": {"allowed": false, "limit_reached": true,
+      "primary_window": {"used_percent": 100, "limit_window_seconds": 18000, "reset_after_seconds": 10, "reset_at": 1},
+      "secondary_window": {"used_percent": 40, "limit_window_seconds": 2592000}},
+     "code_review_rate_limit": {"allowed": true, "limit_reached": false,
+      "primary_window": {"used_percent": 5, "limit_window_seconds": 3600}}}
+    """#
+  let snapshot = try #require(await codexSnapshot(usage: .text(usage)))
+  #expect(snapshot.windows.map(\.id) == ["session", "monthly", "code_review:window-3600"])
+  #expect(snapshot.window("session")?.severity == .critical)
+  #expect(snapshot.window("monthly")?.group == .monthly)
+  #expect(snapshot.window("code_review:window-3600")?.label == "Code review 1h")
+  #expect(snapshot.window("code_review:window-3600")?.group == .other)
 }
 
-@Test func codexCreditsMap() {
-  let credits = CodexMapper.credits(Fixtures.decode(CodexAPI.UsageResponse.self, "codex_usage").credits)!
-  #expect(credits.balance == 0)
-  #expect(!credits.hasCredits)
-  #expect(credits.approxLocalMessages == 0...0)
-  #expect(CodexMapper.credits(nil) == nil)
-  let odd = CodexMapper.credits(
-    .init(
-      hasCredits: true, unlimited: true, overageLimitReached: nil, balance: "12.5", approxLocalMessages: [5, 2],
-      approxCloudMessages: nil))!
-  #expect(odd.balance == Decimal(string: "12.5"))
-  #expect(odd.unlimited)
-  #expect(odd.approxLocalMessages == nil)
-  #expect(odd.approxCloudMessages == nil)
+@Test func codexReportsNoWindowsWithoutRateLimits() async throws {
+  let snapshot = try #require(await codexSnapshot(usage: .text("{}")))
+  #expect(snapshot.windows.isEmpty)
 }
 
-@Test func codexSpendControlMaps() {
-  #expect(CodexMapper.spend(nil) == nil)
-  #expect(CodexMapper.spend(.init(reached: false, individualLimit: nil)) == nil)
-  let spend = CodexMapper.spend(
-    .init(
-      reached: true,
-      individualLimit: .init(
-        limit: "100", used: "42.5", remaining: "57.5", usedPercent: 42.5, resetAt: 1_788_558_705)))!
+@Test func codexTreatsAWindowWithoutADurationAsTheSession() async throws {
+  let usage = #"{"rate_limit": {"primary_window": {"used_percent": 3}}}"#
+  let snapshot = try #require(await codexSnapshot(usage: .text(usage)))
+  #expect(snapshot.windows.map(\.id) == ["session"])
+  #expect(snapshot.windows[0].duration == 18000)
+}
+
+@Test func codexReportsTheCreditBalance() async throws {
+  let snapshot = try #require(await codexSnapshot(usage: .json("codex_usage")))
+  #expect(snapshot.credits?.balance == 0)
+  #expect(snapshot.credits?.hasCredits == false)
+  #expect(snapshot.credits?.approxLocalMessages == 0...0)
+}
+
+@Test func codexReportsUnlimitedCreditsWithoutAMessageRange() async throws {
+  let usage = #"""
+    {"credits": {"has_credits": true, "unlimited": true, "balance": "12.5", "approx_local_messages": [5, 2]}}
+    """#
+  let snapshot = try #require(await codexSnapshot(usage: .text(usage)))
+  #expect(snapshot.credits?.balance == Decimal(string: "12.5"))
+  #expect(snapshot.credits?.unlimited == true)
+  #expect(snapshot.credits?.approxLocalMessages == nil)
+  #expect(snapshot.credits?.approxCloudMessages == nil)
+}
+
+@Test func codexReportsTheIndividualSpendLimit() async throws {
+  let usage = #"""
+    {"spend_control": {"reached": true, "individual_limit": {"limit": "100", "used": "42.5", "remaining": "57.5",
+      "used_percent": 42.5, "reset_at": 1788558705}}}
+    """#
+  let snapshot = try #require(await codexSnapshot(usage: .text(usage)))
+  let spend = try #require(snapshot.spend)
   #expect(spend.used == Money(amountMinor: 4250, currency: "USD"))
   #expect(spend.limit == Money(amountMinor: 10000, currency: "USD"))
   #expect(spend.percent == 42.5)
   #expect(spend.limitReached)
   #expect(spend.resetsAt == Date(timeIntervalSince1970: 1_788_558_705))
-  #expect(
-    CodexMapper.spend(
-      .init(reached: nil, individualLimit: .init(limit: "x", used: nil, remaining: nil, usedPercent: nil, resetAt: nil))
-    )?.limit == nil)
 }
 
-@Test func codexResetCreditsMap() {
-  #expect(CodexMapper.resetCredits(nil) == nil)
-  let summary = Fixtures.decode(CodexAPI.ResetCreditsSummary.self, "codex_reset_credits")
-  #expect(
-    CodexMapper.resetCredits(summary)
-      == ResetCredits(available: 0, applicable: 0, totalEarned: 0, immediatePurchaseEligible: false))
-  #expect(
-    CodexMapper.resetCredits(
-      .init(
-        availableCount: 2, applicableAvailableCount: nil, totalEarnedCount: nil, immediateResetPurchaseEligible: nil))?
-      .applicable == 2)
-  #expect(
-    CodexMapper.resetCredits(
-      .init(
-        availableCount: nil, applicableAvailableCount: nil, totalEarnedCount: nil, immediateResetPurchaseEligible: true)
-    )?.available == 0)
+@Test(
+  arguments: [
+    "{}", #"{"spend_control": {"reached": false}}"#,
+  ])
+func codexReportsNoSpendWithoutALimit(usage: String) async throws {
+  let snapshot = try #require(await codexSnapshot(usage: .text(usage)))
+  #expect(snapshot.spend == nil)
 }
 
-@Test func codexNoticesCoverLimitSpendPromoAndOverage() {
-  #expect(CodexMapper.notices(Fixtures.decode(CodexAPI.UsageResponse.self, "codex_usage")).isEmpty)
-  let typed = CodexAPI.UsageResponse(
-    email: nil, planType: nil,
-    rateLimit: .init(allowed: false, limitReached: true, primaryWindow: nil, secondaryWindow: nil),
-    codeReviewRateLimit: nil, additionalRateLimits: nil,
-    credits: .init(
-      hasCredits: nil, unlimited: nil, overageLimitReached: true, balance: nil, approxLocalMessages: nil,
-      approxCloudMessages: nil),
-    spendControl: .init(reached: true, individualLimit: nil),
-    rateLimitReachedType: .object(["type": .string("workspace_owner_credits_depleted")]),
-    promo: .object(["text": .string("Double limits this week")]), rateLimitResetCredits: nil
+@Test func codexIgnoresAnUnreadableSpendLimit() async throws {
+  let usage = #"{"spend_control": {"individual_limit": {"limit": "x"}}}"#
+  let snapshot = try #require(await codexSnapshot(usage: .text(usage)))
+  #expect(snapshot.spend?.limit == nil)
+}
+
+@Test func codexReportsTheResetCreditsSummary() async throws {
+  let snapshot = try #require(await codexSnapshot(usage: .json("codex_usage")))
+  #expect(
+    snapshot.resetCredits == ResetCredits(available: 0, applicable: 0, totalEarned: 0, immediatePurchaseEligible: false)
   )
-  let notices = CodexMapper.notices(typed)
+}
+
+@Test func codexFallsBackToTheAvailableCountForApplicableCredits() async throws {
+  let transport = StubTransport()
+  transport.on(path: "/wham/usage", .json("codex_usage"))
+  transport.on(path: "rate-limit-reset-credits", .text(#"{"available_count": 2}"#))
+  let provider = codexProvider(MemoryCodexStore(validCodex), transport: transport)
+  guard case .success(let snapshot) = await provider.fetch(now: fixedNow, options: FetchOptions()).outcome else {
+    Issue.record("expected a snapshot")
+    return
+  }
+  #expect(snapshot.resetCredits?.applicable == 2)
+}
+
+@Test func codexNoticesCoverLimitSpendPromoAndOverage() async throws {
+  let usage = #"""
+    {"rate_limit": {"allowed": false, "limit_reached": true},
+     "credits": {"overage_limit_reached": true},
+     "spend_control": {"reached": true},
+     "rate_limit_reached_type": {"type": "workspace_owner_credits_depleted"},
+     "promo": {"text": "Double limits this week"}}
+    """#
+  let snapshot = try #require(await codexSnapshot(usage: .text(usage)))
+  let notices = snapshot.notices
   #expect(notices.map(\.kind) == [.limitReached, .spendControl, .promotion, .spendControl])
   #expect(notices[0].text == "Limit reached: Workspace Owner Credits Depleted.")
   #expect(notices[2].text == "Double limits this week")
-  let untyped = CodexAPI.UsageResponse(
-    email: nil, planType: nil,
-    rateLimit: .init(allowed: false, limitReached: true, primaryWindow: nil, secondaryWindow: nil),
-    codeReviewRateLimit: nil, additionalRateLimits: nil,
-    credits: nil, spendControl: nil, rateLimitReachedType: .null, promo: .object(["title": .string("Promo")]),
-    rateLimitResetCredits: nil
-  )
-  #expect(CodexMapper.notices(untyped).map(\.text) == ["Usage limit reached.", "Promo"])
-  let summary = CodexAPI.UsageResponse(
-    email: nil, planType: nil, rateLimit: nil, codeReviewRateLimit: nil, additionalRateLimits: nil, credits: nil,
-    spendControl: nil, rateLimitReachedType: .string("odd"), promo: .object(["pct": .number(2)]),
-    rateLimitResetCredits: nil)
-  #expect(CodexMapper.notices(summary).map(\.text) == ["Limit reached: Odd.", "pct: 2"])
 }
 
-private let planCases: [(String?, String)] = [
-  (nil, "ChatGPT"), ("", "ChatGPT"), ("pro", "Pro"), ("prolite", "Pro Lite"), ("plus", "Plus"), ("go", "Go"),
-  ("free", "Free"),
-  ("team", "Team"), ("free_workspace", "Team"), ("business", "Business"), ("self_serve_business_prolite", "Business"),
-  ("enterprise", "Enterprise"), ("edu", "Education"), ("education", "Education"), ("k12", "K12"),
-  ("quorum_plus", "Quorum Plus"),
-]
-
-@Test(arguments: planCases)
-func codexPlanNames(planType: String?, expected: String) {
-  #expect(CodexMapper.planName(planType) == expected)
+@Test func codexNoticesReadAPromoAndALimitInWhateverShapeTheyArrive() async throws {
+  let untyped = #"""
+    {"rate_limit": {"allowed": false, "limit_reached": true}, "rate_limit_reached_type": null,
+     "promo": {"title": "Promo"}}
+    """#
+  let plain = try #require(await codexSnapshot(usage: .text(untyped)))
+  #expect(plain.notices.map(\.text) == ["Usage limit reached.", "Promo"])
+  let odd = #"{"rate_limit_reached_type": "odd", "promo": {"pct": 2}}"#
+  let strange = try #require(await codexSnapshot(usage: .text(odd)))
+  #expect(strange.notices.map(\.text) == ["Limit reached: Odd.", "pct: 2"])
 }
 
-@Test func codexIdentityMergesResponseAndAuth() {
-  let auth = CodexAuth(document: Fixtures.codexAuth())!
-  let identity = CodexMapper.identity(Fixtures.decode(CodexAPI.UsageResponse.self, "codex_usage"), auth: auth)
+@Test func codexReportsNoNoticesOnAHealthyAccount() async throws {
+  let snapshot = try #require(await codexSnapshot(usage: .json("codex_usage")))
+  #expect(snapshot.notices.isEmpty)
+}
+
+@Test(
+  arguments: [
+    ("", "ChatGPT"), ("pro", "Pro"), ("prolite", "Pro Lite"), ("plus", "Plus"),
+    ("go", "Go"), ("free", "Free"), ("team", "Team"), ("free_workspace", "Team"), ("business", "Business"),
+    ("self_serve_business_prolite", "Business"), ("enterprise", "Enterprise"), ("edu", "Education"),
+    ("education", "Education"), ("k12", "K12"), ("quorum_plus", "Quorum Plus"),
+  ])
+func codexNamesThePlanFromItsType(planType: String, expected: String) async throws {
+  let snapshot = try #require(await codexSnapshot(usage: .text(#"{"plan_type": "\#(planType)"}"#)))
+  #expect(snapshot.identity?.planName == expected)
+}
+
+@Test func codexFallsBackToThePlanInTheToken() async throws {
+  let snapshot = try #require(await codexSnapshot(usage: .text("{}")))
+  #expect(snapshot.identity?.planName == "Pro")
+}
+
+@Test func codexIdentityMergesTheResponseAndTheToken() async throws {
+  let snapshot = try #require(await codexSnapshot(usage: .json("codex_usage")))
+  let identity = try #require(snapshot.identity)
   #expect(identity.planName == "Pro")
   #expect(identity.tier == "pro")
   #expect(identity.email == "user@example.com")
-  #expect(identity.subscriptionActiveUntil == auth.subscriptionActiveUntil)
-  #expect(CodexMapper.identity(nil, auth: auth).planName == "Pro")
-  #expect(CodexMapper.identity(nil, auth: nil) == ProviderIdentity(planName: "ChatGPT"))
+  #expect(identity.subscriptionActiveUntil == CodexAuth(document: Fixtures.codexAuth())?.subscriptionActiveUntil)
 }
 
-@Test func codexAnalyticsTokenUsageBreakdown() {
-  let rows = Fixtures.decode(CodexAPI.DailyRows.self, "codex_daily_token_usage")
-  let points = CodexMapper.analytics(.tokenUsage, rows: rows.data)
-  let last = points.filter { $0.day == "2026-08-29" }
-  #expect(last.first { $0.metric == .surfaceUsagePercent && $0.series == "cli" }?.value.rounded() == 38)
-  #expect(last.first { $0.metric == .modelCredits && $0.series == "gpt-5.6-sol" } != nil)
-  #expect(Set(last.map(\.metric)) == [.surfaceUsagePercent, .modelCredits])
-  #expect(CodexMapper.analytics(.tokenUsage, rows: [.object(["models": .array([])])]).isEmpty)
+@MainActor
+private func codexAnalytics(_ stub: @escaping (StubTransport) -> Void = { _ in }) async -> ProviderAnalytics? {
+  let (result, _) = await codexFetch(
+    usage: .json("codex_usage"), analytics: true,
+    stub: { transport in
+      stub(transport)
+      stubCodexAnalytics(transport)
+    })
+  return result.analytics
 }
 
-@Test func codexAnalyticsWorkspaceCounts() {
-  let rows = Fixtures.decode(CodexAPI.DailyRows.self, "codex_daily_workspace_usage")
-  let points = CodexMapper.analytics(.workspaceCounts, rows: rows.data)
+@Test func codexAnalyticsCarryUsageBySurfaceAndModel() async throws {
+  let points = try #require(await codexAnalytics()).points.filter { $0.day == "2026-08-29" }
+  #expect(points.first { $0.metric == .surfaceUsagePercent && $0.series == "cli" }?.value.rounded() == 38)
+  #expect(points.contains { $0.metric == .modelCredits && $0.series == "gpt-5.6-sol" })
+}
+
+@Test func codexAnalyticsSkipARowWithoutUsage() async throws {
+  let points = try #require(
+    await codexAnalytics { $0.on(path: "daily-token-usage-breakdown", .text(#"{"data": [{"models": []}]}"#)) })
+  #expect(!points.points.contains { $0.metric == .modelCredits })
+}
+
+@Test func codexAnalyticsCarryWorkspaceTokenCounts() async throws {
+  let points = try #require(await codexAnalytics()).points
   let day = points.filter { $0.day == "2026-08-29" }
   #expect(day.first { $0.metric == .inputTokens }?.value == 23_112_562)
   #expect(day.first { $0.metric == .cachedInputTokens }?.value == 1_218_464_768)
   #expect(day.first { $0.metric == .outputTokens }?.value == 2_018_632)
   #expect(day.contains { $0.metric == .credits && $0.series == "surface:CODEX_CLI" })
   #expect(points.contains { $0.metric == .turns && $0.series.hasPrefix("model:") })
-  let sparse = CodexMapper.analytics(
-    .workspaceCounts,
-    rows: [.object(["date": .string("2026-01-01"), "models": .array([.object(["turns": .number(1)])])])])
-  #expect(sparse.isEmpty)
 }
 
-@Test func codexAnalyticsSkillsPluginsAndCodeReview() {
-  let skills = CodexMapper.analytics(.skills, rows: Fixtures.decode(CodexAPI.DailyRows.self, "codex_daily_skills").data)
-  #expect(skills.contains { $0.day == "2026-08-29" && $0.series == "Simp" && $0.value == 38 })
-  let plugins = CodexMapper.analytics(
-    .plugins, rows: Fixtures.decode(CodexAPI.DailyRows.self, "codex_daily_plugins").data)
-  #expect(plugins.contains { $0.series == "github" && $0.metric == .pluginInvocations })
-  let review = CodexMapper.analytics(
-    .codeReview, rows: [.object(["date": .string("2026-08-01"), "reviews": .number(3), "note": .string("x")])])
-  #expect(review == [AnalyticsPoint(day: "2026-08-01", metric: .codeReviews, series: "reviews", value: 3)])
-  let unnamed = CodexMapper.analytics(
-    .skills,
-    rows: [
-      .object([
-        "date": .string("d"),
-        "skill_usage_overviews": .array([
-          .object(["skill_name": .string("raw"), "invocation_counts": .number(1)]),
-          .object(["invocation_counts": .number(2)]),
-        ]),
-      ])
-    ])
-  #expect(unnamed.map(\.series) == ["raw"])
-  let unnamedPlugin = CodexMapper.analytics(
-    .plugins,
-    rows: [
-      .object([
-        "date": .string("d"),
-        "plugin_usage_overviews": .array([
-          .object(["display_name": .string("Disp"), "invocation_counts": .number(1)]), .object([:]),
-        ]),
-      ])
-    ])
-  #expect(unnamedPlugin.map(\.series) == ["Disp"])
+@Test func codexAnalyticsSkipAWorkspaceRowWithoutTotals() async throws {
+  let sparse = #"{"data": [{"date": "2026-01-01", "models": [{"turns": 1}]}]}"#
+  let points = try #require(await codexAnalytics { $0.on(path: "daily-workspace-usage-counts", .text(sparse)) })
+  #expect(!points.points.contains { $0.metric == .inputTokens })
 }
 
-@Test func codexCreditEventsTolerateShapes() {
-  let rows: [JSONValue] = [
-    .object([
-      "id": .string("e1"), "date": .string("2026-08-01"), "service": .string("Codex"), "credits_used": .number(3),
-    ]),
-    .object(["created_at": .string("2026-08-02T10:00:00Z"), "product": .string("Review"), "credits": .number(1.5)]),
-    .object(["timestamp": .string("2026-08-03T00:00:00Z"), "amount": .number(2)]),
-    .object(["note": .string("no date")]),
-  ]
-  let events = CodexMapper.creditEvents(rows)
-  #expect(events.map(\.id) == ["e1", "2026-08-02T10:00:00Z-1", "2026-08-03T00:00:00Z-2"])
-  #expect(events.map(\.service) == ["Codex", "Review", "Codex"])
-  #expect(events.map(\.creditsUsed) == [3, 1.5, 2])
-  #expect(CodexMapper.creditEvents(Fixtures.decode(CodexAPI.DailyRows.self, "codex_credit_events").data).isEmpty)
-}
-
-@Test func codexAnalyticsURLsCarryExpectedQueries() {
+@Test func codexAnalyticsCarrySkillsPluginsAndCodeReviews() async throws {
+  let points = try #require(await codexAnalytics()).points
+  #expect(points.contains { $0.day == "2026-08-29" && $0.series == "Simp" && $0.value == 38 })
+  #expect(points.contains { $0.series == "github" && $0.metric == .pluginInvocations })
+  let review = #"{"data": [{"date": "2026-08-01", "reviews": 3, "note": "x"}]}"#
+  let reviewed = try #require(await codexAnalytics { $0.on(path: "daily-code-review-metrics", .text(review)) })
   #expect(
-    CodexAPI.Analytics.skills.url(start: "2026-08-01", end: "2026-08-29").absoluteString
-      == "https://chatgpt.com/backend-api/wham/analytics/daily-skill-usage-metrics"
-      + "?start_date=2026-08-01&end_date=2026-08-29&group_by=day&workspace_user=true&top_skill_limit=20"
-  )
-  #expect(CodexAPI.Analytics.plugins.url(start: "a", end: "b").query?.contains("top_plugin_limit=20") == true)
-  #expect(CodexAPI.Analytics.tokenUsage.url(start: "a", end: "b").query == "start_date=a&end_date=b&group_by=day")
-  #expect(CodexAPI.Analytics.codeReview.url(start: "a", end: "b").query?.hasSuffix("workspace_user=true") == true)
-  #expect(CodexAPI.headers(token: "t", accountID: nil)["ChatGPT-Account-Id"] == nil)
-  #expect(CodexAPI.headers(token: "t", accountID: "a")["ChatGPT-Account-Id"] == "a")
+    reviewed.points.contains(AnalyticsPoint(day: "2026-08-01", metric: .codeReviews, series: "reviews", value: 3)))
+}
+
+@Test func codexAnalyticsSkipASkillOrPluginWithoutAName() async throws {
+  let skills = #"""
+    {"data": [{"date": "d", "skill_usage_overviews": [{"skill_name": "raw", "invocation_counts": 1},
+     {"invocation_counts": 2}]}]}
+    """#
+  let plugins = #"""
+    {"data": [{"date": "d", "plugin_usage_overviews": [{"display_name": "Disp", "invocation_counts": 1}, {}]}]}
+    """#
+  let points = try #require(
+    await codexAnalytics {
+      $0.on(path: "daily-skill-usage-metrics", .text(skills))
+      $0.on(path: "daily-plugin-usage-metrics", .text(plugins))
+    }
+  ).points
+  #expect(points.filter { $0.metric == .skillInvocations }.map(\.series) == ["raw"])
+  #expect(points.filter { $0.metric == .pluginInvocations }.map(\.series) == ["Disp"])
+}
+
+@Test func codexCreditEventsTolerateEveryShapeTheAPIReturns() async throws {
+  let rows = #"""
+    {"data": [{"id": "e1", "date": "2026-08-01", "service": "Codex", "credits_used": 3},
+     {"created_at": "2026-08-02T10:00:00Z", "product": "Review", "credits": 1.5},
+     {"timestamp": "2026-08-03T00:00:00Z", "amount": 2}, {"note": "no date"}]}
+    """#
+  let analytics = try #require(await codexAnalytics { $0.on(path: "credit-usage-events", .text(rows)) })
+  #expect(analytics.creditEvents.map(\.id) == ["e1", "2026-08-02T10:00:00Z-1", "2026-08-03T00:00:00Z-2"])
+  #expect(analytics.creditEvents.map(\.service) == ["Codex", "Review", "Codex"])
+  #expect(analytics.creditEvents.map(\.creditsUsed) == [3, 1.5, 2])
+}
+
+@Test func codexAsksEachAnalyticsEndpointForTheRangeItNeeds() async throws {
+  let (_, transport) = await codexFetch(usage: .json("codex_usage"), analytics: true, stub: stubCodexAnalytics)
+  let skills = try #require(transport.requests(matching: "daily-skill-usage-metrics").first?.url)
+  #expect(skills.query?.contains("group_by=day&workspace_user=true&top_skill_limit=20") == true)
+  #expect(
+    transport.requests(matching: "daily-plugin-usage-metrics").first?.url?.query?.contains("top_plugin_limit=20")
+      == true)
+  #expect(
+    transport.requests(matching: "daily-token-usage-breakdown").first?.url?.query?.hasSuffix("group_by=day") == true)
+  #expect(
+    transport.requests(matching: "daily-code-review-metrics").first?.url?.query?.hasSuffix("workspace_user=true")
+      == true)
+  #expect(transport.requests.allSatisfy { $0.value(forHTTPHeaderField: "ChatGPT-Account-Id") == "acct" })
 }
