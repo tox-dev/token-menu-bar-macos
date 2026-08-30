@@ -16,8 +16,36 @@ env:
   TAG: ${{ github.event.inputs.tag || github.ref_name }}
 
 jobs:
+  preflight:
+    name: Which legs can run
+    runs-on: ubuntu-24.04
+    outputs:
+      app_store: ${{ steps.check.outputs.app_store }}
+    steps:
+      # A job cannot read secrets in its own `if`, so the release works out here which legs it can publish.
+      - name: Check the App Store credentials
+        id: check
+        env:
+          APPLE_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_BASE64 }}
+          APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+          APP_STORE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APP_STORE_PROVISIONING_PROFILE_BASE64 }}
+          APP_STORE_WIDGET_PROVISIONING_PROFILE_BASE64: ${{ secrets.APP_STORE_WIDGET_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          missing=""
+          for name in APPLE_DISTRIBUTION_CERTIFICATE_BASE64 APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD \
+            APP_STORE_PROVISIONING_PROFILE_BASE64 APP_STORE_WIDGET_PROVISIONING_PROFILE_BASE64; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "app_store=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping the App Store upload, no:$missing" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "app_store=true" >> "$GITHUB_OUTPUT"
+          fi
+
   direct:
-    name: Direct download (zip, DMG, appcast)
+    name: Direct download (zip, DMG, appcast, cask)
+    needs: preflight
     runs-on: macos-26
     outputs:
       signed: ${{ steps.identity.outputs.signed }}
@@ -126,8 +154,9 @@ jobs:
 
   app-store:
     name: Mac App Store upload
+    needs: [preflight, direct]
     runs-on: macos-26
-    if: ${{ vars.APP_STORE_ENABLED == 'true' }}
+    if: needs.preflight.outputs.app_store == 'true'
     steps:
       - uses: actions/checkout@v4
         with:

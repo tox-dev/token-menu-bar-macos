@@ -79,6 +79,11 @@ xcode:
 version tag:
     Scripts/stamp-version.sh {{ tag }}
 
+# Start a release: Prepare Release tags the commit, which triggers the build, the cask and the App Store upload
+release bump="patch":
+    gh workflow run "Prepare Release" --field bump={{ bump }}
+    @echo "Watch it with: gh run watch \$(gh run list --workflow 'Prepare Release' --limit 1 --json databaseId -q '.[0].databaseId')"
+
 # Archive and export the Developer ID build into dist/direct
 build-direct:
     Scripts/build-direct.sh

@@ -147,15 +147,49 @@ its palette from the site tokens, so a diagram follows the light and dark themes
 
 ## Releasing
 
-Tag `vX.Y.Z`. The release workflow builds the direct app, signs and notarizes it when the secrets exist, publishes the
-zip, DMG, checksums and [Sparkle](https://sparkle-project.org) appcast, refreshes the
-[Homebrew cask](https://docs.brew.sh/Cask-Cookbook), and uploads the App Store flavour when the `APP_STORE_ENABLED`
-variable is set. The signed builds carry the widget extension; an ad-hoc development bundle has none.
+One button: run the **Prepare Release** workflow (`just release patch|minor|major`, or the Actions tab). It works out
+the next version from the newest tag and pushes `vX.Y.Z` with a token of its own, because a tag pushed with the default
+`GITHUB_TOKEN` starts no further workflow.
 
-Secrets the workflow understands: `DEVELOPER_ID_CERTIFICATE_BASE64`, `DEVELOPER_ID_CERTIFICATE_PASSWORD`,
-`APPLE_DISTRIBUTION_CERTIFICATE_BASE64`, `APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD`,
-`APP_STORE_PROVISIONING_PROFILE_BASE64`, `APPLE_TEAM_ID`, `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`,
-`APP_STORE_CONNECT_KEY_BASE64`, `SPARKLE_PUBLIC_ED_KEY`, `SPARKLE_PRIVATE_ED_KEY`.
+That tag triggers **Release**, and one run publishes all three channels:
+
+```mermaid
+flowchart LR
+    P[Prepare Release<br/>bump and tag] --> T((tag vX.Y.Z))
+    T --> D[Direct: archive, sign,<br/>notarize, staple]
+    D --> G[GitHub release:<br/>zip, DMG, checksums, appcast]
+    D --> C[Homebrew cask:<br/>version and sha256 on main]
+    D --> A[App Store: archive,<br/>export, upload]
+    classDef start fill:#efeafe,stroke:#5a46e8,color:#0f1117;
+    classDef build fill:#faf3dc,stroke:#cbb46a,color:#0f1117;
+    classDef ship fill:#e6f2f7,stroke:#7fb3c6,color:#0f1117;
+    class P,T start;
+    class D build;
+    class G,C,A ship;
+```
+
+The direct leg refuses to run without its credentials, so a tag never publishes an app Gatekeeper rejects or a feed
+[Sparkle](https://sparkle-project.org) cannot verify. The App Store leg checks its own credentials first and skips with
+a note in the run summary when they are missing, so the rest of a release still ships while the Apple Developer account
+is pending.
+
+### What Apple needs
+
+Enrol in the [Apple Developer Program](https://developer.apple.com/programs/), then create these and store each as a
+repository secret:
+
+| Secret                                                                                    | Where it comes from                                                                                                                 |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `DEVELOPER_ID_CERTIFICATE_BASE64`, `DEVELOPER_ID_CERTIFICATE_PASSWORD`                    | A **Developer ID Application** certificate, exported from Keychain Access as a `.p12` and base64 encoded                            |
+| `APPLE_DISTRIBUTION_CERTIFICATE_BASE64`, `APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD`        | An **Apple Distribution** certificate, exported the same way                                                                        |
+| `APP_STORE_PROVISIONING_PROFILE_BASE64`, `APP_STORE_WIDGET_PROVISIONING_PROFILE_BASE64`   | Mac App Store provisioning profiles for `dev.tox.token-menu-bar` and its widget extension                                           |
+| `APPLE_TEAM_ID`                                                                           | The ten-character team identifier on the [membership page](https://developer.apple.com/account)                                     |
+| `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_BASE64` | An [App Store Connect API key](https://appstoreconnect.apple.com/access/integrations/api) with the App Manager role, base64 encoded |
+| `SPARKLE_PUBLIC_ED_KEY`, `SPARKLE_PRIVATE_ED_KEY`                                         | `generate_keys` from the [Sparkle](https://sparkle-project.org/documentation/) distribution                                         |
+| `RELEASE_PAT`                                                                             | A fine-grained token with `contents: write` on this repository, in the `release-auth` environment                                   |
+
+The app record in [App Store Connect](https://appstoreconnect.apple.com) has to exist under the same bundle identifier
+before the first upload, along with a `dev.tox.token-menu-bar` App ID and an app group for the widget.
 
 [Renovate](https://docs.renovatebot.com) opens a grouped pull request each week for the pinned tools, the action digests
 and the Swift packages. The docs deploy to GitHub Pages on every push to `main`.
