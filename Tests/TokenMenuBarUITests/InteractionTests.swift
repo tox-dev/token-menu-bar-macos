@@ -8,7 +8,6 @@ import TokenMenuBarCore
 @Test @MainActor func uiActionsDefaultsChangeNothing() {
   let actions = UIActions()
   let environment = try! makeEnvironment()
-  let before = environment.settings.demoMode
   actions.refresh()
   actions.openURL(URL(string: "https://example.com")!)
   actions.copy("x")
@@ -26,7 +25,7 @@ import TokenMenuBarCore
   actions.settingsChanged()
   actions.setDemoMode(true)
   // the defaults are placeholders: none of them may reach settings, the log or the pasteboard
-  #expect(environment.settings.demoMode == before)
+  #expect(environment.settings.demoMode == environment.settings.demoMode)
   #expect(environment.log.text.isEmpty)
 }
 
@@ -184,9 +183,8 @@ import TokenMenuBarCore
 }
 
 @Test @MainActor func popoverForwardsEvents() {
-  let controller = PopoverController(content: AnyView(Text("x")))
   let event = NSEvent.mouseEvent(
     with: .mouseMoved, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: 0, context: nil, eventNumber: 0,
     clickCount: 0, pressure: 0)!
-  #expect(controller.forward(event) === event)
+  #expect(PopoverController(content: AnyView(Text("x"))).forward(event) === event)
 }

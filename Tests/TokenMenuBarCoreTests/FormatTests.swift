@@ -37,8 +37,7 @@ func formatCountdowns(offset: TimeInterval?, long: String, compact: String) {
   #expect(!sameDay.isEmpty && !sameDay.contains(","))
   let thisWeek = Format.resetClock(fixedNow.addingTimeInterval(3 * 86400), now: fixedNow, calendar: calendar)
   #expect(thisWeek.count > sameDay.count)
-  let later = Format.resetClock(fixedNow.addingTimeInterval(20 * 86400), now: fixedNow, calendar: calendar)
-  #expect(later.contains("Sep"))
+  #expect(Format.resetClock(fixedNow.addingTimeInterval(20 * 86400), now: fixedNow, calendar: calendar).contains("Sep"))
 }
 
 private let compactCases: [(Double, String)] = [

@@ -44,8 +44,7 @@ public struct PaceEstimate: Sendable, Hashable {
       return PaceEstimate(status: .unknown, expectedPercent: nil, ratio: nil, projectedExhaustion: nil)
     }
     let start = resetsAt.addingTimeInterval(-duration)
-    let elapsed = min(max(now.timeIntervalSince(start) / duration, 0), 1)
-    let expected = elapsed * 100
+    let expected = min(max(now.timeIntervalSince(start) / duration, 0), 1) * 100
     let projection = projectedExhaustion(window: window, start: start, resetsAt: resetsAt, samples: samples, now: now)
     guard expected >= minimumElapsedPercent else {
       return PaceEstimate(status: .unknown, expectedPercent: expected, ratio: nil, projectedExhaustion: projection)

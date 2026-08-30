@@ -87,8 +87,7 @@ public enum StatusItemRenderer {
   }
 
   static func lineStrings(_ cell: StatusCell, height: CGFloat, dark: Bool) -> [NSAttributedString] {
-    let sizes = fontSizes(height: height, lineCount: cell.lines.count)
-    return zip(cell.lines, sizes).map { runs, size in
+    zip(cell.lines, fontSizes(height: height, lineCount: cell.lines.count)).map { runs, size in
       let line = NSMutableAttributedString()
       for run in runs {
         let font: NSFont =

@@ -337,8 +337,7 @@ enum ClaudeMapper {
     if response.extraUsage?.spendLimitReached == true {
       notices.append(Notice(kind: .spendControl, text: "Monthly usage-credit spend limit reached."))
     }
-    let critical = response.limits.filter { Severity(raw: $0.severity) == .critical }
-    for limit in critical {
+    for limit in response.limits.filter({ Severity(raw: $0.severity) == .critical }) {
       notices.append(
         Notice(kind: .limitReached, text: "\(window(limit).label) limit reached; resets \(limit.resetsAt ?? "later")."))
     }

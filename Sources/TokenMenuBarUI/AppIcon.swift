@@ -156,8 +156,7 @@ extension Color {
   public static var brandAccent: Color {
     Color(
       nsColor: NSColor(name: nil) { appearance in
-        let dark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-        let brand = dark ? Brand.irisDark : Brand.iris
+        let brand = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? Brand.irisDark : Brand.iris
         return NSColor(srgbRed: brand.red, green: brand.green, blue: brand.blue, alpha: 1)
       })
   }
@@ -166,9 +165,8 @@ extension Color {
 
 public enum ProviderGlyph {
   public static func image(_ provider: ProviderID, pointSize: CGFloat) -> NSImage {
-    let configuration = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .semibold)
     return NSImage(systemSymbolName: symbolName(provider), accessibilityDescription: provider.displayName)!
-      .withSymbolConfiguration(configuration)!
+      .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: pointSize, weight: .semibold))!
   }
 
   public static func symbolName(_ provider: ProviderID) -> String {

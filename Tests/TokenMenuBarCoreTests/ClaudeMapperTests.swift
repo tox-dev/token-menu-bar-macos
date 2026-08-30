@@ -159,8 +159,7 @@ func claudeIdentityPlanNames(type: String, tier: String?, expected: String) {
   #expect(identity.planName == "Max 20x")
   #expect(identity.email == "local@example.com")
   #expect(identity.organization == "Local Org")
-  let onlyLocal = ClaudeMapper.identity(profile: nil, credentials: nil, local: local)
-  #expect(onlyLocal.planName == "Claude 5x")
+  #expect(ClaudeMapper.identity(profile: nil, credentials: nil, local: local).planName == "Claude 5x")
 }
 
 @Test func claudeIdentityUsesAccountFlagsWithoutOrganizationType() {

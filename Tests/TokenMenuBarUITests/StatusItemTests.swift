@@ -40,9 +40,8 @@ func appIconInkFollowsTone(tone: StatusIconTone, dark: Bool, ink: NSColor) {
   #expect(StatusItemRenderer.color(for: .label, dark: true) == .white)
   #expect(StatusItemRenderer.color(for: .label, dark: false) == .black)
   #expect(StatusItemRenderer.color(for: .number, dark: false).alphaComponent < 1)
-  let light = StatusItemRenderer.color(for: .usage(50), dark: false)
   let dark = StatusItemRenderer.color(for: .usage(50), dark: true)
-  #expect(dark.brightnessComponent > light.brightnessComponent)
+  #expect(dark.brightnessComponent > StatusItemRenderer.color(for: .usage(50), dark: false).brightnessComponent)
 }
 
 @Test @MainActor func rendererBuildsTitlesForEachFormat() {

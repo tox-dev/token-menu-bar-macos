@@ -44,10 +44,8 @@ private func snapshot(
   #expect(codex.map(\.key) == [key])
   #expect(codex[0].usedPercent == 40)
   #expect(codex[0].resetsAt == fixedNow.addingTimeInterval(3600))
-  let none = try await store.samples(from: fixedNow.addingTimeInterval(100), to: .distantFuture)
-  #expect(none.isEmpty)
-  let recent = try await store.recentSamples(key: key, since: fixedNow.addingTimeInterval(5))
-  #expect(recent.count == 1)
+  #expect(try await store.samples(from: fixedNow.addingTimeInterval(100), to: .distantFuture).isEmpty)
+  #expect(try await store.recentSamples(key: key, since: fixedNow.addingTimeInterval(5)).count == 1)
   let summaries = try await store.summaries()
   #expect(summaries.map(\.key.storageKey) == ["claude:session", "claude:weekly", "codex:session", "codex:weekly"])
   #expect(summaries[0].label == "Current session")
@@ -75,8 +73,7 @@ private func snapshot(
       ProviderAnalytics(
         provider: .codex, points: [AnalyticsPoint(day: "2026-08-29", metric: .turns, series: "model:a", value: 9)],
         fetchedAt: fixedNow)) == 1)
-  let points = try await store.analytics(provider: .codex, from: "2026-08-01", to: "2026-08-31")
-  #expect(points.map(\.value) == [3, 9])
+  #expect(try await store.analytics(provider: .codex, from: "2026-08-01", to: "2026-08-31").map(\.value) == [3, 9])
   #expect(try await store.analytics(provider: .claude, from: "2026-08-01", to: "2026-08-31").isEmpty)
   #expect(try await store.stats().analyticsCount == 2)
 }
@@ -84,8 +81,7 @@ private func snapshot(
 @Test func historyExportsCSVAndClears() async throws {
   let store = try UsageHistoryStore(url: nil)
   try await store.record(snapshot(12.5), now: fixedNow)
-  let csv = try await store.exportCSV()
-  let lines = csv.split(separator: "\n")
+  let lines = try await store.exportCSV().split(separator: "\n")
   #expect(lines[0] == "timestamp,key,label,used_percent,resets_at")
   #expect(lines[1].hasPrefix("2026-08-29T"))
   #expect(lines[1].contains(",claude:session,Current session,12.50,2026-08-29T"))

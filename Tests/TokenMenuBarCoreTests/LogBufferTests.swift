@@ -38,8 +38,7 @@ import Testing
   let log = LogBuffer(fileURL: url, clock: testClock)
   #expect(log.snapshot.map(\.message) == ["recent"])
   log.log("new")
-  let reloaded = LogBuffer(fileURL: url, clock: testClock)
-  #expect(reloaded.snapshot.map(\.message) == ["recent", "new"])
+  #expect(LogBuffer(fileURL: url, clock: testClock).snapshot.map(\.message) == ["recent", "new"])
   try Data("garbage".utf8).write(to: url)
   #expect(LogBuffer(fileURL: url, clock: testClock).snapshot.isEmpty)
 }

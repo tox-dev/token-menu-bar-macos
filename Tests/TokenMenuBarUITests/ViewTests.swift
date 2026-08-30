@@ -246,8 +246,7 @@ func findScrollView(_ view: NSView) -> NSScrollView? {
   #expect(
     inkFraction(
       WrappingHStack { ForEach(0..<12, id: \.self) { Text("chip \($0)").padding(4) } }, width: 200, height: 200) > 0)
-  let layout = WrappingHStack()
-  #expect(layout.horizontalSpacing == 6)
+  #expect(WrappingHStack().horizontalSpacing == 6)
   var size = CGSize.zero
   SizeKey.reduce(value: &size) { CGSize(width: 1, height: 2) }
   SizeKey.reduce(value: &size) { .zero }
@@ -256,8 +255,7 @@ func findScrollView(_ view: NSView) -> NSScrollView? {
   #expect(inkFraction(ScrollingTab { Text("x") }, width: 200, height: 200) > 0)
   #expect(Color(HSBColor(hue: 0.3, saturation: 0.5, brightness: 0.5)) != Color.clear)
   #expect(inkFraction(Text("help").hoverHelp { Text("tip") }, width: 100, height: 40) > 0)
-  let plain = NSView(frame: .zero)
-  ScrollerStyler.apply(from: plain)
+  ScrollerStyler.apply(from: NSView(frame: .zero))
   let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 100, height: 100))
   let inner = NSView(frame: .zero)
   scroll.documentView = inner

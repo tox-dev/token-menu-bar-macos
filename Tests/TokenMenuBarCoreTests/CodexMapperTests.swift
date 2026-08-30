@@ -139,8 +139,7 @@ import Testing
     credits: nil, spendControl: nil, rateLimitReachedType: .null, promo: .object(["title": .string("Promo")]),
     rateLimitResetCredits: nil
   )
-  let fallback = CodexMapper.notices(untyped)
-  #expect(fallback.map(\.text) == ["Usage limit reached.", "Promo"])
+  #expect(CodexMapper.notices(untyped).map(\.text) == ["Usage limit reached.", "Promo"])
   let summary = CodexAPI.UsageResponse(
     email: nil, planType: nil, rateLimit: nil, codeReviewRateLimit: nil, additionalRateLimits: nil, credits: nil,
     spendControl: nil, rateLimitReachedType: .string("odd"), promo: .object(["pct": .number(2)]),
@@ -163,8 +162,7 @@ func codexPlanNames(planType: String?, expected: String) {
 
 @Test func codexIdentityMergesResponseAndAuth() {
   let auth = CodexAuth(document: Fixtures.codexAuth())!
-  let response = Fixtures.decode(CodexAPI.UsageResponse.self, "codex_usage")
-  let identity = CodexMapper.identity(response, auth: auth)
+  let identity = CodexMapper.identity(Fixtures.decode(CodexAPI.UsageResponse.self, "codex_usage"), auth: auth)
   #expect(identity.planName == "Pro")
   #expect(identity.tier == "pro")
   #expect(identity.email == "user@example.com")
@@ -249,9 +247,8 @@ func codexPlanNames(planType: String?, expected: String) {
 }
 
 @Test func codexAnalyticsURLsCarryExpectedQueries() {
-  let skills = CodexAPI.Analytics.skills.url(start: "2026-08-01", end: "2026-08-29")
   #expect(
-    skills.absoluteString
+    CodexAPI.Analytics.skills.url(start: "2026-08-01", end: "2026-08-29").absoluteString
       == "https://chatgpt.com/backend-api/wham/analytics/daily-skill-usage-metrics"
       + "?start_date=2026-08-01&end_date=2026-08-29&group_by=day&workspace_user=true&top_skill_limit=20"
   )

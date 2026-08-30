@@ -64,8 +64,7 @@ final class DateBox: @unchecked Sendable {
 struct TestError: Error {}
 
 func makeJWT(_ payload: JSONValue) -> String {
-  let header = Data(#"{"alg":"none"}"#.utf8).base64EncodedString()
   let body = try! JSONEncoder().encode(payload).base64EncodedString().replacingOccurrences(of: "=", with: "")
     .replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_")
-  return "\(header).\(body).sig"
+  return "\(Data(#"{"alg":"none"}"#.utf8).base64EncodedString()).\(body).sig"
 }

@@ -2,8 +2,7 @@ import Foundation
 
 public enum Format {
   public static func percent(_ value: Double, decimals: Int = 0) -> String {
-    let clamped = min(max(value, 0), 100)
-    return clamped.formatted(.number.precision(.fractionLength(decimals))) + "%"
+    min(max(value, 0), 100).formatted(.number.precision(.fractionLength(decimals))) + "%"
   }
 
   public static func countdown(to date: Date?, now: Date) -> String {
@@ -44,16 +43,15 @@ public enum Format {
   }
 
   public static func compactNumber(_ value: Double) -> String {
-    let magnitude = abs(value)
     let (scaled, suffix): (Double, String) =
-      switch magnitude {
+      switch abs(value) {
       case ..<1000: (value, "")
       case ..<1_000_000: (value / 1000, "K")
       case ..<1_000_000_000: (value / 1_000_000, "M")
       default: (value / 1_000_000_000, "B")
       }
-    let digits = abs(scaled) < 10 && !suffix.isEmpty ? 1 : 0
-    return scaled.formatted(.number.precision(.fractionLength(digits))) + suffix
+    return scaled.formatted(.number.precision(.fractionLength(abs(scaled) < 10 && !suffix.isEmpty ? 1 : 0)))
+      + suffix
   }
 
   public static func duration(_ seconds: TimeInterval) -> String {

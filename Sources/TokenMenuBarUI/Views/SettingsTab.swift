@@ -376,8 +376,7 @@ public struct LogTextView: NSViewRepresentable {
     let textView = scrollView.documentView as! NSTextView
     let text = entries.map(\.line).joined(separator: "\n")
     guard textView.string != text else { return }
-    let visible = scrollView.contentView.bounds.origin
     textView.string = text
-    scrollView.contentView.scroll(to: visible)
+    scrollView.contentView.scroll(to: scrollView.contentView.bounds.origin)
   }
 }

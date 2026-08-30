@@ -13,8 +13,7 @@ private let endpoint = URL(
   log.debugEnabled = true
   let client = APIClient(transport: transport, log: log, clock: testClock)
   struct Payload: Decodable { let value: Int }
-  let payload = try await client.getJSON(Payload.self, endpoint, headers: ["X-Test": "1"], operation: "op")
-  #expect(payload.value == 1)
+  #expect(try await client.getJSON(Payload.self, endpoint, headers: ["X-Test": "1"], operation: "op").value == 1)
   let request = transport.requests[0]
   #expect(request.value(forHTTPHeaderField: "X-Test") == "1")
   #expect(request.value(forHTTPHeaderField: "Accept") == "application/json")

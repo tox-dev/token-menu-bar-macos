@@ -117,9 +117,8 @@ import Testing
     """#
     .utf8
   ).write(to: url)
-  let account = ClaudeLocalAccount.load(from: url)
   #expect(
-    account
+    ClaudeLocalAccount.load(from: url)
       == ClaudeLocalAccount(
         email: "a@b.c", organizationName: "Org", rateLimitTier: "default_claude_max_5x", hasExtraUsageEnabled: true))
   try Data(#"{"other":1}"#.utf8).write(to: url)
@@ -151,8 +150,7 @@ import Testing
 }
 
 @Test func codexAuthExpiryComesFromAccessTokenJWT() {
-  let expiring = makeJWT(.object(["exp": .number(fixedNow.timeIntervalSince1970 + 60)]))
-  let auth = CodexAuth(accessToken: expiring)
+  let auth = CodexAuth(accessToken: makeJWT(.object(["exp": .number(fixedNow.timeIntervalSince1970 + 60)])))
   #expect(auth.state(now: fixedNow) == .expired(Date(timeIntervalSince1970: fixedNow.timeIntervalSince1970 + 60)))
   #expect(auth.claims == nil)
   #expect(auth.email == nil)
@@ -182,8 +180,7 @@ import Testing
 }
 
 @Test func fileCodexStoreRoundTripsAndDefaultsLocation() throws {
-  let directory = temporaryDirectory()
-  let store = FileCodexAuthStore(url: directory.appendingPathComponent("auth.json"))
+  let store = FileCodexAuthStore(url: temporaryDirectory().appendingPathComponent("auth.json"))
   #expect(try store.load() == nil)
   #expect(store.description == store.url.path)
   try store.save(CodexAuth(accessToken: "tok"))

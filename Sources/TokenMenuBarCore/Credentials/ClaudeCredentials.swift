@@ -111,8 +111,7 @@ public struct KeychainClaudeCredentialStore: ClaudeCredentialStore {
     ]
     let status = SecItemUpdate(query as CFDictionary, [kSecValueData as String: data] as CFDictionary)
     if status == errSecItemNotFound {
-      let add = query.merging([kSecValueData as String: data]) { $1 }
-      let addStatus = SecItemAdd(add as CFDictionary, nil)
+      let addStatus = SecItemAdd(query.merging([kSecValueData as String: data]) { $1 } as CFDictionary, nil)
       guard addStatus == errSecSuccess else { throw CredentialStoreError.keychain(addStatus) }
       return
     }

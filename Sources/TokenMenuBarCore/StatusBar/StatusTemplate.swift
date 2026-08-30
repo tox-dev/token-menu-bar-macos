@@ -193,11 +193,9 @@ public enum StatusTemplate {
     case "monthly": return "1mo"
     default:
       if let scope = window.scope {
-        let word = scope.split(separator: " ").first.map(String.init) ?? scope
-        return String(word.prefix(3)).uppercased()
+        return String((scope.split(separator: " ").first.map(String.init) ?? scope).prefix(3)).uppercased()
       }
-      let component = window.id.split(separator: ":").last.map(String.init) ?? window.id
-      return String(component.prefix(3)).uppercased()
+      return String((window.id.split(separator: ":").last.map(String.init) ?? window.id).prefix(3)).uppercased()
     }
   }
 }

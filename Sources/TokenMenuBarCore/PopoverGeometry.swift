@@ -19,8 +19,7 @@ public struct PopoverDismissalGate: Sendable, Equatable {
     trigger: PopoverDismissalTrigger
   ) -> Bool {
     if trigger == .keyEscape { return true }
-    let inside = popoverFrame?.contains(mouseLocation) ?? false
-    if inside {
+    if popoverFrame?.contains(mouseLocation) ?? false {
       mouseEnteredPopover = true
       return false
     }
@@ -55,8 +54,7 @@ public enum PopoverGeometry {
   public static let chromeHeight: CGFloat = 58
 
   public static func maxSize(anchor: CGRect, visibleFrame: CGRect) -> CGSize {
-    let heightBelow = anchor.minY - visibleFrame.minY - margin
-    let height = max(minimumHeight, heightBelow)
+    let height = max(minimumHeight, anchor.minY - visibleFrame.minY - margin)
     return CGSize(width: max(minimumWidth, visibleFrame.width - 2 * margin), height: height)
   }
 

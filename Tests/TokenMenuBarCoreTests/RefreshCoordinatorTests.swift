@@ -290,8 +290,7 @@ extension UsageHistoryStore {
 }
 
 @Test @MainActor func coordinatorRestoresAndStoresCachedSnapshots() async throws {
-  let root = temporaryDirectory()
-  let cache = SnapshotCache(url: root.appendingPathComponent("snapshots.json"))
+  let cache = SnapshotCache(url: temporaryDirectory().appendingPathComponent("snapshots.json"))
   #expect(cache.load().isEmpty)
   try cache.store([.codex: DemoData.snapshot(.codex, now: fixedNow)])
   let restored = cache.load()

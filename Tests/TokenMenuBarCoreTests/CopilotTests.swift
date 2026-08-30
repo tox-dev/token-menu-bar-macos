@@ -11,8 +11,7 @@ import Testing
   #expect(store.description == "\(hosts.path), \(apps.path)")
   #expect(try store.load() == nil)
   try Fixtures.data("copilot_hosts").write(to: apps)
-  let loaded = try store.load()
-  #expect(loaded == CopilotAuth(token: "gho_test_token_123", user: "octocat", host: "github.com"))
+  #expect(try store.load() == CopilotAuth(token: "gho_test_token_123", user: "octocat", host: "github.com"))
   try Data(#"{"ghe.example.com:Iv1.x": {"user": "ent", "oauth_token": "gho_ent"}, "empty": {"oauth_token": ""}}"#.utf8)
     .write(to: hosts)
   #expect(try store.load() == CopilotAuth(token: "gho_ent", user: "ent", host: "ghe.example.com"))
@@ -73,8 +72,7 @@ private let validCopilot = CopilotAuth(token: "gho_test", user: "octocat")
       "premium_interactions": .object(["entitlement": .number(0), "remaining": .number(0)]),
     ])
   ])
-  let overageNotices = CopilotMapper.notices(overage)
-  #expect(overageNotices.map(\.kind) == [.limitReached])
+  #expect(CopilotMapper.notices(overage).map(\.kind) == [.limitReached])
   #expect(CopilotMapper.windows(overage).map(\.id) == ["chat"])
   #expect(CopilotMapper.identity(.object([:]), auth: CopilotAuth(token: "t")).planName == "Copilot")
   #expect(CopilotMapper.windows(.object([:])).isEmpty)
@@ -85,8 +83,7 @@ private let validCopilot = CopilotAuth(token: "gho_test", user: "octocat")
   transport.on(path: "/copilot_internal/user", .json("copilot_user"))
   #expect(provider.credentialDescription == "memory")
   #expect(provider.credentialState(now: fixedNow) == .valid(expiresAt: nil))
-  let result = await provider.fetch(now: fixedNow, options: FetchOptions())
-  guard case .success(let snapshot) = result.outcome else {
+  guard case .success(let snapshot) = await provider.fetch(now: fixedNow, options: FetchOptions()).outcome else {
     Issue.record("expected success")
     return
   }

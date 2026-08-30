@@ -42,8 +42,7 @@ private func plan(
   #expect(events[0].body.contains("Resets"))
   #expect(events[0].id.hasPrefix("claude:session:90:"))
   #expect(plan(snapshot(92), snapshot(93)).isEmpty)
-  let limit = plan(snapshot(95), snapshot(100))
-  #expect(limit[0].body.hasPrefix("Limit reached."))
+  #expect(plan(snapshot(95), snapshot(100))[0].body.hasPrefix("Limit reached."))
 }
 
 @Test func plannerSkipsThresholdsAcrossResetAndReportsReset() {

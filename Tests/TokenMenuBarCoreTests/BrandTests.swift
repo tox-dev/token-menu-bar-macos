@@ -40,6 +40,5 @@ import Testing
 func usageConversionCoversEveryHueSector(hueFraction: Double) {
   let color = Brand.usage(hueFraction * 100)
   #expect((0...1).contains(color.red) && (0...1).contains(color.green) && (0...1).contains(color.blue))
-  let hsb = HSBColor(hue: hueFraction, saturation: 0.8, brightness: 0.8)
-  #expect(Brand.rgb(hsb).hex.count == 7)
+  #expect(Brand.rgb(HSBColor(hue: hueFraction, saturation: 0.8, brightness: 0.8)).hex.count == 7)
 }

@@ -89,13 +89,12 @@ public final class LogBuffer: @unchecked Sendable {
   }
 
   private func append(_ level: LogLevel, _ message: String) {
-    let entry = LogEntry(timestamp: clock.now(), level: level, message: message)
     switch level {
     case .error: osLog.error("\(message, privacy: .public)")
     default: osLog.info("\(message, privacy: .public)")
     }
     lock.withLock {
-      entries.append(entry)
+      entries.append(LogEntry(timestamp: clock.now(), level: level, message: message))
       if entries.count > Self.capacity { entries.removeFirst(entries.count - Self.capacity) }
       let now = clock.now()
       if lastPrune.map({ now.timeIntervalSince($0) > 3600 }) ?? true {

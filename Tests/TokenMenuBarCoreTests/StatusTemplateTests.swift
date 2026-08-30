@@ -148,8 +148,7 @@ private func input(
   #expect(hidden.cells.isEmpty)
   #expect(hidden.showsIcon)
   #expect(!hidden.countdownActive)
-  let missing = StatusItemBuilder.build(input(selected: [WindowKey(provider: .claude, windowID: "nope")]))
-  #expect(missing.cells.isEmpty)
+  #expect(StatusItemBuilder.build(input(selected: [WindowKey(provider: .claude, windowID: "nope")])).cells.isEmpty)
 }
 
 @Test func builderRendersMiniBarsPerProvider() {
@@ -159,8 +158,7 @@ private func input(
   #expect(model.cells[1].isMiniBar)
   #expect(model.cells[1].percent == 61)
   #expect(model.cells[0].tooltip == "Weekly: 62%")
-  let byProvider = StatusItemBuilder.build(input(format: .miniBars))
-  #expect(byProvider.cells.map(\.id) == ["claude", "codex"])
+  #expect(StatusItemBuilder.build(input(format: .miniBars)).cells.map(\.id) == ["claude", "codex"])
 }
 
 @Test func builderIconToneFollowsAvailability() {

@@ -173,6 +173,7 @@ extension QuotaAvailability {
   let frame = CGRect(x: 0, y: 0, width: 100, height: 100)
   let button = CGRect(x: 200, y: 200, width: 20, height: 20)
   let far = CGPoint(x: 500, y: 500)
+  // #expect cannot call a mutating method, and the gate records whether the pointer has entered the popover
   let movedBeforeEntering = gate.shouldClose(mouseLocation: far, popoverFrame: frame, trigger: .mouseMoved)
   #expect(!movedBeforeEntering)
   let clickedOutside = gate.shouldClose(mouseLocation: far, popoverFrame: frame, trigger: .mouseDown)

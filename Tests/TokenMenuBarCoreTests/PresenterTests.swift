@@ -377,8 +377,7 @@ private func makePresenter() throws -> (HistoryPresenter, UsageHistoryStore, Set
         provider: .codex, windows: snapshot.windows, source: .cache, fetchedAt: snapshot.fetchedAt),
       availability: .stale, isRefreshing: true))
   #expect(cached.statusHelp.contains("last ran"))
-  let firstRun = card(ProviderState(availability: .loading, isRefreshing: true))
-  #expect(firstRun.statusText == "Fetching…")
+  #expect(card(ProviderState(availability: .loading, isRefreshing: true)).statusText == "Fetching…")
   #expect(card(ProviderState(availability: .unavailable)).statusText == QuotaAvailability.unavailable.title)
 }
 

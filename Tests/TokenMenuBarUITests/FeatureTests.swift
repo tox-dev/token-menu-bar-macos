@@ -14,8 +14,7 @@ import WidgetKit
   #expect(dependencies.settings.demoMode == true)
   #expect(recorder.relaunched == 1)
   #expect(dependencies.log.text.contains("demo mode on"))
-  let tab = SettingsTab(environment: controller.environment)
-  #expect(inkFraction(tab, width: 760, height: 900) > 0)
+  #expect(inkFraction(SettingsTab(environment: controller.environment), width: 760, height: 900) > 0)
   let usage = UsageTab(environment: controller.environment)
   #expect(inkFraction(usage, width: 760, height: 600) > 0)
 }
@@ -37,8 +36,7 @@ import WidgetKit
   #expect(store.read()?.rows.isEmpty == true)
   let unwritable = WidgetSnapshotStore(url: URL(fileURLWithPath: "/dev/null/widget.json"))
   let (failing, _) = try makeDependencies(widgetStore: unwritable)
-  let failingController = AppController(dependencies: failing)
-  failingController.publishWidget(.placeholder)
+  AppController(dependencies: failing).publishWidget(.placeholder)
   #expect(failing.log.text.contains("widget snapshot write failed"))
   let (none, noneRecorder) = try makeDependencies()
   AppController(dependencies: none).publishWidget(.placeholder)
@@ -192,8 +190,7 @@ import WidgetKit
   dependencies.reloadWidgets()
   #expect(dependencies.widgetStore == nil)
   UIActions().setDemoMode(true)
-  let controller = AppController(dependencies: dependencies)
-  controller.refreshIfStale()
+  AppController(dependencies: dependencies).refreshIfStale()
   for _ in 0..<100 where dependencies.state.lastRefresh == nil { try await Task.sleep(for: .milliseconds(20)) }
   #expect(dependencies.state.lastRefresh != nil)
 }
@@ -233,9 +230,8 @@ import WidgetKit
 
 @Test @MainActor func exportRunnerWritesOnePopoverShotPerTabAndAppearance() async throws {
   let directory = FileManager.default.temporaryDirectory.appendingPathComponent("tmb-export-\(UUID().uuidString)")
-  let shots = try await ExportRunner.run(.popover, directory: directory, settle: .zero)
   #expect(
-    shots.map(\.lastPathComponent)
+    try await ExportRunner.run(.popover, directory: directory, settle: .zero).map(\.lastPathComponent)
       == PopoverTab.allCases.flatMap {
         ["popover-\($0.rawValue.lowercased())-light.png", "popover-\($0.rawValue.lowercased())-dark.png"]
       })

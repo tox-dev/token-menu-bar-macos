@@ -7,10 +7,8 @@ import Testing
   let samples = [sample(0.2, 1), sample(0.8, 2), sample(1.5, 3), sample(0.5, 9, key: other)]
   let buckets = ChartPipeline.bucket(samples, rollup: .minute, timeZone: utc)
   #expect(buckets.map(\.value) == [2, 3])
-  let hourly = ChartPipeline.bucket(samples, rollup: .hour, timeZone: utc)
-  #expect(hourly.map(\.value) == [3])
-  let reversed = ChartPipeline.bucket([sample(0.8, 2), sample(0.2, 1)], rollup: .minute, timeZone: utc)
-  #expect(reversed.map(\.value) == [2])
+  #expect(ChartPipeline.bucket(samples, rollup: .hour, timeZone: utc).map(\.value) == [3])
+  #expect(ChartPipeline.bucket([sample(0.8, 2), sample(0.2, 1)], rollup: .minute, timeZone: utc).map(\.value) == [2])
 }
 
 private let key = WindowKey(provider: .claude, windowID: "session")
@@ -31,11 +29,9 @@ private func sample(_ minutes: Double, _ value: Double, resets: Double? = 300, k
   let dropOnly = ChartPipeline.insertResetZeros([raw(0, 80, resets: 10), raw(5, 5, resets: 310)])
   #expect(dropOnly.map(\.value) == [80, 0, 5])
   #expect(dropOnly[1].date == fixedNow.addingTimeInterval(299))
-  let noReset = ChartPipeline.insertResetZeros([raw(0, 80), raw(5, 5)])
-  #expect(noReset.map(\.value) == [80, 5])
+  #expect(ChartPipeline.insertResetZeros([raw(0, 80), raw(5, 5)]).map(\.value) == [80, 5])
   #expect(ChartPipeline.insertResetZeros([raw(0, 1)]).count == 1)
-  let rising = ChartPipeline.insertResetZeros([raw(0, 5, resets: 10), raw(5, 80, resets: 310)])
-  #expect(rising.map(\.value) == [5, 80])
+  #expect(ChartPipeline.insertResetZeros([raw(0, 5, resets: 10), raw(5, 80, resets: 310)]).map(\.value) == [5, 80])
 }
 
 private func raw(_ minutes: Double, _ value: Double, resets: Double? = nil) -> ChartPipeline.Raw {
@@ -80,8 +76,7 @@ private func raw(_ minutes: Double, _ value: Double, resets: Double? = nil) -> C
   #expect(reduced.contains { $0.value == 0 })
   #expect(zip(reduced, reduced.dropFirst()).allSatisfy { $0.date <= $1.date })
   #expect(ChartPipeline.downsample(points, limit: 2000).count == 1000)
-  let descending = (0..<50).map { raw(Double($0), Double(50 - $0)) }
-  #expect(ChartPipeline.downsample(descending, limit: 10).count <= 10)
+  #expect(ChartPipeline.downsample((0..<50).map { raw(Double($0), Double(50 - $0)) }, limit: 10).count <= 10)
 }
 
 @Test func stackAccumulatesBases() {
