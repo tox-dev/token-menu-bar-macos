@@ -7,7 +7,8 @@ let owner = CommandLine.arguments.dropFirst().first ?? "Token Menu Bar"
 let options: CGWindowListOption = [.optionOnScreenOnly, .excludeDesktopElements]
 let windows = (CGWindowListCopyWindowInfo(options, kCGNullWindowID) as? [[String: Any]]) ?? []
 let matches = windows.compactMap { window -> [String: Any]? in
-  guard window[kCGWindowOwnerName as String] as? String == owner, let bounds = window[kCGWindowBounds as String] as? [String: Any]
+  guard window[kCGWindowOwnerName as String] as? String == owner,
+    let bounds = window[kCGWindowBounds as String] as? [String: Any]
   else { return nil }
   return [
     "id": window[kCGWindowNumber as String] as? Int ?? 0,

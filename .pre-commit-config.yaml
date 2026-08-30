@@ -1,0 +1,49 @@
+ci:
+  # swift-format needs a Swift toolchain, which pre-commit.ci's Linux runners do not have; CI covers it on macOS.
+  skip: [swift-format]
+
+exclude: ^(website/public|website/resources|dist)/
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=4096"]
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+      - id: detect-private-key
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 1.0.0
+    hooks:
+      - id: mdformat
+        args: ["--wrap", "120", "--number"]
+        # website/layouts holds Hugo templates rather than prose, and reflowing a shortcode breaks the build
+        exclude: ^website/(layouts|content/install\.md)
+        additional_dependencies:
+          - mdformat-hugo>=0.1
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+  - repo: https://github.com/google/yamlfmt
+    rev: v0.21.0
+    hooks:
+      - id: yamlfmt
+        args: ["--formatter", "max_line_length=120,retain_line_breaks_single=true"]
+        # yamlfmt rewrites folded scalars in the site's data files into marker comments
+        exclude: ^website/data/
+  - repo: local
+    hooks:
+      - id: swift-format
+        name: swift-format
+        entry: swift-format lint --strict
+        language: system
+        types: [swift]
+        require_serial: false

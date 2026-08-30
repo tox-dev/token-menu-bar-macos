@@ -36,7 +36,8 @@ Scripts/screenshots.sh
 
 The script launches the installed app with `TOKEN_MENU_BAR_DEMO=1`, so the captures show generated data rather than your
 account, then grabs the popover tabs in light and dark mode and the menu bar strip, and builds the tour GIF into
-`website/assets/images/`. It needs screen-recording permission for the terminal and temporarily switches the system appearance.
+`website/assets/images/`. It needs screen-recording permission for the terminal and temporarily switches the system
+appearance.
 
 ## Releasing
 
