@@ -1,26 +1,26 @@
 import Foundation
 
-public enum CopilotAPI {
-  public static let editorVersion = "vscode/1.96.2"
-  public static let pluginVersion = "copilot-chat/0.26.7"
+enum CopilotAPI {
+  static let editorVersion = "vscode/1.96.2"
+  static let pluginVersion = "copilot-chat/0.26.7"
 
-  public static func userURL(host: String) -> URL {
+  static func userURL(host: String) -> URL {
     let apiHost = host == "github.com" ? "api.github.com" : "api.\(host)"
     return URL(string: "https://\(apiHost)/copilot_internal/user")!
   }
 
-  public static func headers(token: String) -> [String: String] {
+  static func headers(token: String) -> [String: String] {
     [
       "Authorization": "token \(token)", "Editor-Version": editorVersion, "Editor-Plugin-Version": pluginVersion,
       "User-Agent": "GitHubCopilotChat/0.26.7", "X-Github-Api-Version": "2025-04-01",
     ]
   }
 
-  public static let snapshotOrder = ["premium_interactions", "chat", "completions"]
+  static let snapshotOrder = ["premium_interactions", "chat", "completions"]
 }
 
-public enum CopilotMapper {
-  public static func windows(_ user: JSONValue) -> [QuotaWindow] {
+enum CopilotMapper {
+  static func windows(_ user: JSONValue) -> [QuotaWindow] {
     let resetsAt = date(user["quota_reset_date"]?.stringValue)
     var windows: [QuotaWindow] = []
     if let snapshots = user["quota_snapshots"]?.objectValue {
@@ -61,26 +61,26 @@ public enum CopilotMapper {
     value?.doubleValue ?? value?.stringValue.flatMap(Double.init)
   }
 
-  public static func label(_ key: String) -> String {
+  static func label(_ key: String) -> String {
     switch key {
     case "premium_interactions": "Premium requests"
     default: Format.humanize(key)
     }
   }
 
-  public static func date(_ text: String?) -> Date? {
+  static func date(_ text: String?) -> Date? {
     guard let text else { return nil }
     return ISODate.parse(text) ?? DayStamp.date(text)
   }
 
-  public static func identity(_ user: JSONValue, auth: CopilotAuth) -> ProviderIdentity {
+  static func identity(_ user: JSONValue, auth: CopilotAuth) -> ProviderIdentity {
     let plan = user["copilot_plan"]?.stringValue ?? user["access_type_sku"]?.stringValue ?? "Copilot"
     return ProviderIdentity(
       planName: Format.humanize(plan), tier: user["access_type_sku"]?.stringValue, email: auth.user,
       subscriptionActiveUntil: nil)
   }
 
-  public static func notices(_ user: JSONValue) -> [Notice] {
+  static func notices(_ user: JSONValue) -> [Notice] {
     var notices: [Notice] = []
     let snapshots = user["quota_snapshots"]?.objectValue ?? [:]
     let credits = snapshots.values.compactMap { number($0["credits_used"]) }.reduce(0, +)

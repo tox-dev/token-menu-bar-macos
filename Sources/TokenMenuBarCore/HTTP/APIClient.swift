@@ -36,7 +36,7 @@ public enum APIError: Error, Equatable, Sendable {
 }
 
 public struct APIClient: Sendable {
-  public static let bodySnippetLength = 200
+  static let bodySnippetLength = 200
   public static let timeout: TimeInterval = 20
 
   private let transport: any HTTPTransport

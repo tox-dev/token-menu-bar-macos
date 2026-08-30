@@ -1,29 +1,29 @@
 import Foundation
 
-public enum CursorAPI {
-  public static let usageSummaryURL = URL(string: "https://cursor.com/api/usage-summary")!
-  public static let meURL = URL(string: "https://cursor.com/api/auth/me")!
-  public static let periodUsageURL = URL(
+enum CursorAPI {
+  static let usageSummaryURL = URL(string: "https://cursor.com/api/usage-summary")!
+  static let meURL = URL(string: "https://cursor.com/api/auth/me")!
+  static let periodUsageURL = URL(
     string: "https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage")!
 
-  public static func cookieHeaders(_ auth: CursorAuth) -> [String: String] {
+  static func cookieHeaders(_ auth: CursorAuth) -> [String: String] {
     ["Cookie": auth.sessionCookie, "Origin": "https://cursor.com", "User-Agent": "token-menu-bar"]
   }
 
-  public static func bearerHeaders(_ auth: CursorAuth) -> [String: String] {
+  static func bearerHeaders(_ auth: CursorAuth) -> [String: String] {
     ["Authorization": "Bearer \(auth.accessToken)", "Connect-Protocol-Version": "1", "User-Agent": "token-menu-bar"]
   }
 
-  public struct Bucket: Decodable, Sendable, Equatable {
-    public let enabled: Bool?
-    public let used: Double?
-    public let limit: Double?
-    public let remaining: Double?
-    public let autoPercentUsed: Double?
-    public let apiPercentUsed: Double?
-    public let totalPercentUsed: Double?
+  struct Bucket: Decodable, Sendable, Equatable {
+    let enabled: Bool?
+    let used: Double?
+    let limit: Double?
+    let remaining: Double?
+    let autoPercentUsed: Double?
+    let apiPercentUsed: Double?
+    let totalPercentUsed: Double?
 
-    public var percentUsed: Double? {
+    var percentUsed: Double? {
       if let totalPercentUsed { return totalPercentUsed }
       switch (autoPercentUsed, apiPercentUsed) {
       case (let auto?, let api?): return (auto + api) / 2
@@ -36,48 +36,48 @@ public enum CursorAPI {
     }
   }
 
-  public struct IndividualUsage: Decodable, Sendable, Equatable {
-    public let plan: Bucket?
-    public let onDemand: Bucket?
-    public let overall: Bucket?
+  struct IndividualUsage: Decodable, Sendable, Equatable {
+    let plan: Bucket?
+    let onDemand: Bucket?
+    let overall: Bucket?
   }
 
-  public struct TeamUsage: Decodable, Sendable, Equatable {
-    public let onDemand: Bucket?
-    public let pooled: Bucket?
+  struct TeamUsage: Decodable, Sendable, Equatable {
+    let onDemand: Bucket?
+    let pooled: Bucket?
   }
 
-  public struct UsageSummary: Decodable, Sendable, Equatable {
-    public let billingCycleStart: String?
-    public let billingCycleEnd: String?
-    public let membershipType: String?
-    public let isUnlimited: Bool?
-    public let individualUsage: IndividualUsage?
-    public let teamUsage: TeamUsage?
+  struct UsageSummary: Decodable, Sendable, Equatable {
+    let billingCycleStart: String?
+    let billingCycleEnd: String?
+    let membershipType: String?
+    let isUnlimited: Bool?
+    let individualUsage: IndividualUsage?
+    let teamUsage: TeamUsage?
   }
 
-  public struct PeriodUsage: Decodable, Sendable, Equatable {
-    public let billingCycleStart: String?
-    public let billingCycleEnd: String?
-    public let planUsage: Bucket?
-    public let displayMessage: String?
+  struct PeriodUsage: Decodable, Sendable, Equatable {
+    let billingCycleStart: String?
+    let billingCycleEnd: String?
+    let planUsage: Bucket?
+    let displayMessage: String?
 
-    public var summary: UsageSummary {
+    var summary: UsageSummary {
       UsageSummary(
         billingCycleStart: billingCycleStart, billingCycleEnd: billingCycleEnd, membershipType: nil, isUnlimited: nil,
         individualUsage: IndividualUsage(plan: planUsage, onDemand: nil, overall: nil), teamUsage: nil)
     }
   }
 
-  public struct Me: Decodable, Sendable, Equatable {
-    public let email: String?
-    public let name: String?
-    public let sub: String?
+  struct Me: Decodable, Sendable, Equatable {
+    let email: String?
+    let name: String?
+    let sub: String?
   }
 }
 
-public enum CursorMapper {
-  public static func windows(_ summary: CursorAPI.UsageSummary) -> [QuotaWindow] {
+enum CursorMapper {
+  static func windows(_ summary: CursorAPI.UsageSummary) -> [QuotaWindow] {
     let resetsAt = ISODate.parse(summary.billingCycleEnd)
     let start = ISODate.parse(summary.billingCycleStart)
     let duration = start.flatMap { start in resetsAt.map { $0.timeIntervalSince(start) } }
@@ -97,7 +97,7 @@ public enum CursorMapper {
     return windows
   }
 
-  public static func spend(_ summary: CursorAPI.UsageSummary) -> SpendControl? {
+  static func spend(_ summary: CursorAPI.UsageSummary) -> SpendControl? {
     guard let onDemand = summary.individualUsage?.onDemand, onDemand.enabled != false else { return nil }
     return SpendControl(
       enabled: true,
@@ -108,7 +108,7 @@ public enum CursorMapper {
       limitReached: (onDemand.remaining ?? 1) <= 0 && (onDemand.limit ?? 0) > 0)
   }
 
-  public static func identity(
+  static func identity(
     _ summary: CursorAPI.UsageSummary, auth: CursorAuth, me: CursorAPI.Me?
   )
     -> ProviderIdentity
@@ -117,7 +117,7 @@ public enum CursorMapper {
     return ProviderIdentity(planName: Format.humanize(plan), email: me?.email ?? auth.email)
   }
 
-  public static func notices(_ summary: CursorAPI.UsageSummary, period: CursorAPI.PeriodUsage?) -> [Notice] {
+  static func notices(_ summary: CursorAPI.UsageSummary, period: CursorAPI.PeriodUsage?) -> [Notice] {
     var notices: [Notice] = []
     if summary.isUnlimited == true { notices.append(Notice(kind: .info, text: "This plan has unlimited usage.")) }
     if let message = period?.displayMessage, !message.isEmpty { notices.append(Notice(kind: .info, text: message)) }

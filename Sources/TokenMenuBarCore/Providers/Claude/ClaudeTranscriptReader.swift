@@ -105,7 +105,7 @@ public struct LocalUsage: Sendable, Equatable, Hashable, Codable {
 }
 
 public actor ClaudeTranscriptReader {
-  public static let retentionDays = 60
+  static let retentionDays = 60
 
   private let root: URL
   private var offsets: [String: Int] = [:]

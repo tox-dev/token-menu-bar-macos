@@ -33,7 +33,7 @@ public struct HistoryStats: Sendable, Equatable {
 public actor UsageHistoryStore {
   public static let retention: TimeInterval = 60 * 86400
   public static let sampleInterval: TimeInterval = 300
-  public static let changeThreshold: Double = 5
+  static let changeThreshold: Double = 5
 
   let database: SQLiteDatabase
   private var lastRecorded: [WindowKey: UsageSample] = [:]

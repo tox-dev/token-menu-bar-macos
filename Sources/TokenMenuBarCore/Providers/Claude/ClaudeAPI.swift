@@ -1,20 +1,20 @@
 import Foundation
 
-public enum ClaudeAPI {
-  public static let usageURL = URL(string: "https://api.anthropic.com/api/oauth/usage")!
-  public static let profileURL = URL(string: "https://api.anthropic.com/api/oauth/profile")!
-  public static let tokenURL = URL(string: "https://platform.claude.com/v1/oauth/token")!
-  public static let clientID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
-  public static let betaHeader = "oauth-2025-04-20"
-  public static let userAgent = "claude-code/2.1.251"
+enum ClaudeAPI {
+  static let usageURL = URL(string: "https://api.anthropic.com/api/oauth/usage")!
+  static let profileURL = URL(string: "https://api.anthropic.com/api/oauth/profile")!
+  static let tokenURL = URL(string: "https://platform.claude.com/v1/oauth/token")!
+  static let clientID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
+  static let betaHeader = "oauth-2025-04-20"
+  static let userAgent = "claude-code/2.1.251"
 
-  public static func headers(token: String) -> [String: String] {
+  static func headers(token: String) -> [String: String] {
     ["Authorization": "Bearer \(token)", "anthropic-beta": betaHeader, "User-Agent": userAgent]
   }
 
-  public struct Window: Decodable, Sendable, Equatable {
-    public let utilization: Double?
-    public let resetsAt: String?
+  struct Window: Decodable, Sendable, Equatable {
+    let utilization: Double?
+    let resetsAt: String?
 
     enum CodingKeys: String, CodingKey {
       case utilization
@@ -22,11 +22,11 @@ public enum ClaudeAPI {
     }
   }
 
-  public struct Limit: Decodable, Sendable, Equatable {
-    public struct Scope: Decodable, Sendable, Equatable {
-      public struct Model: Decodable, Sendable, Equatable {
-        public let id: String?
-        public let displayName: String?
+  struct Limit: Decodable, Sendable, Equatable {
+    struct Scope: Decodable, Sendable, Equatable {
+      struct Model: Decodable, Sendable, Equatable {
+        let id: String?
+        let displayName: String?
 
         enum CodingKeys: String, CodingKey {
           case id
@@ -34,17 +34,17 @@ public enum ClaudeAPI {
         }
       }
 
-      public let model: Model?
-      public let surface: String?
+      let model: Model?
+      let surface: String?
     }
 
-    public let kind: String
-    public let group: String?
-    public let percent: Double
-    public let severity: String?
-    public let resetsAt: String?
-    public let scope: Scope?
-    public let isActive: Bool?
+    let kind: String
+    let group: String?
+    let percent: Double
+    let severity: String?
+    let resetsAt: String?
+    let scope: Scope?
+    let isActive: Bool?
 
     enum CodingKeys: String, CodingKey {
       case kind, group, percent, severity, scope
@@ -53,10 +53,10 @@ public enum ClaudeAPI {
     }
   }
 
-  public struct MoneyDTO: Decodable, Sendable, Equatable {
-    public let amountMinor: Int
-    public let currency: String?
-    public let exponent: Int?
+  struct MoneyDTO: Decodable, Sendable, Equatable {
+    let amountMinor: Int
+    let currency: String?
+    let exponent: Int?
 
     enum CodingKeys: String, CodingKey {
       case amountMinor = "amount_minor"
@@ -68,17 +68,17 @@ public enum ClaudeAPI {
     }
   }
 
-  public struct Spend: Decodable, Sendable, Equatable {
-    public let used: MoneyDTO?
-    public let limit: MoneyDTO?
-    public let percent: Double?
-    public let severity: String?
-    public let enabled: Bool?
-    public let disabledReason: String?
-    public let balance: MoneyDTO?
-    public let autoReload: JSONValue?
-    public let canPurchaseCredits: Bool?
-    public let canToggle: Bool?
+  struct Spend: Decodable, Sendable, Equatable {
+    let used: MoneyDTO?
+    let limit: MoneyDTO?
+    let percent: Double?
+    let severity: String?
+    let enabled: Bool?
+    let disabledReason: String?
+    let balance: MoneyDTO?
+    let autoReload: JSONValue?
+    let canPurchaseCredits: Bool?
+    let canToggle: Bool?
 
     enum CodingKeys: String, CodingKey {
       case used, limit, percent, severity, enabled, balance
@@ -89,15 +89,15 @@ public enum ClaudeAPI {
     }
   }
 
-  public struct ExtraUsage: Decodable, Sendable, Equatable {
-    public let isEnabled: Bool?
-    public let monthlyLimit: Double?
-    public let usedCredits: Double?
-    public let utilization: Double?
-    public let currency: String?
-    public let decimalPlaces: Int?
-    public let disabledReason: String?
-    public let spendLimitReached: Bool?
+  struct ExtraUsage: Decodable, Sendable, Equatable {
+    let isEnabled: Bool?
+    let monthlyLimit: Double?
+    let usedCredits: Double?
+    let utilization: Double?
+    let currency: String?
+    let decimalPlaces: Int?
+    let disabledReason: String?
+    let spendLimitReached: Bool?
 
     enum CodingKeys: String, CodingKey {
       case utilization, currency
@@ -110,8 +110,8 @@ public enum ClaudeAPI {
     }
   }
 
-  public struct UsageResponse: Decodable, Sendable, Equatable {
-    public static let knownWindowKeys: [String: (id: String, label: String, group: WindowGroup)] = [
+  struct UsageResponse: Decodable, Sendable, Equatable {
+    static let knownWindowKeys: [String: (id: String, label: String, group: WindowGroup)] = [
       "five_hour": ("session", "Current session", .session),
       "seven_day": ("weekly", "All models", .weekly),
       "seven_day_opus": ("weekly:opus", "Opus", .weekly),
@@ -120,10 +120,10 @@ public enum ClaudeAPI {
       "seven_day_cowork": ("weekly:cowork", "Cowork", .weekly),
     ]
 
-    public let limits: [Limit]
-    public let windows: [String: Window]
-    public let spend: Spend?
-    public let extraUsage: ExtraUsage?
+    let limits: [Limit]
+    let windows: [String: Window]
+    let spend: Spend?
+    let extraUsage: ExtraUsage?
 
     struct DynamicKey: CodingKey {
       var stringValue: String
@@ -132,7 +132,7 @@ public enum ClaudeAPI {
       init?(intValue: Int) { nil }
     }
 
-    public init(from decoder: any Decoder) throws {
+    init(from decoder: any Decoder) throws {
       let container = try decoder.container(keyedBy: DynamicKey.self)
       var windows: [String: Window] = [:]
       var limits: [Limit] = []
@@ -156,7 +156,7 @@ public enum ClaudeAPI {
       self.extraUsage = extraUsage
     }
 
-    public init(limits: [Limit], windows: [String: Window], spend: Spend?, extraUsage: ExtraUsage?) {
+    init(limits: [Limit], windows: [String: Window], spend: Spend?, extraUsage: ExtraUsage?) {
       self.limits = limits
       self.windows = windows
       self.spend = spend
@@ -164,12 +164,12 @@ public enum ClaudeAPI {
     }
   }
 
-  public struct ProfileResponse: Decodable, Sendable, Equatable {
-    public struct Account: Decodable, Sendable, Equatable {
-      public let email: String?
-      public let displayName: String?
-      public let hasClaudeMax: Bool?
-      public let hasClaudePro: Bool?
+  struct ProfileResponse: Decodable, Sendable, Equatable {
+    struct Account: Decodable, Sendable, Equatable {
+      let email: String?
+      let displayName: String?
+      let hasClaudeMax: Bool?
+      let hasClaudePro: Bool?
 
       enum CodingKeys: String, CodingKey {
         case email
@@ -179,12 +179,12 @@ public enum ClaudeAPI {
       }
     }
 
-    public struct Organization: Decodable, Sendable, Equatable {
-      public let name: String?
-      public let organizationType: String?
-      public let rateLimitTier: String?
-      public let hasExtraUsageEnabled: Bool?
-      public let subscriptionStatus: String?
+    struct Organization: Decodable, Sendable, Equatable {
+      let name: String?
+      let organizationType: String?
+      let rateLimitTier: String?
+      let hasExtraUsageEnabled: Bool?
+      let subscriptionStatus: String?
 
       enum CodingKeys: String, CodingKey {
         case name
@@ -195,14 +195,14 @@ public enum ClaudeAPI {
       }
     }
 
-    public let account: Account?
-    public let organization: Organization?
+    let account: Account?
+    let organization: Organization?
   }
 
-  public struct TokenResponse: Decodable, Sendable, Equatable {
-    public let accessToken: String
-    public let refreshToken: String?
-    public let expiresIn: Double?
+  struct TokenResponse: Decodable, Sendable, Equatable {
+    let accessToken: String
+    let refreshToken: String?
+    let expiresIn: Double?
 
     enum CodingKeys: String, CodingKey {
       case accessToken = "access_token"
@@ -212,11 +212,11 @@ public enum ClaudeAPI {
   }
 }
 
-public enum ClaudeMapper {
-  public static let sessionDuration: TimeInterval = 5 * 3600
-  public static let weeklyDuration: TimeInterval = 7 * 86400
+enum ClaudeMapper {
+  static let sessionDuration: TimeInterval = 5 * 3600
+  static let weeklyDuration: TimeInterval = 7 * 86400
 
-  public static func windows(_ response: ClaudeAPI.UsageResponse) -> [QuotaWindow] {
+  static func windows(_ response: ClaudeAPI.UsageResponse) -> [QuotaWindow] {
     if !response.limits.isEmpty { return response.limits.map(window) }
     return response.windows.map { key, window in
       let known = ClaudeAPI.UsageResponse.knownWindowKeys[key]
@@ -261,7 +261,7 @@ public enum ClaudeMapper {
     )
   }
 
-  public static func spend(
+  static func spend(
     _ response: ClaudeAPI.UsageResponse, now: Date, calendar: Calendar = .current
   ) -> SpendControl? {
     let extra = response.extraUsage
@@ -307,7 +307,7 @@ public enum ClaudeMapper {
     return start.flatMap { calendar.date(byAdding: .month, value: 1, to: $0) }
   }
 
-  public static func identity(
+  static func identity(
     profile: ClaudeAPI.ProfileResponse?, credentials: ClaudeOAuthCredentials?, local: ClaudeLocalAccount?
   ) -> ProviderIdentity {
     let tier = profile?.organization?.rateLimitTier ?? credentials?.rateLimitTier ?? local?.rateLimitTier
@@ -332,7 +332,7 @@ public enum ClaudeMapper {
     )
   }
 
-  public static func notices(_ response: ClaudeAPI.UsageResponse) -> [Notice] {
+  static func notices(_ response: ClaudeAPI.UsageResponse) -> [Notice] {
     var notices: [Notice] = []
     if response.extraUsage?.spendLimitReached == true {
       notices.append(Notice(kind: .spendControl, text: "Monthly usage-credit spend limit reached."))

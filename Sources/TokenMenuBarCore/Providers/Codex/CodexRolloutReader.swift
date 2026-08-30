@@ -1,7 +1,7 @@
 import Foundation
 
 public struct CodexRolloutReader: Sendable {
-  public static let maxFiles = 8
+  static let maxFiles = 8
 
   public let sessionsRoot: URL
 
@@ -9,14 +9,14 @@ public struct CodexRolloutReader: Sendable {
     self.sessionsRoot = sessionsRoot
   }
 
-  public struct Reading: Sendable, Equatable {
-    public let rateLimit: CodexAPI.RateLimit
-    public let planType: String?
-    public let credits: CodexAPI.Credits?
-    public let observedAt: Date?
+  struct Reading: Sendable, Equatable {
+    let rateLimit: CodexAPI.RateLimit
+    let planType: String?
+    let credits: CodexAPI.Credits?
+    let observedAt: Date?
   }
 
-  public func latest() -> Reading? {
+  func latest() -> Reading? {
     for url in newestRollouts() {
       guard let data = FileManager.default.contents(atPath: url.path) else { continue }
       let text = String(decoding: data, as: UTF8.self)

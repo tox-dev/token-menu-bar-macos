@@ -1,7 +1,7 @@
 import Foundation
 
 public actor ClaudeProvider: UsageProvider {
-  public static let profileCacheInterval: TimeInterval = 6 * 3600
+  static let profileCacheInterval: TimeInterval = 6 * 3600
 
   public nonisolated let id: ProviderID = .claude
   public nonisolated let pollingPolicy = PollingPolicy.defaults(for: .claude)

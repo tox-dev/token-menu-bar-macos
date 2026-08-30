@@ -1,26 +1,26 @@
 import Foundation
 
-public enum CodexAPI {
-  public static let base = URL(string: "https://chatgpt.com/backend-api")!
-  public static let tokenURL = URL(string: "https://auth.openai.com/oauth/token")!
-  public static let clientID = "app_EMoamEEZ73f0CkXaXp7hrann"
-  public static let originator = "codex_cli_rs"
-  public static let terminalRefreshErrors: Set<String> = [
+enum CodexAPI {
+  static let base = URL(string: "https://chatgpt.com/backend-api")!
+  static let tokenURL = URL(string: "https://auth.openai.com/oauth/token")!
+  static let clientID = "app_EMoamEEZ73f0CkXaXp7hrann"
+  static let originator = "codex_cli_rs"
+  static let terminalRefreshErrors: Set<String> = [
     "refresh_token_expired", "refresh_token_reused", "refresh_token_invalidated", "invalid_grant",
   ]
 
-  public static var usageURL: URL { base.appendingPathComponent("wham/usage") }
-  public static var resetCreditsURL: URL { base.appendingPathComponent("wham/rate-limit-reset-credits") }
-  public static var creditEventsURL: URL { base.appendingPathComponent("wham/usage/credit-usage-events") }
+  static var usageURL: URL { base.appendingPathComponent("wham/usage") }
+  static var resetCreditsURL: URL { base.appendingPathComponent("wham/rate-limit-reset-credits") }
+  static var creditEventsURL: URL { base.appendingPathComponent("wham/usage/credit-usage-events") }
 
-  public enum Analytics: String, CaseIterable, Sendable {
+  enum Analytics: String, CaseIterable, Sendable {
     case tokenUsage = "wham/usage/daily-token-usage-breakdown"
     case workspaceCounts = "wham/analytics/daily-workspace-usage-counts"
     case skills = "wham/analytics/daily-skill-usage-metrics"
     case plugins = "wham/analytics/daily-plugin-usage-metrics"
     case codeReview = "wham/analytics/daily-code-review-metrics"
 
-    public func url(start: String, end: String) -> URL {
+    func url(start: String, end: String) -> URL {
       var components = URLComponents(
         url: CodexAPI.base.appendingPathComponent(rawValue), resolvingAgainstBaseURL: false)!
       var items = [
@@ -44,7 +44,7 @@ public enum CodexAPI {
     }
   }
 
-  public static func headers(token: String, accountID: String?) -> [String: String] {
+  static func headers(token: String, accountID: String?) -> [String: String] {
     var headers = [
       "Authorization": "Bearer \(token)", "originator": originator, "User-Agent": "\(originator)/token-menu-bar",
     ]
@@ -52,11 +52,11 @@ public enum CodexAPI {
     return headers
   }
 
-  public struct Window: Decodable, Sendable, Equatable {
-    public let usedPercent: Double
-    public let limitWindowSeconds: Double?
-    public let resetAfterSeconds: Double?
-    public let resetAt: Double?
+  struct Window: Decodable, Sendable, Equatable {
+    let usedPercent: Double
+    let limitWindowSeconds: Double?
+    let resetAfterSeconds: Double?
+    let resetAt: Double?
 
     enum CodingKeys: String, CodingKey {
       case usedPercent = "used_percent"
@@ -65,7 +65,7 @@ public enum CodexAPI {
       case resetAt = "reset_at"
     }
 
-    public init(usedPercent: Double, limitWindowSeconds: Double?, resetAfterSeconds: Double?, resetAt: Double?) {
+    init(usedPercent: Double, limitWindowSeconds: Double?, resetAfterSeconds: Double?, resetAt: Double?) {
       self.usedPercent = usedPercent
       self.limitWindowSeconds = limitWindowSeconds
       self.resetAfterSeconds = resetAfterSeconds
@@ -73,11 +73,11 @@ public enum CodexAPI {
     }
   }
 
-  public struct RateLimit: Decodable, Sendable, Equatable {
-    public let allowed: Bool?
-    public let limitReached: Bool?
-    public let primaryWindow: Window?
-    public let secondaryWindow: Window?
+  struct RateLimit: Decodable, Sendable, Equatable {
+    let allowed: Bool?
+    let limitReached: Bool?
+    let primaryWindow: Window?
+    let secondaryWindow: Window?
 
     enum CodingKeys: String, CodingKey {
       case allowed
@@ -86,7 +86,7 @@ public enum CodexAPI {
       case secondaryWindow = "secondary_window"
     }
 
-    public init(allowed: Bool?, limitReached: Bool?, primaryWindow: Window?, secondaryWindow: Window?) {
+    init(allowed: Bool?, limitReached: Bool?, primaryWindow: Window?, secondaryWindow: Window?) {
       self.allowed = allowed
       self.limitReached = limitReached
       self.primaryWindow = primaryWindow
@@ -94,10 +94,10 @@ public enum CodexAPI {
     }
   }
 
-  public struct AdditionalRateLimit: Decodable, Sendable, Equatable {
-    public let limitName: String
-    public let meteredFeature: String?
-    public let rateLimit: RateLimit
+  struct AdditionalRateLimit: Decodable, Sendable, Equatable {
+    let limitName: String
+    let meteredFeature: String?
+    let rateLimit: RateLimit
 
     enum CodingKeys: String, CodingKey {
       case limitName = "limit_name"
@@ -106,13 +106,13 @@ public enum CodexAPI {
     }
   }
 
-  public struct Credits: Decodable, Sendable, Equatable {
-    public let hasCredits: Bool?
-    public let unlimited: Bool?
-    public let overageLimitReached: Bool?
-    public let balance: String?
-    public let approxLocalMessages: [Int]?
-    public let approxCloudMessages: [Int]?
+  struct Credits: Decodable, Sendable, Equatable {
+    let hasCredits: Bool?
+    let unlimited: Bool?
+    let overageLimitReached: Bool?
+    let balance: String?
+    let approxLocalMessages: [Int]?
+    let approxCloudMessages: [Int]?
 
     enum CodingKeys: String, CodingKey {
       case unlimited, balance
@@ -123,12 +123,12 @@ public enum CodexAPI {
     }
   }
 
-  public struct IndividualLimit: Decodable, Sendable, Equatable {
-    public let limit: String?
-    public let used: String?
-    public let remaining: String?
-    public let usedPercent: Double?
-    public let resetAt: Double?
+  struct IndividualLimit: Decodable, Sendable, Equatable {
+    let limit: String?
+    let used: String?
+    let remaining: String?
+    let usedPercent: Double?
+    let resetAt: Double?
 
     enum CodingKeys: String, CodingKey {
       case limit, used, remaining
@@ -137,9 +137,9 @@ public enum CodexAPI {
     }
   }
 
-  public struct SpendControl: Decodable, Sendable, Equatable {
-    public let reached: Bool?
-    public let individualLimit: IndividualLimit?
+  struct SpendControl: Decodable, Sendable, Equatable {
+    let reached: Bool?
+    let individualLimit: IndividualLimit?
 
     enum CodingKeys: String, CodingKey {
       case reached
@@ -147,11 +147,11 @@ public enum CodexAPI {
     }
   }
 
-  public struct ResetCreditsSummary: Decodable, Sendable, Equatable {
-    public let availableCount: Int?
-    public let applicableAvailableCount: Int?
-    public let totalEarnedCount: Int?
-    public let immediateResetPurchaseEligible: Bool?
+  struct ResetCreditsSummary: Decodable, Sendable, Equatable {
+    let availableCount: Int?
+    let applicableAvailableCount: Int?
+    let totalEarnedCount: Int?
+    let immediateResetPurchaseEligible: Bool?
 
     enum CodingKeys: String, CodingKey {
       case availableCount = "available_count"
@@ -161,17 +161,17 @@ public enum CodexAPI {
     }
   }
 
-  public struct UsageResponse: Decodable, Sendable, Equatable {
-    public let email: String?
-    public let planType: String?
-    public let rateLimit: RateLimit?
-    public let codeReviewRateLimit: RateLimit?
-    public let additionalRateLimits: [AdditionalRateLimit]?
-    public let credits: Credits?
-    public let spendControl: SpendControl?
-    public let rateLimitReachedType: JSONValue?
-    public let promo: JSONValue?
-    public let rateLimitResetCredits: ResetCreditsSummary?
+  struct UsageResponse: Decodable, Sendable, Equatable {
+    let email: String?
+    let planType: String?
+    let rateLimit: RateLimit?
+    let codeReviewRateLimit: RateLimit?
+    let additionalRateLimits: [AdditionalRateLimit]?
+    let credits: Credits?
+    let spendControl: SpendControl?
+    let rateLimitReachedType: JSONValue?
+    let promo: JSONValue?
+    let rateLimitResetCredits: ResetCreditsSummary?
 
     enum CodingKeys: String, CodingKey {
       case email, credits, promo
@@ -185,11 +185,11 @@ public enum CodexAPI {
     }
   }
 
-  public struct TokenResponse: Decodable, Sendable, Equatable {
-    public let accessToken: String?
-    public let refreshToken: String?
-    public let idToken: String?
-    public let error: String?
+  struct TokenResponse: Decodable, Sendable, Equatable {
+    let accessToken: String?
+    let refreshToken: String?
+    let idToken: String?
+    let error: String?
 
     enum CodingKeys: String, CodingKey {
       case error
@@ -199,9 +199,9 @@ public enum CodexAPI {
     }
   }
 
-  public struct DailyRows: Decodable, Sendable, Equatable {
-    public let data: [JSONValue]
-    public let dataFreshness: String?
+  struct DailyRows: Decodable, Sendable, Equatable {
+    let data: [JSONValue]
+    let dataFreshness: String?
 
     enum CodingKeys: String, CodingKey {
       case data
@@ -210,8 +210,8 @@ public enum CodexAPI {
   }
 }
 
-public enum CodexMapper {
-  public static func planName(_ planType: String?) -> String {
+enum CodexMapper {
+  static func planName(_ planType: String?) -> String {
     switch planType?.lowercased() {
     case nil, "": "ChatGPT"
     case "pro": "Pro"
@@ -227,7 +227,7 @@ public enum CodexMapper {
     }
   }
 
-  public static func windows(_ response: CodexAPI.UsageResponse) -> [QuotaWindow] {
+  static func windows(_ response: CodexAPI.UsageResponse) -> [QuotaWindow] {
     var windows = rateLimitWindows(response.rateLimit, idPrefix: "", labelPrefix: "")
     windows += rateLimitWindows(response.codeReviewRateLimit, idPrefix: "code_review:", labelPrefix: "Code review ")
     for extra in response.additionalRateLimits ?? [] {
@@ -264,7 +264,7 @@ public enum CodexMapper {
     }
   }
 
-  public static func credits(_ credits: CodexAPI.Credits?) -> CreditBalance? {
+  static func credits(_ credits: CodexAPI.Credits?) -> CreditBalance? {
     guard let credits else { return nil }
     return CreditBalance(
       balance: credits.balance.flatMap { Decimal(string: $0) },
@@ -281,7 +281,7 @@ public enum CodexMapper {
     return low...high
   }
 
-  public static func spend(_ control: CodexAPI.SpendControl?) -> SpendControl? {
+  static func spend(_ control: CodexAPI.SpendControl?) -> SpendControl? {
     guard let control, let limit = control.individualLimit else { return nil }
     func money(_ text: String?) -> Money? {
       text.flatMap { Decimal(string: $0) }.map {
@@ -298,7 +298,7 @@ public enum CodexMapper {
     )
   }
 
-  public static func resetCredits(_ summary: CodexAPI.ResetCreditsSummary?) -> ResetCredits? {
+  static func resetCredits(_ summary: CodexAPI.ResetCreditsSummary?) -> ResetCredits? {
     guard let summary else { return nil }
     return ResetCredits(
       available: summary.availableCount ?? 0,
@@ -308,7 +308,7 @@ public enum CodexMapper {
     )
   }
 
-  public static func notices(_ response: CodexAPI.UsageResponse) -> [Notice] {
+  static func notices(_ response: CodexAPI.UsageResponse) -> [Notice] {
     var notices: [Notice] = []
     if let reached = response.rateLimitReachedType, !reached.isNull {
       let type = reached["type"]?.stringValue ?? reached.summary
@@ -329,7 +329,7 @@ public enum CodexMapper {
     return notices
   }
 
-  public static func identity(_ response: CodexAPI.UsageResponse?, auth: CodexAuth?) -> ProviderIdentity {
+  static func identity(_ response: CodexAPI.UsageResponse?, auth: CodexAuth?) -> ProviderIdentity {
     let planType = response?.planType ?? auth?.planType
     return ProviderIdentity(
       planName: planName(planType),
@@ -339,7 +339,7 @@ public enum CodexMapper {
     )
   }
 
-  public static func analytics(_ endpoint: CodexAPI.Analytics, rows: [JSONValue]) -> [AnalyticsPoint] {
+  static func analytics(_ endpoint: CodexAPI.Analytics, rows: [JSONValue]) -> [AnalyticsPoint] {
     rows.flatMap { row -> [AnalyticsPoint] in
       guard let day = row["date"]?.stringValue else { return [] }
       switch endpoint {
@@ -406,7 +406,7 @@ public enum CodexMapper {
     }
   }
 
-  public static func creditEvents(_ rows: [JSONValue]) -> [CreditEvent] {
+  static func creditEvents(_ rows: [JSONValue]) -> [CreditEvent] {
     rows.enumerated().compactMap { index, row in
       let dateText = row["date"]?.stringValue ?? row["created_at"]?.stringValue ?? row["timestamp"]?.stringValue
       guard let date = dateText.flatMap({ ISODate.parse($0) ?? DayStamp.date($0) }) else { return nil }
