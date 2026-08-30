@@ -19,6 +19,9 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     MACOSX_DEPLOYMENT_TARGET: "26.0"
     APP_GROUP_ID: group.dev.tox.token-menu-bar
+    # The names of the App Store profiles, matched by the export options plist the release writes
+    APP_PROFILE: Token Menu Bar App Store
+    WIDGET_PROFILE: Token Menu Bar Widget App Store
 packages:
   TokenMenuBarPackage:
     path: ..
@@ -34,6 +37,8 @@ targets:
         name: Entry
       - path: Sources
         name: App
+      - path: Assets.xcassets
+      - path: PrivacyInfo.xcprivacy
     dependencies:
       - package: TokenMenuBarPackage
         product: TokenMenuBarUI
@@ -54,7 +59,8 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSUIElement: true
         LSMinimumSystemVersion: "26.0"
-        NSHumanReadableCopyright: "MIT License"
+        LSApplicationCategoryType: public.app-category.developer-tools
+        NSHumanReadableCopyright: "Copyright © 2026 Bernát Gábor. MIT licensed."
         ITSAppUsesNonExemptEncryption: false
         NSSupportsAutomaticTermination: false
         SUFeedURL: https://github.com/tox-dev/token-menu-bar-macos/releases/latest/download/appcast.xml
@@ -82,6 +88,7 @@ targets:
           CODE_SIGN_ENTITLEMENTS: App/AppStore.entitlements
           CODE_SIGN_IDENTITY: "Apple Distribution"
           CODE_SIGN_STYLE: Manual
+          PROVISIONING_PROFILE_SPECIFIER: $(APP_PROFILE)
           ENABLE_HARDENED_RUNTIME: NO
           ENABLE_APP_SANDBOX: YES
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: APPSTORE
@@ -133,6 +140,7 @@ targets:
         AppStore:
           CODE_SIGN_IDENTITY: "Apple Distribution"
           CODE_SIGN_STYLE: Manual
+          PROVISIONING_PROFILE_SPECIFIER: $(WIDGET_PROFILE)
 schemes:
   TokenMenuBar-Direct:
     build:

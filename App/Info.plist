@@ -22,12 +22,14 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.developer-tools</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>26.0</string>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string>MIT License</string>
+	<string>Copyright © 2026 Bernát Gábor. MIT licensed.</string>
 	<key>NSSupportsAutomaticTermination</key>
 	<false/>
 	<key>SUEnableInstallerLauncherService</key>
@@ -36,5 +38,7 @@
 	<string>https://github.com/tox-dev/token-menu-bar-macos/releases/latest/download/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>$(SPARKLE_PUBLIC_ED_KEY)</string>
+	<key>TokenMenuBarAppGroup</key>
+	<string>$(APP_GROUP_ID)</string>
 </dict>
 </plist>

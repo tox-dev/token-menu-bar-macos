@@ -3,6 +3,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# A profile left by an earlier filtered run merges into this one and hides lines the full suite covers.
+rm -rf "$(swift build --show-bin-path)/codecov"
 swift test --enable-code-coverage "$@"
 
 bin_dir="$(swift build --show-bin-path)"

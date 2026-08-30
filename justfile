@@ -51,9 +51,28 @@ install:
 shots:
     Scripts/screenshots.sh
 
-# Write the app icon set into the given directory
-icons directory="dist/icons":
-    swift run TokenMenuBar --export-icon {{ directory }}
+# Redraw App/Assets.xcassets from the icon the app draws in code
+icons:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    set="App/Assets.xcassets/AppIcon.appiconset"
+    rm -rf "$set" && mkdir -p "$set"
+    swift run TokenMenuBar --export-icon "$set" >/dev/null
+    python3 - "$set" <<'PYTHON'
+    import json, pathlib, sys
+    icons = pathlib.Path(sys.argv[1])
+    images = [
+        {"filename": f"icon_{size}x{size}{suffix}.png", "idiom": "mac", "scale": scale, "size": f"{size}x{size}"}
+        for size in (16, 32, 128, 256, 512)
+        for suffix, scale in (("", "1x"), ("@2x", "2x"))
+    ]
+    for file in icons.glob("*.png"):
+        if file.name not in {image["filename"] for image in images}:
+            file.unlink()
+    (icons / "Contents.json").write_text(json.dumps({"images": images, "info": {"author": "xcode", "version": 1}},
+                                                    indent=2) + "\n")
+    PYTHON
+    python3 Scripts/optimize-png.py "$set"
 
 # Build the website into website/public
 site:

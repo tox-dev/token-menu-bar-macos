@@ -7,6 +7,9 @@ cd "$(dirname "$0")/.."
 : "${APP_STORE_CONNECT_KEY_ID:?}"
 : "${APP_STORE_CONNECT_ISSUER_ID:?}"
 : "${APP_STORE_CONNECT_KEY_BASE64:?}"
+# The profile names have to match the ones installed on the runner and the ones the project archives with.
+APP_PROFILE="${APP_PROFILE:-Token Menu Bar App Store}"
+WIDGET_PROFILE="${WIDGET_PROFILE:-Token Menu Bar Widget App Store}"
 out="dist/app-store"
 archive="$out/TokenMenuBar.xcarchive"
 key="$RUNNER_TEMP/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
@@ -19,7 +22,6 @@ xcodebuild -project App/TokenMenuBar.xcodeproj -scheme TokenMenuBar-AppStore -co
 
 app="$archive/Products/Applications/Token Menu Bar.app"
 rm -rf "$app/Contents/Frameworks/Sparkle.framework"
-cp App/PrivacyInfo.xcprivacy "$app/Contents/Resources/"
 
 cat > "$out/export.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -34,8 +36,8 @@ cat > "$out/export.plist" <<PLIST
   <key>installerSigningCertificate</key><string>3rd Party Mac Developer Installer</string>
   <key>provisioningProfiles</key>
   <dict>
-    <key>dev.tox.token-menu-bar</key><string>Token Menu Bar App Store</string>
-    <key>dev.tox.token-menu-bar.widget</key><string>Token Menu Bar Widget App Store</string>
+    <key>dev.tox.token-menu-bar</key><string>${APP_PROFILE}</string>
+    <key>dev.tox.token-menu-bar.widget</key><string>${WIDGET_PROFILE}</string>
   </dict>
 </dict>
 </plist>
