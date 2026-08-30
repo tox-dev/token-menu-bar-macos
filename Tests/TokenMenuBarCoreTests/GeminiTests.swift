@@ -3,33 +3,6 @@ import Testing
 
 @testable import TokenMenuBarCore
 
-final class MemoryGeminiStore: GeminiAuthStore, @unchecked Sendable {
-  private let lock = NSLock()
-  private var stored: GeminiAuth?
-  var loadError: (any Error)?
-  var saveError: (any Error)?
-  private(set) var saved: [GeminiAuth] = []
-
-  init(_ auth: GeminiAuth?) {
-    stored = auth
-  }
-
-  var description: String { "memory" }
-
-  func load() throws -> GeminiAuth? {
-    if let loadError { throw loadError }
-    return lock.withLock { stored }
-  }
-
-  func save(_ auth: GeminiAuth) throws {
-    if let saveError { throw saveError }
-    lock.withLock {
-      stored = auth
-      saved.append(auth)
-    }
-  }
-}
-
 private func idToken(email: String, hd: String? = nil) -> String {
   var claims: [String: JSONValue] = ["email": .string(email), "exp": .number(1_900_000_000)]
   claims["hd"] = hd.map(JSONValue.string)

@@ -182,12 +182,70 @@ final class FakeUpdater: UpdaterHook {
   }
 }
 
-struct StaticProvider: UsageProvider {
+struct ScriptedProvider: UsageProvider {
   let id: ProviderID
   let result: ProviderFetchResult
   let pollingPolicy = PollingPolicy(minimumInterval: 0, activeInterval: 0, defaultInterval: 0)
 
-  var credentialDescription: String { "static \(id.rawValue)" }
+  var credentialDescription: String { "scripted \(id.rawValue)" }
   func credentialState(now: Date) -> CredentialState { .valid(expiresAt: nil) }
   func fetch(now: Date, options: FetchOptions) async -> ProviderFetchResult { result }
+}
+
+@MainActor
+func makeDependencies(
+  providers: [any UsageProvider] = [], updater: FakeUpdater? = FakeUpdater(), history: UsageHistoryStore? = nil,
+  widgetStore: WidgetSnapshotStore? = nil, isDemo: Bool = false
+) throws -> (AppDependencies, Recorder) {
+  let recorder = Recorder()
+  let history = try history ?? UsageHistoryStore(url: nil)
+  let settings = makeSettings()
+  let dependencies = AppDependencies(
+    appInfo: testAppInfo,
+    settings: settings,
+    state: AppState(),
+    history: history,
+    log: makeLog(),
+    registry: ProviderRegistry(providers),
+    notifier: Notifier(center: FakeNotificationCenter(), log: makeLog()),
+    launchAtLogin: LaunchAtLoginBackend(
+      status: { .notRegistered }, register: {}, unregister: {},
+      openSettings: { MainActor.assumeIsolated { recorder.openedLoginItems += 1 } }),
+    clock: sleepingClock,
+    updater: updater,
+    isSandboxed: true,
+    isDemo: isDemo,
+    openURL: { recorder.urls.append($0) },
+    copyToPasteboard: { recorder.copied.append($0) },
+    revealInFinder: { recorder.revealed.append($0) },
+    chooseExportURL: { recorder.exportURL },
+    chooseDirectory: { _ in recorder.codexHome },
+    terminate: { recorder.terminated += 1 },
+    relaunch: { recorder.relaunched += 1 },
+    widgetStore: widgetStore,
+    reloadWidgets: { recorder.reloadedWidgets += 1 },
+    rebuildProviders: { _ in
+      recorder.rebuilt += 1
+      return ProviderRegistry([
+        ScriptedProvider(id: .codex, result: ProviderFetchResult(outcome: .success(sampleSnapshot(.codex))))
+      ])
+    },
+    screenVisibleFrame: { CGRect(x: 0, y: 0, width: 1440, height: 900) },
+    openPopoverOnLaunch: providers.count > 1
+  )
+  return (dependencies, recorder)
+}
+
+@MainActor
+final class Recorder {
+  var relaunched = 0
+  var reloadedWidgets = 0
+  var urls: [URL] = []
+  var copied: [String] = []
+  var revealed: [URL] = []
+  var exportURL: URL?
+  var codexHome: URL?
+  var terminated = 0
+  var rebuilt = 0
+  var openedLoginItems = 0
 }

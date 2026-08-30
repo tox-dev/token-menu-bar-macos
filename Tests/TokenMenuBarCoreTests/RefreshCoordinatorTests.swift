@@ -21,31 +21,6 @@ private func snapshot(_ provider: ProviderID, _ percent: Double, resets: TimeInt
   )
 }
 
-final class ScriptedProvider: UsageProvider, @unchecked Sendable {
-  let id: ProviderID
-  var pollingPolicy = PollingPolicy(minimumInterval: 0, activeInterval: 0, defaultInterval: 0)
-  private let lock = NSLock()
-  private var queue: [ProviderFetchResult]
-  private(set) var calls: [FetchOptions] = []
-  var credentials: CredentialState = .valid(expiresAt: nil)
-
-  init(id: ProviderID, results: [ProviderFetchResult]) {
-    self.id = id
-    queue = results
-  }
-
-  var credentialDescription: String { "scripted" }
-
-  func credentialState(now: Date) -> CredentialState { credentials }
-
-  func fetch(now: Date, options: FetchOptions) async -> ProviderFetchResult {
-    lock.withLock {
-      calls.append(options)
-      return queue.count > 1 ? queue.removeFirst() : queue[0]
-    }
-  }
-}
-
 @MainActor
 private func makeCoordinator(
   _ providers: [any UsageProvider], settings: Settings? = nil, clock: Clock = testClock,

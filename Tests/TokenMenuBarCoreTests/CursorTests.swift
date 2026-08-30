@@ -3,22 +3,6 @@ import Testing
 
 @testable import TokenMenuBarCore
 
-final class MemoryCursorStore: CursorAuthStore, @unchecked Sendable {
-  private let stored: CursorAuth?
-  var loadError: (any Error)?
-
-  init(_ auth: CursorAuth?) {
-    stored = auth
-  }
-
-  var description: String { "memory" }
-
-  func load() throws -> CursorAuth? {
-    if let loadError { throw loadError }
-    return stored
-  }
-}
-
 private func cursorJWT(subject: String = "auth0|user_01ABC", exp: Double = 1_900_000_000) -> String {
   let payload = try! JSONEncoder().encode(JSONValue.object(["sub": .string(subject), "exp": .number(exp)]))
     .base64EncodedString().replacingOccurrences(of: "=", with: "")

@@ -5,64 +5,13 @@ import UserNotifications
 
 @testable import TokenMenuBarUI
 
-@MainActor
-private func makeDependencies(
-  providers: [any UsageProvider] = [], updater: FakeUpdater? = FakeUpdater(), history: UsageHistoryStore? = nil
-) throws -> (AppDependencies, Recorder) {
-  let recorder = Recorder()
-  let history = try history ?? UsageHistoryStore(url: nil)
-  let settings = makeSettings()
-  let dependencies = AppDependencies(
-    appInfo: testAppInfo,
-    settings: settings,
-    state: AppState(),
-    history: history,
-    log: makeLog(),
-    registry: ProviderRegistry(providers),
-    notifier: Notifier(center: FakeNotificationCenter(), log: makeLog()),
-    launchAtLogin: LaunchAtLoginBackend(
-      status: { .notRegistered }, register: {}, unregister: {},
-      openSettings: { MainActor.assumeIsolated { recorder.openedLoginItems += 1 } }),
-    clock: sleepingClock,
-    updater: updater,
-    isSandboxed: true,
-    openURL: { recorder.urls.append($0) },
-    copyToPasteboard: { recorder.copied.append($0) },
-    revealInFinder: { recorder.revealed.append($0) },
-    chooseExportURL: { recorder.exportURL },
-    chooseDirectory: { _ in recorder.codexHome },
-    terminate: { recorder.terminated += 1 },
-    rebuildProviders: { _ in
-      recorder.rebuilt += 1
-      return ProviderRegistry([
-        StaticProvider(id: .codex, result: ProviderFetchResult(outcome: .success(sampleSnapshot(.codex))))
-      ])
-    },
-    screenVisibleFrame: { CGRect(x: 0, y: 0, width: 1440, height: 900) },
-    openPopoverOnLaunch: providers.count > 1
-  )
-  return (dependencies, recorder)
-}
-
-@MainActor
-final class Recorder {
-  var urls: [URL] = []
-  var copied: [String] = []
-  var revealed: [URL] = []
-  var exportURL: URL?
-  var codexHome: URL?
-  var terminated = 0
-  var rebuilt = 0
-  var openedLoginItems = 0
-}
-
 @Test @MainActor func appControllerStartsRefreshesAndStops() async throws {
-  let provider = StaticProvider(id: .claude, result: ProviderFetchResult(outcome: .success(sampleSnapshot(.claude))))
+  let provider = ScriptedProvider(id: .claude, result: ProviderFetchResult(outcome: .success(sampleSnapshot(.claude))))
   let (dependencies, recorder) = try makeDependencies(providers: [provider])
   dependencies.settings.lastLaunchedVersion = "0.9"
   dependencies.settings.detailedLogging = true
   let controller = AppController(dependencies: dependencies)
-  #expect(controller.environment.credentialDescriptions == [.claude: "static claude"])
+  #expect(controller.environment.credentialDescriptions == [.claude: "scripted claude"])
   #expect(controller.environment.canCheckForUpdates)
   controller.start()
   #expect(controller.statusItem != nil)
@@ -157,7 +106,7 @@ final class Recorder {
   actions.grantAccess(codexHome)
   #expect(recorder.rebuilt == 1)
   #expect(dependencies.settings.bookmark(for: codexHome) != nil)
-  #expect(controller.environment.credentialDescriptions == [.codex: "static codex"])
+  #expect(controller.environment.credentialDescriptions == [.codex: "scripted codex"])
   recorder.codexHome = URL(fileURLWithPath: "/nonexistent/path/\(UUID().uuidString)")
   actions.grantAccess(codexHome)
   #expect(dependencies.log.text.contains("bookmark for ~/.codex failed"))

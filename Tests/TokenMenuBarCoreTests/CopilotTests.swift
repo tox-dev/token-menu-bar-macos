@@ -3,22 +3,6 @@ import Testing
 
 @testable import TokenMenuBarCore
 
-final class MemoryCopilotStore: CopilotAuthStore, @unchecked Sendable {
-  private let stored: CopilotAuth?
-  var loadError: (any Error)?
-
-  init(_ auth: CopilotAuth?) {
-    stored = auth
-  }
-
-  var description: String { "memory" }
-
-  func load() throws -> CopilotAuth? {
-    if let loadError { throw loadError }
-    return stored
-  }
-}
-
 private let validCopilot = CopilotAuth(token: "gho_test", user: "octocat")
 
 private func makeProvider(_ auth: CopilotAuth?, store: MemoryCopilotStore? = nil) -> (CopilotProvider, StubTransport) {

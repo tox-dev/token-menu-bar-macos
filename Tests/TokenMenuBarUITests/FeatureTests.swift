@@ -6,45 +6,8 @@ import WidgetKit
 @testable import TokenMenuBarCore
 @testable import TokenMenuBarUI
 
-@MainActor
-private final class FeatureRecorder {
-  var relaunched = 0
-  var reloadedWidgets = 0
-}
-
-@MainActor
-private func makeFeatureDependencies(
-  providers: [any UsageProvider] = [], widgetStore: WidgetSnapshotStore? = nil, isDemo: Bool = false
-) throws -> (AppDependencies, FeatureRecorder) {
-  let recorder = FeatureRecorder()
-  let dependencies = AppDependencies(
-    appInfo: testAppInfo,
-    settings: makeSettings(),
-    state: AppState(),
-    history: try UsageHistoryStore(url: nil),
-    log: makeLog(),
-    registry: ProviderRegistry(providers),
-    notifier: Notifier(center: nil, log: makeLog()),
-    launchAtLogin: LaunchAtLoginBackend(status: { .notRegistered }, register: {}, unregister: {}),
-    clock: sleepingClock,
-    isDemo: isDemo,
-    openURL: { _ in },
-    copyToPasteboard: { _ in },
-    revealInFinder: { _ in },
-    chooseExportURL: { nil },
-    chooseDirectory: { _ in nil },
-    terminate: {},
-    relaunch: { recorder.relaunched += 1 },
-    widgetStore: widgetStore,
-    reloadWidgets: { recorder.reloadedWidgets += 1 },
-    rebuildProviders: { _ in ProviderRegistry([]) },
-    screenVisibleFrame: { nil }
-  )
-  return (dependencies, recorder)
-}
-
 @Test @MainActor func demoModeTogglesSettingsAndRelaunches() throws {
-  let (dependencies, recorder) = try makeFeatureDependencies(isDemo: true)
+  let (dependencies, recorder) = try makeDependencies(isDemo: true)
   let controller = AppController(dependencies: dependencies)
   #expect(controller.environment.isDemo)
   controller.environment.actions.setDemoMode(true)
@@ -60,8 +23,8 @@ private func makeFeatureDependencies(
 @Test @MainActor func widgetSnapshotsArePublishedOnStatusRebuild() async throws {
   let root = FileManager.default.temporaryDirectory.appendingPathComponent("tmb-widget-\(UUID().uuidString)")
   let store = WidgetSnapshotStore(url: root.appendingPathComponent("widget.json"))
-  let provider = StaticProvider(id: .claude, result: ProviderFetchResult(outcome: .success(sampleSnapshot(.claude))))
-  let (dependencies, recorder) = try makeFeatureDependencies(providers: [provider], widgetStore: store)
+  let provider = ScriptedProvider(id: .claude, result: ProviderFetchResult(outcome: .success(sampleSnapshot(.claude))))
+  let (dependencies, recorder) = try makeDependencies(providers: [provider], widgetStore: store)
   let controller = AppController(dependencies: dependencies)
   // one publish when the sink attaches to the empty model, one when the refresh lands
   #expect(recorder.reloadedWidgets == 1)
@@ -73,11 +36,11 @@ private func makeFeatureDependencies(
   controller.publishWidget(WidgetSnapshot(rows: [], attention: false, updatedAt: fixedNow))
   #expect(store.read()?.rows.isEmpty == true)
   let unwritable = WidgetSnapshotStore(url: URL(fileURLWithPath: "/dev/null/widget.json"))
-  let (failing, _) = try makeFeatureDependencies(widgetStore: unwritable)
+  let (failing, _) = try makeDependencies(widgetStore: unwritable)
   let failingController = AppController(dependencies: failing)
   failingController.publishWidget(.placeholder)
   #expect(failing.log.text.contains("widget snapshot write failed"))
-  let (none, noneRecorder) = try makeFeatureDependencies()
+  let (none, noneRecorder) = try makeDependencies()
   AppController(dependencies: none).publishWidget(.placeholder)
   #expect(noneRecorder.reloadedWidgets == 0)
 }

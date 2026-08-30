@@ -3,60 +3,6 @@ import Testing
 
 @testable import TokenMenuBarCore
 
-final class MemoryClaudeStore: ClaudeCredentialStore, @unchecked Sendable {
-  private let lock = NSLock()
-  private var stored: ClaudeOAuthCredentials?
-  var loadError: (any Error)?
-  var saveError: (any Error)?
-  private(set) var saved: [ClaudeOAuthCredentials] = []
-
-  init(_ credentials: ClaudeOAuthCredentials?) {
-    stored = credentials
-  }
-
-  var description: String { "memory" }
-
-  func load() throws -> ClaudeOAuthCredentials? {
-    if let loadError { throw loadError }
-    return lock.withLock { stored }
-  }
-
-  func save(_ credentials: ClaudeOAuthCredentials) throws {
-    if let saveError { throw saveError }
-    lock.withLock {
-      stored = credentials
-      saved.append(credentials)
-    }
-  }
-}
-
-final class MemoryCodexStore: CodexAuthStore, @unchecked Sendable {
-  private let lock = NSLock()
-  private var stored: CodexAuth?
-  var loadError: (any Error)?
-  var saveError: (any Error)?
-  private(set) var saved: [CodexAuth] = []
-
-  init(_ auth: CodexAuth?) {
-    stored = auth
-  }
-
-  var description: String { "memory" }
-
-  func load() throws -> CodexAuth? {
-    if let loadError { throw loadError }
-    return lock.withLock { stored }
-  }
-
-  func save(_ auth: CodexAuth) throws {
-    if let saveError { throw saveError }
-    lock.withLock {
-      stored = auth
-      saved.append(auth)
-    }
-  }
-}
-
 private let validClaude = ClaudeOAuthCredentials(
   accessToken: "tok", refreshToken: "ref", expiresAt: fixedNow.addingTimeInterval(86400), subscriptionType: "max",
   rateLimitTier: "default_claude_max_20x")

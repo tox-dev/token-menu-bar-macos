@@ -139,7 +139,7 @@ extension QuotaAvailability {
 }
 
 @Test func registryOrdersAndLooksUpProviders() {
-  let registry = ProviderRegistry([FakeProvider(id: .codex), FakeProvider(id: .claude)])
+  let registry = ProviderRegistry([scriptedProvider(.codex), scriptedProvider(.claude)])
   #expect(registry.ids == [.claude, .codex])
   #expect(registry[.codex]?.id == .codex)
   #expect(ProviderRegistry([])[.claude] == nil)
@@ -251,16 +251,6 @@ extension QuotaAvailability {
   let ok = LaunchAtLoginBackend(status: { .enabled }, register: {}, unregister: {})
   #expect(ok.setEnabled(true) == .enabled)
   ok.openSettings()
-}
-
-struct FakeProvider: UsageProvider {
-  let id: ProviderID
-  let pollingPolicy = PollingPolicy(minimumInterval: 0, activeInterval: 0, defaultInterval: 0)
-  var result: ProviderFetchResult = ProviderFetchResult(outcome: .failed("unset"))
-  var credentials: CredentialState = .valid(expiresAt: nil)
-  var credentialDescription: String { "fake" }
-  func credentialState(now: Date) -> CredentialState { credentials }
-  func fetch(now: Date, options: FetchOptions) async -> ProviderFetchResult { result }
 }
 
 @Test(arguments: [
