@@ -1,6 +1,5 @@
 import Testing
-
-@testable import TokenMenuBarCore
+import TokenMenuBarCore
 
 @Test func menuListsProvidersBetweenRefreshAndQuit() {
   let commands = MenuCommand.menu(providers: [.claude, .codex], canCheckForUpdates: false, appName: "Token Menu Bar")

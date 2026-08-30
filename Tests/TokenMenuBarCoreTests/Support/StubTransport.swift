@@ -1,6 +1,5 @@
 import Foundation
-
-@testable import TokenMenuBarCore
+import TokenMenuBarCore
 
 final class StubTransport: HTTPTransport, @unchecked Sendable {
   struct Response {

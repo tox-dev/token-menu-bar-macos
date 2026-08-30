@@ -1,8 +1,8 @@
 import AppKit
 import SwiftUI
 import Testing
-import TokenMenuBarCore
 
+@testable import TokenMenuBarCore
 @testable import TokenMenuBarUI
 
 @Test @MainActor func rootViewHostsEveryTab() async throws {

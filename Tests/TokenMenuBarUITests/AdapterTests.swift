@@ -1,9 +1,9 @@
 import Foundation
 import ServiceManagement
 import Testing
-import TokenMenuBarCore
 import UserNotifications
 
+@testable import TokenMenuBarCore
 @testable import TokenMenuBarUI
 
 @Test @MainActor func notifierDeliversWhenAuthorized() async {

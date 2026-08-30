@@ -1,6 +1,5 @@
 import Foundation
-
-@testable import TokenMenuBarCore
+import TokenMenuBarCore
 
 // The provider seam for every test that drives the refresh loop: hand it the results a case needs, in order, and it
 // replays them while recording the options it was called with.

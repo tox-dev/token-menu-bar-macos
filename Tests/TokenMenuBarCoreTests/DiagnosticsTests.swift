@@ -1,7 +1,6 @@
 import Foundation
 import Testing
-
-@testable import TokenMenuBarCore
+import TokenMenuBarCore
 
 @Test func appInfoReadsBundleWithFallbacks() {
   let info = AppInfo.from(bundle: Bundle(for: DateBox.self), isAppStore: true)

@@ -1,7 +1,6 @@
 import Foundation
 import Testing
-
-@testable import TokenMenuBarCore
+import TokenMenuBarCore
 
 enum Fixtures {
   static func url(_ name: String) -> URL {

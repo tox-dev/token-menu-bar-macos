@@ -1,7 +1,6 @@
 import Foundation
 import Testing
-
-@testable import TokenMenuBarCore
+import TokenMenuBarCore
 
 @Test func paceExhaustedAt100() {
   let estimate = PaceEstimate.estimate(window: window(used: 100, elapsedFraction: 0.5), now: fixedNow)

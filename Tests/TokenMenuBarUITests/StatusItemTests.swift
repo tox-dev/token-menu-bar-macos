@@ -1,7 +1,7 @@
 import AppKit
 import Testing
-import TokenMenuBarCore
 
+@testable import TokenMenuBarCore
 @testable import TokenMenuBarUI
 
 @Test(arguments: [StatusIconTone.normal, .offline, .attention], [false, true])

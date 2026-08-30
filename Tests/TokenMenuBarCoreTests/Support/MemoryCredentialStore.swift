@@ -1,6 +1,5 @@
 import Foundation
-
-@testable import TokenMenuBarCore
+import TokenMenuBarCore
 
 // One double for all five credential seams: each provider reads its own type, but the behaviour under test is the
 // same everywhere — hand back what was stored, or throw what the case asked for.

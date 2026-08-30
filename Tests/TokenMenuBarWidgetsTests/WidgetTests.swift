@@ -1,10 +1,9 @@
 import AppKit
 import SwiftUI
 import Testing
+import TokenMenuBarCore
+import TokenMenuBarWidgets
 import WidgetKit
-
-@testable import TokenMenuBarCore
-@testable import TokenMenuBarWidgets
 
 @Test func timelineProviderReadsStoreOrPlaceholder() throws {
   let store = temporaryStore()

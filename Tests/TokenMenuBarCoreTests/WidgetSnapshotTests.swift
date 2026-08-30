@@ -1,7 +1,6 @@
 import Foundation
 import Testing
-
-@testable import TokenMenuBarCore
+import TokenMenuBarCore
 
 @Test func widgetSnapshotBuildsRowsFromSelection() {
   let snapshot = DemoData.snapshot(.claude, now: fixedNow)

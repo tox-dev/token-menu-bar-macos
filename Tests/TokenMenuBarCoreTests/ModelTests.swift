@@ -1,7 +1,6 @@
 import Foundation
 import Testing
-
-@testable import TokenMenuBarCore
+import TokenMenuBarCore
 
 @Test func providerIDMetadata() {
   #expect(ProviderID.claude < .codex)

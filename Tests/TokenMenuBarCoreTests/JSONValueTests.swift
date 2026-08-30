@@ -1,7 +1,6 @@
 import Foundation
 import Testing
-
-@testable import TokenMenuBarCore
+import TokenMenuBarCore
 
 @Test func jsonValueRoundTripsAllKinds() throws {
   let text = #"{"a":null,"b":true,"c":1.5,"d":"x","e":[1,"y"],"f":{"g":2}}"#

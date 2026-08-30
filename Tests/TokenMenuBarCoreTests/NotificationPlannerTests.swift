@@ -1,7 +1,6 @@
 import Foundation
 import Testing
-
-@testable import TokenMenuBarCore
+import TokenMenuBarCore
 
 @Test func plannerIsSilentWhenDisabledOrWithoutHistory() {
   #expect(plan(nil, snapshot(99)).isEmpty)

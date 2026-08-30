@@ -2,8 +2,7 @@ import AppKit
 import SwiftUI
 import Testing
 import TokenMenuBarCore
-
-@testable import TokenMenuBarUI
+import TokenMenuBarUI
 
 @MainActor
 private func anchoredPopover() -> (PopoverController, NSView, NSWindow) {

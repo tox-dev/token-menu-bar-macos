@@ -1,9 +1,8 @@
 import AppKit
 import SwiftUI
 import Testing
-
-@testable import TokenMenuBarCore
-@testable import TokenMenuBarUI
+import TokenMenuBarCore
+import TokenMenuBarUI
 
 @Test @MainActor func productIconDrawsAndExports() throws {
   let image = AppIcon.productImage(size: 128)

@@ -1,8 +1,8 @@
 import AppKit
 import Testing
-import TokenMenuBarCore
 import UserNotifications
 
+@testable import TokenMenuBarCore
 @testable import TokenMenuBarUI
 
 @Test @MainActor func appControllerStartInstallsTheStatusItemAndRecordsTheUpgrade() throws {

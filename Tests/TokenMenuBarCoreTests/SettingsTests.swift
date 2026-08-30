@@ -1,7 +1,6 @@
 import Foundation
 import Testing
-
-@testable import TokenMenuBarCore
+import TokenMenuBarCore
 
 @Test @MainActor func settingsDefaultsAndClamping() {
   let defaults = freshDefaults()

@@ -1,7 +1,6 @@
 import Foundation
 import Testing
-
-@testable import TokenMenuBarCore
+import TokenMenuBarCore
 
 private let percentCases: [(Double, Int, String)] = [
   (36.0, 0, "36%"), (36.46, 1, "36.5%"), (-5.0, 0, "0%"), (250.0, 0, "100%"),
