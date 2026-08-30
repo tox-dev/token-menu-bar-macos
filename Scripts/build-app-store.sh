@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Archives the AppStore scheme, removes Sparkle from the bundle, exports with the app-store-connect method and uploads.
+# Sparkle is stripped from the bundle: App Review rejects binaries that can update themselves.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

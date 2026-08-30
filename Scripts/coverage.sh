@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Runs the test suite with coverage and fails when any line in the Core or UI targets never executed.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

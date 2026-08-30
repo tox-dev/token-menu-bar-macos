@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Archives the Direct scheme and exports a Developer ID (or ad-hoc) signed app into dist/direct.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

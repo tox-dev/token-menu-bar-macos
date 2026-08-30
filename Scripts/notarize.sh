@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Notarizes the .app, .dmg and .zip files in the given directory with an App Store Connect API key,
-# then staples the result.
 set -euo pipefail
 
 directory="${1:?usage: notarize.sh <directory>}"

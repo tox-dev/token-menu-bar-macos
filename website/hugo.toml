@@ -50,7 +50,7 @@ home = ["HTML", "llms"]
 page = ["HTML", "md"]
 section = ["HTML"]
 
-# llms.txt (llmstxt.org): a plain-text index for LLM crawlers; every page also gets a raw-markdown twin.
+# Format defined at llmstxt.org.
 [outputFormats.llms]
 mediaType = "text/plain"
 baseName = "llms"

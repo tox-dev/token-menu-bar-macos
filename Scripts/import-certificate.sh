@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Imports a base64-encoded .p12 certificate into a temporary keychain for codesign on CI.
 set -euo pipefail
 
 : "${CERTIFICATE_BASE64:?}"

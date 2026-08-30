@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Produces TokenMenuBar.zip and TokenMenuBar.dmg (plus .sha256 sidecars) from dist/direct/Token Menu Bar.app.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

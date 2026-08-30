@@ -1,4 +1,3 @@
-// Prints the on-screen windows of a process as JSON so screenshot scripts can capture them by id or frame.
 // Usage: swift Scripts/window-frames.swift "Token Menu Bar"
 import CoreGraphics
 import Foundation

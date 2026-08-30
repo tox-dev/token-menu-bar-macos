@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Writes the release version into App/project.yml; the build number is the number of commits on the branch.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

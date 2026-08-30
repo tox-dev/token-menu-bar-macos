@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Rewrites Casks/token-menu-bar.rb with the released version and DMG checksum.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
