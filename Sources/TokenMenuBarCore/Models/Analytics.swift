@@ -102,12 +102,12 @@ public struct ProviderAnalytics: Codable, Sendable, Hashable {
 
 public enum DayStamp {
   private static let formatter: DateFormatter = {
-    let f = DateFormatter()
-    f.calendar = Calendar(identifier: .iso8601)
-    f.locale = Locale(identifier: "en_US_POSIX")
-    f.timeZone = TimeZone(identifier: "UTC")
-    f.dateFormat = "yyyy-MM-dd"
-    return f
+    let formatter = DateFormatter()
+    formatter.calendar = Calendar(identifier: .iso8601)
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.timeZone = TimeZone(identifier: "UTC")
+    formatter.dateFormat = "yyyy-MM-dd"
+    return formatter
   }()
 
   public static func string(_ date: Date) -> String {

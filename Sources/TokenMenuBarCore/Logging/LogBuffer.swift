@@ -41,11 +41,11 @@ public struct LogEntry: Codable, Sendable, Hashable, Identifiable {
 
 public final class LogBuffer: @unchecked Sendable {
   static let timestampFormat: DateFormatter = {
-    let f = DateFormatter()
-    f.locale = Locale(identifier: "en_US_POSIX")
-    f.timeZone = TimeZone(identifier: "UTC")
-    f.dateFormat = "yyyy-MM-dd HH:mm:ss"
-    return f
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    formatter.timeZone = TimeZone(identifier: "UTC")
+    formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+    return formatter
   }()
 
   public static let capacity = 500

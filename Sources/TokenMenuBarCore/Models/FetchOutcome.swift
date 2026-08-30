@@ -10,7 +10,7 @@ public enum ProviderFetchOutcome: Sendable, Equatable {
 
   public var snapshot: ProviderSnapshot? {
     switch self {
-    case .success(let s), .partial(let s, _): s
+    case .success(let snapshot), .partial(let snapshot, _): snapshot
     default: nil
     }
   }
@@ -18,9 +18,9 @@ public enum ProviderFetchOutcome: Sendable, Equatable {
   public var errorDescription: String? {
     switch self {
     case .success: nil
-    case .partial(_, let e), .notAuthenticated(let e), .networkUnavailable(let e), .failed(let e),
-      .rateLimited(let e, _):
-      e
+    case .partial(_, let message), .notAuthenticated(let message), .networkUnavailable(let message),
+      .failed(let message), .rateLimited(let message, _):
+      message
     }
   }
 }
