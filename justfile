@@ -39,6 +39,14 @@ app *args:
 run:
     Scripts/bundle-dev.sh --run
 
+# Build the app and install it into /Applications, replacing any copy already there
+install:
+    Scripts/bundle-dev.sh
+    osascript -e 'quit app "Token Menu Bar"' 2>/dev/null || true
+    rm -rf "/Applications/Token Menu Bar.app"
+    cp -R "dist/Token Menu Bar.app" /Applications/
+    open -a "Token Menu Bar"
+
 # Re-render the website screenshots from demo data
 shots:
     Scripts/screenshots.sh

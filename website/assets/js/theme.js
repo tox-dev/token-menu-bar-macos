@@ -14,6 +14,8 @@
 
   const paintIcon = () => {
     if (icon) icon.setAttribute("d", isDark() ? sun : moon);
+    // Diagrams pick their palette at render time, so they need to hear about the switch
+    document.dispatchEvent(new CustomEvent("themechange"));
   };
 
   if (toggle) {

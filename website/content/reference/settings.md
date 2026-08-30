@@ -1,6 +1,7 @@
 ---
 title: Settings reference
 description: What each option in the Settings tab does.
+icon: M4 6h16M4 12h16M4 18h16M8 4v4M16 10v4M11 16v4
 weight: 3
 ---
 
@@ -8,9 +9,11 @@ The popover's Settings tab holds these options. A change takes effect as you mak
 
 ## About
 
-Version and build flavour, **Launch at login** (with a shortcut to Login Items when macOS wants approval), **Reset
-Defaults**, **Copy Diagnostics** (a report with versions, provider state and the last log lines), **Report Issue**
-(opens a pre-filled GitHub issue), and, in the direct build, automatic update checks.
+Version and build flavour,
+**[Launch at login](https://developer.apple.com/documentation/servicemanagement/smappservice)** (with a shortcut to
+Login Items when macOS wants approval), **Reset Defaults**, **Copy Diagnostics** (a report with versions, provider state
+and the last log lines), **Report Issue** (opens a pre-filled GitHub issue), and, in the direct build, automatic update
+checks through [Sparkle](https://sparkle-project.org).
 
 ## Menu bar
 
@@ -47,11 +50,13 @@ The same code that draws the menu bar renders the preview under the controls.
 Enable or disable each provider (Claude, Codex, Gemini, Cursor, Copilot), see the credential state, and set the refresh
 interval per provider. The floors are 2 minutes for Claude and 1 minute for the others; while the popover is open the
 app polls at the floor. **Refresh expired tokens on my behalf** starts off, since a refresh rotates the CLI's refresh
-token and writes the new one back to the Keychain or `~/.codex/auth.json`.
+token and writes the new one back to the
+[Keychain](https://developer.apple.com/documentation/security/keychain-services) or `~/.codex/auth.json`.
 
 ## Data
 
-How often the app fetches analytics, where the history database lives, and buttons to reveal, export (CSV) or clear it.
+How often the app fetches analytics, where the history database lives, and buttons to reveal, export
+([CSV](https://datatracker.ietf.org/doc/html/rfc4180)) or clear it.
 
 ## Notifications
 

@@ -7,6 +7,12 @@
     <div class="cards">
       {{ range .Pages.ByWeight }}
         <a class="card card-link" href="{{ .RelPermalink }}">
+          {{ with .Params.icon }}
+            <div class="card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" aria-hidden="true"><path d="{{ . }}" /></svg>
+            </div>
+          {{ end }}
           <h3>{{ .Title }}</h3>
           <p>{{ .Description | default .Summary }}</p>
         </a>

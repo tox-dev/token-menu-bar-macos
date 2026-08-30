@@ -32,6 +32,10 @@
 
   {{ partial "footer.html" . }}
 
+  {{ if or (.Store.Get "hasMermaid") (strings.Contains .RawContent "```mermaid") }}
+    {{ partial "mermaid.html" . }}
+  {{ end }}
+
   {{ if hugo.IsServer }}
     {{ with resources.Get "js/theme.js" }}
       <script defer src="{{ .RelPermalink }}"></script>
