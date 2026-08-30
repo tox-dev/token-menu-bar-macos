@@ -3,22 +3,6 @@ import Testing
 
 @testable import TokenMenuBarCore
 
-private func cursorJWT(subject: String = "auth0|user_01ABC", exp: Double = 1_900_000_000) -> String {
-  let payload = try! JSONEncoder().encode(JSONValue.object(["sub": .string(subject), "exp": .number(exp)]))
-    .base64EncodedString().replacingOccurrences(of: "=", with: "")
-  return "eyJhbGciOiJIUzI1NiJ9.\(payload).sig"
-}
-
-private let validCursor = CursorAuth(accessToken: cursorJWT(), email: "cached@example.com", membershipType: "pro")
-
-private func makeProvider(_ auth: CursorAuth?, store: MemoryCursorStore? = nil) -> (CursorProvider, StubTransport) {
-  let transport = StubTransport()
-  let provider = CursorProvider(
-    auth: store ?? MemoryCursorStore(auth), client: APIClient(transport: transport, log: makeLog(), clock: testClock),
-    log: makeLog())
-  return (provider, transport)
-}
-
 @Test func cursorAuthDerivesUserAndCookie() {
   #expect(validCursor.userID == "user_01ABC")
   #expect(validCursor.sessionCookie == "WorkosCursorSessionToken=user_01ABC%3A%3A\(validCursor.accessToken)")
@@ -29,6 +13,14 @@ private func makeProvider(_ auth: CursorAuth?, store: MemoryCursorStore? = nil) 
   #expect(opaque.state(now: fixedNow) == .valid(expiresAt: nil))
   #expect(CursorAuth(accessToken: cursorJWT(exp: 1)).state(now: fixedNow).isUsable == false)
 }
+
+private func cursorJWT(subject: String = "auth0|user_01ABC", exp: Double = 1_900_000_000) -> String {
+  let payload = try! JSONEncoder().encode(JSONValue.object(["sub": .string(subject), "exp": .number(exp)]))
+    .base64EncodedString().replacingOccurrences(of: "=", with: "")
+  return "eyJhbGciOiJIUzI1NiJ9.\(payload).sig"
+}
+
+private let validCursor = CursorAuth(accessToken: cursorJWT(), email: "cached@example.com", membershipType: "pro")
 
 @Test func cursorStateStoreReadsTheAppDatabase() throws {
   let root = temporaryDirectory()
@@ -122,14 +114,6 @@ private func makeProvider(_ auth: CursorAuth?, store: MemoryCursorStore? = nil) 
   #expect(notices.map(\.text) == ["This plan has unlimited usage.", "You have used 60% of your plan."])
 }
 
-private func cursorBucket(
-  auto: Double? = nil, api: Double? = nil, total: Double? = nil, used: Double? = nil, limit: Double? = nil
-) -> CursorAPI.Bucket {
-  CursorAPI.Bucket(
-    enabled: true, used: used, limit: limit, remaining: nil, autoPercentUsed: auto, apiPercentUsed: api,
-    totalPercentUsed: total)
-}
-
 @Test(
   arguments: [
     (cursorBucket(auto: 1, api: 2, total: 3), 3.0), (cursorBucket(auto: 10, api: 20), 15.0),
@@ -138,6 +122,14 @@ private func cursorBucket(
   ])
 func cursorBucketPercentPrecedence(bucket: CursorAPI.Bucket, percent: Double?) {
   #expect(bucket.percentUsed == percent)
+}
+
+private func cursorBucket(
+  auto: Double? = nil, api: Double? = nil, total: Double? = nil, used: Double? = nil, limit: Double? = nil
+) -> CursorAPI.Bucket {
+  CursorAPI.Bucket(
+    enabled: true, used: used, limit: limit, remaining: nil, autoPercentUsed: auto, apiPercentUsed: api,
+    totalPercentUsed: total)
 }
 
 @Test func cursorSpendReflectsTheOnDemandBucket() {
@@ -181,6 +173,14 @@ func cursorBucketPercentPrecedence(bucket: CursorAPI.Bucket, percent: Double?) {
   let request = transport.requests(matching: "/api/usage-summary").first!
   #expect(request.value(forHTTPHeaderField: "Cookie")?.hasPrefix("WorkosCursorSessionToken=user_01ABC") == true)
   #expect(request.value(forHTTPHeaderField: "Origin") == "https://cursor.com")
+}
+
+private func makeProvider(_ auth: CursorAuth?, store: MemoryCursorStore? = nil) -> (CursorProvider, StubTransport) {
+  let transport = StubTransport()
+  let provider = CursorProvider(
+    auth: store ?? MemoryCursorStore(auth), client: APIClient(transport: transport, log: makeLog(), clock: testClock),
+    log: makeLog())
+  return (provider, transport)
 }
 
 @Test func cursorProviderFallsBackToBearerEndpoint() async {

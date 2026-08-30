@@ -3,6 +3,12 @@ import Testing
 
 @testable import TokenMenuBarCore
 
+@Test func plannerIsSilentWhenDisabledOrWithoutHistory() {
+  #expect(plan(nil, snapshot(99)).isEmpty)
+  #expect(plan(snapshot(10), snapshot(99), settings: NotificationSettings(enabled: false)).isEmpty)
+  #expect(plan(snapshot(10), nil).isEmpty)
+}
+
 private func snapshot(
   _ percent: Double, resets: TimeInterval = 3600, credits: Bool? = nil, extra: [QuotaWindow] = []
 ) -> ProviderSnapshot {
@@ -25,12 +31,6 @@ private func plan(
   NotificationPlanner.events(
     previous: previous, current: current, previousAvailability: from, currentAvailability: to, provider: .claude,
     settings: settings, now: fixedNow)
-}
-
-@Test func plannerIsSilentWhenDisabledOrWithoutHistory() {
-  #expect(plan(nil, snapshot(99)).isEmpty)
-  #expect(plan(snapshot(10), snapshot(99), settings: NotificationSettings(enabled: false)).isEmpty)
-  #expect(plan(snapshot(10), nil).isEmpty)
 }
 
 @Test func plannerReportsHighestCrossedThreshold() {

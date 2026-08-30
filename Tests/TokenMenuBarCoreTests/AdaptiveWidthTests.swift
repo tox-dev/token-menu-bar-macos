@@ -4,6 +4,26 @@ import Testing
 
 @testable import TokenMenuBarCore
 
+@Test func tiersReshapeTheStatusModel() {
+  let configured = StatusItemBuilder.build(input())
+  #expect(configured.cells.count == 3)
+  #expect(StatusItemBuilder.build(input(tier: .stacked)) == configured)
+  let worst = StatusItemBuilder.build(input(tier: .worstPerProvider))
+  #expect(worst.cells.map(\.id) == ["claude:weekly", "codex:weekly"])
+  let mini = StatusItemBuilder.build(input(tier: .miniBars))
+  #expect(mini.cells.allSatisfy { $0.isMiniBar })
+  let icon = StatusItemBuilder.build(input(tier: .iconOnly))
+  #expect(icon.cells.isEmpty && icon.showsIcon && !icon.countdownActive)
+  #expect(StatusItemBuilder.build(input(format: .inline, tier: .stacked)).cells.first?.lines.count == 2)
+  #expect(input(format: .miniBars, tier: .iconOnly).effectiveFormat == .miniBars)
+  #expect(input(format: .inline).with(tier: .miniBars).tier == .miniBars)
+  let percentOrdered = StatusItemInput(
+    snapshots: input().snapshots, availability: [:], selectedKeys: input().selectedKeys, format: .stacked,
+    customTemplate: "", decimals: 0, hideZeroCells: true, order: .percent, labels: [:], now: fixedNow,
+    tier: .worstPerProvider)
+  #expect(StatusItemBuilder.build(percentOrdered).cells.map(\.id) == ["codex:weekly", "claude:weekly"])
+}
+
 private func input(
   format: StatusFormat = .stacked, tier: StatusTier = .configured, hideZero: Bool = true
 )
@@ -24,26 +44,6 @@ private func input(
     snapshots: snapshots, availability: [.claude: .current, .codex: .current],
     selectedKeys: StatusItemBuilder.defaultSelection(snapshots), format: format, customTemplate: "{cell}",
     decimals: 0, hideZeroCells: hideZero, order: .provider, labels: [:], now: fixedNow, tier: tier)
-}
-
-@Test func tiersReshapeTheStatusModel() {
-  let configured = StatusItemBuilder.build(input())
-  #expect(configured.cells.count == 3)
-  #expect(StatusItemBuilder.build(input(tier: .stacked)) == configured)
-  let worst = StatusItemBuilder.build(input(tier: .worstPerProvider))
-  #expect(worst.cells.map(\.id) == ["claude:weekly", "codex:weekly"])
-  let mini = StatusItemBuilder.build(input(tier: .miniBars))
-  #expect(mini.cells.allSatisfy { $0.isMiniBar })
-  let icon = StatusItemBuilder.build(input(tier: .iconOnly))
-  #expect(icon.cells.isEmpty && icon.showsIcon && !icon.countdownActive)
-  #expect(StatusItemBuilder.build(input(format: .inline, tier: .stacked)).cells.first?.lines.count == 2)
-  #expect(input(format: .miniBars, tier: .iconOnly).effectiveFormat == .miniBars)
-  #expect(input(format: .inline).with(tier: .miniBars).tier == .miniBars)
-  let percentOrdered = StatusItemInput(
-    snapshots: input().snapshots, availability: [:], selectedKeys: input().selectedKeys, format: .stacked,
-    customTemplate: "", decimals: 0, hideZeroCells: true, order: .percent, labels: [:], now: fixedNow,
-    tier: .worstPerProvider)
-  #expect(StatusItemBuilder.build(percentOrdered).cells.map(\.id) == ["codex:weekly", "claude:weekly"])
 }
 
 @Test func candidatesDedupeEqualModels() {

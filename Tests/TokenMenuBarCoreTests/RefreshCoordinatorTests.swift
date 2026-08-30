@@ -3,10 +3,34 @@ import Testing
 
 @testable import TokenMenuBarCore
 
-@MainActor
-private func makeSettings() -> Settings {
-  let defaults = UserDefaults(suiteName: "tests-\(UUID().uuidString)")!
-  return Settings(defaults: defaults)
+@Test @MainActor func coordinatorAppliesSuccessAndRecordsHistory() async throws {
+  let claude = ScriptedProvider(
+    id: .claude, results: [ProviderFetchResult(outcome: .success(snapshot(.claude, 20)), warnings: ["w"])])
+  let codex = ScriptedProvider(
+    id: .codex,
+    results: [
+      ProviderFetchResult(
+        outcome: .success(snapshot(.codex, 50)),
+        analytics: ProviderAnalytics(
+          provider: .codex, points: [AnalyticsPoint(day: "2026-08-29", metric: .turns, series: "m", value: 1)],
+          fetchedAt: fixedNow))
+    ])
+  let (coordinator, state, _, history, sink) = try makeCoordinator([claude, codex])
+  await coordinator.refresh(RefreshRequest())
+  #expect(state.state(for: .claude).availability == .current)
+  #expect(state.state(for: .claude).warnings == ["w"])
+  #expect(state.state(for: .claude).lastSuccess == fixedNow)
+  #expect(state.state(for: .claude).credentialState == .valid(expiresAt: nil))
+  #expect(state.state(for: .codex).analytics?.points.count == 1)
+  #expect(state.lastRefresh == fixedNow)
+  #expect(!state.isRefreshing)
+  #expect(state.statusModel.cells.map(\.id) == ["claude:session", "codex:session"])
+  #expect(try await history.samples(from: .distantPast, to: .distantFuture).count == 2)
+  #expect(try await history.analytics(provider: .codex, from: "2026-01-01", to: "2026-12-31").count == 1)
+  #expect(sink.events.isEmpty)
+  #expect(codex.calls.first?.includeAnalytics == true)
+  #expect(state.orderedProviders == [.claude, .codex])
+  #expect(!state.state(for: .claude).isStale)
 }
 
 private func snapshot(_ provider: ProviderID, _ percent: Double, resets: TimeInterval = 3600) -> ProviderSnapshot {
@@ -43,34 +67,9 @@ final class NotificationSink {
   var events: [NotificationEvent] = []
 }
 
-@Test @MainActor func coordinatorAppliesSuccessAndRecordsHistory() async throws {
-  let claude = ScriptedProvider(
-    id: .claude, results: [ProviderFetchResult(outcome: .success(snapshot(.claude, 20)), warnings: ["w"])])
-  let codex = ScriptedProvider(
-    id: .codex,
-    results: [
-      ProviderFetchResult(
-        outcome: .success(snapshot(.codex, 50)),
-        analytics: ProviderAnalytics(
-          provider: .codex, points: [AnalyticsPoint(day: "2026-08-29", metric: .turns, series: "m", value: 1)],
-          fetchedAt: fixedNow))
-    ])
-  let (coordinator, state, _, history, sink) = try makeCoordinator([claude, codex])
-  await coordinator.refresh(RefreshRequest())
-  #expect(state.state(for: .claude).availability == .current)
-  #expect(state.state(for: .claude).warnings == ["w"])
-  #expect(state.state(for: .claude).lastSuccess == fixedNow)
-  #expect(state.state(for: .claude).credentialState == .valid(expiresAt: nil))
-  #expect(state.state(for: .codex).analytics?.points.count == 1)
-  #expect(state.lastRefresh == fixedNow)
-  #expect(!state.isRefreshing)
-  #expect(state.statusModel.cells.map(\.id) == ["claude:session", "codex:session"])
-  #expect(try await history.samples(from: .distantPast, to: .distantFuture).count == 2)
-  #expect(try await history.analytics(provider: .codex, from: "2026-01-01", to: "2026-12-31").count == 1)
-  #expect(sink.events.isEmpty)
-  #expect(codex.calls.first?.includeAnalytics == true)
-  #expect(state.orderedProviders == [.claude, .codex])
-  #expect(!state.state(for: .claude).isStale)
+actor Ticks {
+  var count = 0
+  func increment() { count += 1 }
 }
 
 @Test @MainActor func coordinatorHandlesFailuresStaleAndBackoff() async throws {
@@ -147,6 +146,12 @@ final class NotificationSink {
       == RefreshRequest(interactive: true, force: true, analytics: true))
 }
 
+@MainActor
+private func makeSettings() -> Settings {
+  let defaults = UserDefaults(suiteName: "tests-\(UUID().uuidString)")!
+  return Settings(defaults: defaults)
+}
+
 @Test @MainActor func coordinatorLoopRunsUntilStopped() async throws {
   let claude = ScriptedProvider(id: .claude, results: [ProviderFetchResult(outcome: .success(snapshot(.claude, 10)))])
   let ticks = Ticks()
@@ -170,11 +175,6 @@ final class NotificationSink {
   coordinator.stop()
   #expect(!coordinator.isRunning)
   coordinator.stop()
-}
-
-actor Ticks {
-  var count = 0
-  func increment() { count += 1 }
 }
 
 @Test @MainActor func coordinatorAnalyticsCadenceAndStoredFallback() async throws {

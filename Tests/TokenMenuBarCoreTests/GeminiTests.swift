@@ -3,32 +3,6 @@ import Testing
 
 @testable import TokenMenuBarCore
 
-private func idToken(email: String, hd: String? = nil) -> String {
-  var claims: [String: JSONValue] = ["email": .string(email), "exp": .number(1_900_000_000)]
-  claims["hd"] = hd.map(JSONValue.string)
-  let payload = try! JSONEncoder().encode(JSONValue.object(claims)).base64EncodedString()
-    .replacingOccurrences(of: "=", with: "")
-  return "eyJhbGciOiJIUzI1NiJ9.\(payload).sig"
-}
-
-private let validGemini = GeminiAuth(
-  accessToken: "ya29.valid", refreshToken: "1//refresh", idToken: idToken(email: "you@example.com"),
-  expiresAt: fixedNow.addingTimeInterval(3600))
-
-private let testOAuth = GeminiOAuthClient(id: "test-client.apps.googleusercontent.com", secret: "test-secret")
-
-private func makeProvider(
-  _ auth: GeminiAuth?, allowRefresh: Bool = false, store: MemoryGeminiStore? = nil,
-  oauth: GeminiOAuthClient? = testOAuth
-) -> (GeminiProvider, StubTransport, MemoryGeminiStore) {
-  let transport = StubTransport()
-  let store = store ?? MemoryGeminiStore(auth)
-  let provider = GeminiProvider(
-    auth: store, client: APIClient(transport: transport, log: makeLog(), clock: testClock), log: makeLog(),
-    allowRefresh: { allowRefresh }, oauthClient: { oauth })
-  return (provider, transport, store)
-}
-
 @Test func geminiAuthParsesDocumentAndClaims() {
   let auth = GeminiAuth(document: Fixtures.json("gemini_creds"))!
   #expect(auth.accessToken == "ya29.test")
@@ -50,6 +24,18 @@ private func makeProvider(
   #expect(
     validGemini.refreshed(accessToken: "n", expiresIn: 1, idToken: nil, now: fixedNow).idToken == validGemini.idToken)
 }
+
+private func idToken(email: String, hd: String? = nil) -> String {
+  var claims: [String: JSONValue] = ["email": .string(email), "exp": .number(1_900_000_000)]
+  claims["hd"] = hd.map(JSONValue.string)
+  let payload = try! JSONEncoder().encode(JSONValue.object(claims)).base64EncodedString()
+    .replacingOccurrences(of: "=", with: "")
+  return "eyJhbGciOiJIUzI1NiJ9.\(payload).sig"
+}
+
+private let validGemini = GeminiAuth(
+  accessToken: "ya29.valid", refreshToken: "1//refresh", idToken: idToken(email: "you@example.com"),
+  expiresAt: fixedNow.addingTimeInterval(3600))
 
 @Test func geminiFileStoreRoundTripsAndValidates() throws {
   let root = temporaryDirectory()
@@ -134,6 +120,18 @@ func geminiPlanNames(tier: String, hosted: String?, expected: String) {
   #expect(quotaRequest.value(forHTTPHeaderField: "Authorization") == "Bearer ya29.valid")
   _ = await provider.fetch(now: fixedNow.addingTimeInterval(10), options: FetchOptions())
   #expect(transport.requests(matching: ":loadCodeAssist").count == 1)
+}
+
+private func makeProvider(
+  _ auth: GeminiAuth?, allowRefresh: Bool = false, store: MemoryGeminiStore? = nil,
+  oauth: GeminiOAuthClient? = testOAuth
+) -> (GeminiProvider, StubTransport, MemoryGeminiStore) {
+  let transport = StubTransport()
+  let store = store ?? MemoryGeminiStore(auth)
+  let provider = GeminiProvider(
+    auth: store, client: APIClient(transport: transport, log: makeLog(), clock: testClock), log: makeLog(),
+    allowRefresh: { allowRefresh }, oauthClient: { oauth })
+  return (provider, transport, store)
 }
 
 @Test func geminiProviderHandlesMissingExpiredAndErrors() async {
@@ -308,3 +306,5 @@ func geminiPlanNames(tier: String, hosted: String?, expected: String) {
   }
   #expect(reason.contains("refresh failed"))
 }
+
+private let testOAuth = GeminiOAuthClient(id: "test-client.apps.googleusercontent.com", secret: "test-secret")

@@ -69,6 +69,23 @@ public enum StatusItemRenderer {
     cell.isMiniBar ? miniBarImage(cell, height: height, dark: dark) : textImage(cell, height: height, dark: dark)
   }
 
+  static func textImage(_ cell: StatusCell, height: CGFloat, dark: Bool) -> NSImage {
+    let lines = lineStrings(cell, height: height, dark: dark)
+    let widest = lines.map { $0.size().width }.max() ?? 0
+    let width = ceil(widest) + cellPadding * 2
+    let heights = lines.map { $0.size().height }
+    let total = heights.reduce(0, +)
+    return NSImage(size: CGSize(width: width, height: height), flipped: true) { rect in
+      var lineTop = (rect.height - total) / 2
+      for line in lines {
+        let size = line.size()
+        line.draw(at: CGPoint(x: (rect.width - size.width) / 2, y: lineTop))
+        lineTop += size.height
+      }
+      return true
+    }
+  }
+
   static func lineStrings(_ cell: StatusCell, height: CGFloat, dark: Bool) -> [NSAttributedString] {
     let sizes = fontSizes(height: height, lineCount: cell.lines.count)
     return zip(cell.lines, sizes).map { runs, size in
@@ -84,23 +101,6 @@ public enum StatusItemRenderer {
             string: run.text, attributes: [.font: font, .foregroundColor: color(for: run.kind, dark: dark)]))
       }
       return line
-    }
-  }
-
-  static func textImage(_ cell: StatusCell, height: CGFloat, dark: Bool) -> NSImage {
-    let lines = lineStrings(cell, height: height, dark: dark)
-    let widest = lines.map { $0.size().width }.max() ?? 0
-    let width = ceil(widest) + cellPadding * 2
-    let heights = lines.map { $0.size().height }
-    let total = heights.reduce(0, +)
-    return NSImage(size: CGSize(width: width, height: height), flipped: true) { rect in
-      var lineTop = (rect.height - total) / 2
-      for line in lines {
-        let size = line.size()
-        line.draw(at: CGPoint(x: (rect.width - size.width) / 2, y: lineTop))
-        lineTop += size.height
-      }
-      return true
     }
   }
 

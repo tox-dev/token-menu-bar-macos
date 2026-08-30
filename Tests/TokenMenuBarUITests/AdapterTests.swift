@@ -6,12 +6,6 @@ import UserNotifications
 
 @testable import TokenMenuBarUI
 
-private func event(_ kind: NotificationEvent.Kind, id: String = UUID().uuidString) -> NotificationEvent {
-  NotificationEvent(
-    id: id, kind: kind, provider: .claude, window: WindowKey(provider: .claude, windowID: "session"), title: "t",
-    body: "b")
-}
-
 @Test @MainActor func notifierDeliversWhenAuthorized() async {
   let center = FakeNotificationCenter()
   let notifier = Notifier(center: center, log: makeLog())
@@ -35,6 +29,12 @@ private func event(_ kind: NotificationEvent.Kind, id: String = UUID().uuidStrin
   #expect(Set(center.removed) == ["a", "b"])
   #expect(notifier.delivered.contains { $0.id == "other" })
   #expect(notifier.delivered.map(\.kind) == [.credits, .threshold, .reset])
+}
+
+private func event(_ kind: NotificationEvent.Kind, id: String = UUID().uuidString) -> NotificationEvent {
+  NotificationEvent(
+    id: id, kind: kind, provider: .claude, window: WindowKey(provider: .claude, windowID: "session"), title: "t",
+    body: "b")
 }
 
 @Test @MainActor func notifierHandlesErrorsAndMissingCenter() async {

@@ -5,6 +5,16 @@ import UserNotifications
 
 @testable import TokenMenuBarUI
 
+@Test @MainActor func appControllerStartInstallsTheStatusItemAndRecordsTheUpgrade() throws {
+  let (controller, dependencies, _) = try startedController()
+  #expect(controller.environment.credentialDescriptions == [.claude: "scripted claude"])
+  #expect(controller.environment.canCheckForUpdates)
+  #expect(controller.statusItem != nil)
+  #expect(controller.popover != nil)
+  #expect(dependencies.settings.lastLaunchedVersion == "1.2.3")
+  #expect(dependencies.log.text.contains("updated from 0.9"))
+}
+
 @MainActor
 private func startedController() throws -> (AppController, AppDependencies, Recorder) {
   let provider = ScriptedProvider(id: .claude, result: ProviderFetchResult(outcome: .success(sampleSnapshot(.claude))))
@@ -14,16 +24,6 @@ private func startedController() throws -> (AppController, AppDependencies, Reco
   let controller = AppController(dependencies: dependencies)
   controller.start()
   return (controller, dependencies, recorder)
-}
-
-@Test @MainActor func appControllerStartInstallsTheStatusItemAndRecordsTheUpgrade() throws {
-  let (controller, dependencies, _) = try startedController()
-  #expect(controller.environment.credentialDescriptions == [.claude: "scripted claude"])
-  #expect(controller.environment.canCheckForUpdates)
-  #expect(controller.statusItem != nil)
-  #expect(controller.popover != nil)
-  #expect(dependencies.settings.lastLaunchedVersion == "1.2.3")
-  #expect(dependencies.log.text.contains("updated from 0.9"))
 }
 
 @Test @MainActor func appControllerRefreshFeedsTheStatusItem() async throws {

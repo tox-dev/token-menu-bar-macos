@@ -3,25 +3,6 @@ import Testing
 
 @testable import TokenMenuBarCore
 
-private func line(
-  id: String, request: String = "req", at: Date, model: String = "claude-opus-5", session: String = "s1",
-  input: Int = 10,
-  output: Int = 20, cacheWrite: Int = 30, cacheRead: Int = 40, tools: Int = 1
-) -> String {
-  let content = (0..<tools).map { _ in #"{"type":"tool_use","name":"Bash"}"# } + [#"{"type":"text","text":"hi"}"#]
-  return #"{"type":"assistant","uuid":"u-\#(id)","requestId":"\#(request)","sessionId":"\#(session)","#
-    + #""timestamp":"\#(ISODate.string(at))","message":{"id":"\#(id)","model":"\#(model)","#
-    + #""content":[\#(content.joined(separator: ","))],"usage":{"input_tokens":\#(input),"#
-    + #""output_tokens":\#(output),"cache_creation_input_tokens":\#(cacheWrite),"#
-    + #""cache_read_input_tokens":\#(cacheRead)}}}"#
-}
-
-private func transcriptRoot() throws -> URL {
-  let root = temporaryDirectory().appendingPathComponent("projects/-Users-me-repo")
-  try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-  return root
-}
-
 @Test func transcriptReaderParsesIncrementallyAndDedupes() async throws {
   let root = try transcriptRoot()
   let file = root.appendingPathComponent("session.jsonl")
@@ -50,6 +31,25 @@ private func transcriptRoot() throws -> URL {
   messages = await reader.refresh(now: fixedNow)
   #expect(messages.count == 2)
   #expect(await ClaudeTranscriptReader(root: root.appendingPathComponent("missing")).refresh(now: fixedNow).isEmpty)
+}
+
+private func line(
+  id: String, request: String = "req", at: Date, model: String = "claude-opus-5", session: String = "s1",
+  input: Int = 10,
+  output: Int = 20, cacheWrite: Int = 30, cacheRead: Int = 40, tools: Int = 1
+) -> String {
+  let content = (0..<tools).map { _ in #"{"type":"tool_use","name":"Bash"}"# } + [#"{"type":"text","text":"hi"}"#]
+  return #"{"type":"assistant","uuid":"u-\#(id)","requestId":"\#(request)","sessionId":"\#(session)","#
+    + #""timestamp":"\#(ISODate.string(at))","message":{"id":"\#(id)","model":"\#(model)","#
+    + #""content":[\#(content.joined(separator: ","))],"usage":{"input_tokens":\#(input),"#
+    + #""output_tokens":\#(output),"cache_creation_input_tokens":\#(cacheWrite),"#
+    + #""cache_read_input_tokens":\#(cacheRead)}}}"#
+}
+
+private func transcriptRoot() throws -> URL {
+  let root = temporaryDirectory().appendingPathComponent("projects/-Users-me-repo")
+  try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+  return root
 }
 
 @Test func transcriptParseRejectsIncompleteRecords() {

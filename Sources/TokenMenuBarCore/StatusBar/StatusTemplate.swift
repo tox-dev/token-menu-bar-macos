@@ -79,6 +79,23 @@ public enum StatusTemplate {
     case newline
   }
 
+  public static func referencesCountdown(_ template: String) -> Bool {
+    parse(template).contains { $0 == .placeholder("reset") }
+  }
+
+  public static func render(_ template: String, context: StatusCellContext) -> [[StatusRun]] {
+    var lines: [[StatusRun]] = [[]]
+    for token in parse(template) {
+      switch token {
+      case .newline: lines.append([])
+      case .text(let text): lines[lines.count - 1].append(StatusRun(text: text, kind: .label))
+      case .placeholder(let name):
+        if let run = run(for: name, context: context) { lines[lines.count - 1].append(run) }
+      }
+    }
+    return lines.filter { !$0.isEmpty }
+  }
+
   static func parse(_ template: String) -> [Token] {
     var tokens: [Token] = []
     var text = ""
@@ -138,23 +155,6 @@ public enum StatusTemplate {
     }
     flush()
     return tokens
-  }
-
-  public static func referencesCountdown(_ template: String) -> Bool {
-    parse(template).contains { $0 == .placeholder("reset") }
-  }
-
-  public static func render(_ template: String, context: StatusCellContext) -> [[StatusRun]] {
-    var lines: [[StatusRun]] = [[]]
-    for token in parse(template) {
-      switch token {
-      case .newline: lines.append([])
-      case .text(let text): lines[lines.count - 1].append(StatusRun(text: text, kind: .label))
-      case .placeholder(let name):
-        if let run = run(for: name, context: context) { lines[lines.count - 1].append(run) }
-      }
-    }
-    return lines.filter { !$0.isEmpty }
   }
 
   static func run(for name: String, context: StatusCellContext) -> StatusRun? {

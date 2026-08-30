@@ -3,23 +3,6 @@ import Testing
 
 @testable import TokenMenuBarCore
 
-private let validClaude = ClaudeOAuthCredentials(
-  accessToken: "tok", refreshToken: "ref", expiresAt: fixedNow.addingTimeInterval(86400), subscriptionType: "max",
-  rateLimitTier: "default_claude_max_20x")
-private let expiredClaude = ClaudeOAuthCredentials(
-  accessToken: "old", refreshToken: "ref", expiresAt: fixedNow.addingTimeInterval(-10))
-
-private func claudeProvider(
-  _ store: any ClaudeCredentialStore, transport: StubTransport, allowRefresh: Bool = false, localAccount: URL? = nil,
-  transcripts: URL? = nil
-) -> ClaudeProvider {
-  ClaudeProvider(
-    credentials: store, localAccountURL: localAccount,
-    transcripts: transcripts.map { ClaudeTranscriptReader(root: $0) },
-    client: APIClient(transport: transport, log: makeLog(), clock: testClock), log: makeLog(),
-    allowRefresh: { allowRefresh })
-}
-
 @Test func claudeProviderFetchesUsageAndProfile() async {
   let transport = StubTransport()
   transport.on(path: "/api/oauth/usage", .json("claude_usage"))
@@ -47,6 +30,23 @@ private func claudeProvider(
   #expect(transport.requests(matching: "/api/oauth/profile").count == 1)
   _ = await provider.fetch(now: fixedNow.addingTimeInterval(7 * 3600), options: FetchOptions())
   #expect(transport.requests(matching: "/api/oauth/profile").count == 2)
+}
+
+private let validClaude = ClaudeOAuthCredentials(
+  accessToken: "tok", refreshToken: "ref", expiresAt: fixedNow.addingTimeInterval(86400), subscriptionType: "max",
+  rateLimitTier: "default_claude_max_20x")
+private let expiredClaude = ClaudeOAuthCredentials(
+  accessToken: "old", refreshToken: "ref", expiresAt: fixedNow.addingTimeInterval(-10))
+
+private func claudeProvider(
+  _ store: any ClaudeCredentialStore, transport: StubTransport, allowRefresh: Bool = false, localAccount: URL? = nil,
+  transcripts: URL? = nil
+) -> ClaudeProvider {
+  ClaudeProvider(
+    credentials: store, localAccountURL: localAccount,
+    transcripts: transcripts.map { ClaudeTranscriptReader(root: $0) },
+    client: APIClient(transport: transport, log: makeLog(), clock: testClock), log: makeLog(),
+    allowRefresh: { allowRefresh })
 }
 
 @Test func claudeProviderReportsMissingAndUnreadableCredentials() async {
@@ -166,28 +166,6 @@ private func claudeProvider(
   #expect(second.warnings.isEmpty)
 }
 
-private let validCodex = CodexAuth(
-  accessToken: "codex-tok", refreshToken: "codex-ref",
-  idToken: CodexAuth(document: Fixtures.codexAuth())!.idToken, accountID: "acct")
-
-private func codexProvider(
-  _ store: any CodexAuthStore, transport: StubTransport, allowRefresh: Bool = false, rollouts: URL? = nil
-) -> CodexProvider {
-  CodexProvider(
-    auth: store, rollouts: rollouts.map { CodexRolloutReader(sessionsRoot: $0) },
-    client: APIClient(transport: transport, log: makeLog(), clock: testClock), log: makeLog(),
-    allowRefresh: { allowRefresh })
-}
-
-private func stubCodexAnalytics(_ transport: StubTransport) {
-  transport.on(path: "daily-token-usage-breakdown", .json("codex_daily_token_usage"))
-  transport.on(path: "daily-workspace-usage-counts", .json("codex_daily_workspace_usage"))
-  transport.on(path: "daily-skill-usage-metrics", .json("codex_daily_skills"))
-  transport.on(path: "daily-plugin-usage-metrics", .json("codex_daily_plugins"))
-  transport.on(path: "daily-code-review-metrics", .json("codex_daily_code_review"))
-  transport.on(path: "credit-usage-events", .json("codex_credit_events"))
-}
-
 @Test func codexProviderFetchesUsageAndAnalytics() async {
   let transport = StubTransport()
   transport.on(path: "/wham/usage", .json("codex_usage"))
@@ -220,6 +198,28 @@ private func stubCodexAnalytics(_ transport: StubTransport) {
   #expect(usage.value(forHTTPHeaderField: "originator") == CodexAPI.originator)
   let breakdown = transport.requests(matching: "daily-token-usage-breakdown")[0].url!.query!
   #expect(breakdown.contains("start_date=2026-08-23&end_date=2026-08-29"))
+}
+
+private let validCodex = CodexAuth(
+  accessToken: "codex-tok", refreshToken: "codex-ref",
+  idToken: CodexAuth(document: Fixtures.codexAuth())!.idToken, accountID: "acct")
+
+private func codexProvider(
+  _ store: any CodexAuthStore, transport: StubTransport, allowRefresh: Bool = false, rollouts: URL? = nil
+) -> CodexProvider {
+  CodexProvider(
+    auth: store, rollouts: rollouts.map { CodexRolloutReader(sessionsRoot: $0) },
+    client: APIClient(transport: transport, log: makeLog(), clock: testClock), log: makeLog(),
+    allowRefresh: { allowRefresh })
+}
+
+private func stubCodexAnalytics(_ transport: StubTransport) {
+  transport.on(path: "daily-token-usage-breakdown", .json("codex_daily_token_usage"))
+  transport.on(path: "daily-workspace-usage-counts", .json("codex_daily_workspace_usage"))
+  transport.on(path: "daily-skill-usage-metrics", .json("codex_daily_skills"))
+  transport.on(path: "daily-plugin-usage-metrics", .json("codex_daily_plugins"))
+  transport.on(path: "daily-code-review-metrics", .json("codex_daily_code_review"))
+  transport.on(path: "credit-usage-events", .json("codex_credit_events"))
 }
 
 @Test func codexProviderAnalyticsWarningsAndEmptyResult() async {

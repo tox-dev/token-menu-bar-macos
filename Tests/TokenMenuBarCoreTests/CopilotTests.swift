@@ -3,16 +3,6 @@ import Testing
 
 @testable import TokenMenuBarCore
 
-private let validCopilot = CopilotAuth(token: "gho_test", user: "octocat")
-
-private func makeProvider(_ auth: CopilotAuth?, store: MemoryCopilotStore? = nil) -> (CopilotProvider, StubTransport) {
-  let transport = StubTransport()
-  let provider = CopilotProvider(
-    auth: store ?? MemoryCopilotStore(auth), client: APIClient(transport: transport, log: makeLog(), clock: testClock),
-    log: makeLog())
-  return (provider, transport)
-}
-
 @Test func copilotFileStoreFindsGitHubEntries() throws {
   let root = temporaryDirectory()
   let hosts = root.appendingPathComponent("hosts.json")
@@ -40,6 +30,8 @@ private func makeProvider(_ auth: CopilotAuth?, store: MemoryCopilotStore? = nil
       == "/xdg/github-copilot/hosts.json")
   #expect(validCopilot.state(now: fixedNow) == .valid(expiresAt: nil))
 }
+
+private let validCopilot = CopilotAuth(token: "gho_test", user: "octocat")
 
 @Test func copilotMapperReadsPaidPlans() {
   let user = Fixtures.json("copilot_user")
@@ -106,6 +98,14 @@ private func makeProvider(_ auth: CopilotAuth?, store: MemoryCopilotStore? = nil
   #expect(request.value(forHTTPHeaderField: "Editor-Version") == CopilotAPI.editorVersion)
   #expect(
     CopilotAPI.userURL(host: "ghe.example.com").absoluteString == "https://api.ghe.example.com/copilot_internal/user")
+}
+
+private func makeProvider(_ auth: CopilotAuth?, store: MemoryCopilotStore? = nil) -> (CopilotProvider, StubTransport) {
+  let transport = StubTransport()
+  let provider = CopilotProvider(
+    auth: store ?? MemoryCopilotStore(auth), client: APIClient(transport: transport, log: makeLog(), clock: testClock),
+    log: makeLog())
+  return (provider, transport)
 }
 
 @Test func copilotProviderHandlesFailures() async {

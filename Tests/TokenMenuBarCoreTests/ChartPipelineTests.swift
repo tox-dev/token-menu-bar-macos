@@ -3,22 +3,6 @@ import Testing
 
 @testable import TokenMenuBarCore
 
-private let key = WindowKey(provider: .claude, windowID: "session")
-private let other = WindowKey(provider: .codex, windowID: "weekly")
-private let utc = TimeZone(identifier: "UTC")!
-
-private func sample(_ minutes: Double, _ value: Double, resets: Double? = 300, key: WindowKey = key) -> UsageSample {
-  UsageSample(
-    timestamp: fixedNow.addingTimeInterval(minutes * 60), key: key, usedPercent: value,
-    resetsAt: resets.map { fixedNow.addingTimeInterval($0 * 60) })
-}
-
-private func raw(_ minutes: Double, _ value: Double, resets: Double? = nil) -> ChartPipeline.Raw {
-  ChartPipeline.Raw(
-    date: fixedNow.addingTimeInterval(minutes * 60), value: value,
-    resetsAt: resets.map { fixedNow.addingTimeInterval($0 * 60) })
-}
-
 @Test func bucketKeepsLatestSamplePerBucket() {
   let samples = [sample(0.2, 1), sample(0.8, 2), sample(1.5, 3), sample(0.5, 9, key: other)]
   let buckets = ChartPipeline.bucket(samples, rollup: .minute, timeZone: utc)
@@ -27,6 +11,16 @@ private func raw(_ minutes: Double, _ value: Double, resets: Double? = nil) -> C
   #expect(hourly.map(\.value) == [3])
   let reversed = ChartPipeline.bucket([sample(0.8, 2), sample(0.2, 1)], rollup: .minute, timeZone: utc)
   #expect(reversed.map(\.value) == [2])
+}
+
+private let key = WindowKey(provider: .claude, windowID: "session")
+private let other = WindowKey(provider: .codex, windowID: "weekly")
+private let utc = TimeZone(identifier: "UTC")!
+
+private func sample(_ minutes: Double, _ value: Double, resets: Double? = 300, key: WindowKey = key) -> UsageSample {
+  UsageSample(
+    timestamp: fixedNow.addingTimeInterval(minutes * 60), key: key, usedPercent: value,
+    resetsAt: resets.map { fixedNow.addingTimeInterval($0 * 60) })
 }
 
 @Test func insertResetZerosAddsCliffAtResetBoundary() {
@@ -42,6 +36,12 @@ private func raw(_ minutes: Double, _ value: Double, resets: Double? = nil) -> C
   #expect(ChartPipeline.insertResetZeros([raw(0, 1)]).count == 1)
   let rising = ChartPipeline.insertResetZeros([raw(0, 5, resets: 10), raw(5, 80, resets: 310)])
   #expect(rising.map(\.value) == [5, 80])
+}
+
+private func raw(_ minutes: Double, _ value: Double, resets: Double? = nil) -> ChartPipeline.Raw {
+  ChartPipeline.Raw(
+    date: fixedNow.addingTimeInterval(minutes * 60), value: value,
+    resetsAt: resets.map { fixedNow.addingTimeInterval($0 * 60) })
 }
 
 @Test func clipCarriesLastValueIntoDomain() {

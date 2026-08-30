@@ -3,22 +3,6 @@ import Testing
 
 @testable import TokenMenuBarCore
 
-private let session = QuotaWindow(
-  id: "session", label: "Current session", group: .session, usedPercent: 36.4,
-  resetsAt: fixedNow.addingTimeInterval(4 * 3600 + 24 * 60), duration: 18000)
-private let fable = QuotaWindow(
-  id: "weekly:fable", label: "Fable", group: .weekly, usedPercent: 61, resetsAt: fixedNow.addingTimeInterval(3 * 86400),
-  duration: 604_800, scope: "Fable")
-
-private func context(
-  _ window: QuotaWindow = session, decimals: Int = 0, plan: String? = "Max 20x", credits: String? = "$5.00"
-) -> StatusCellContext {
-  StatusCellContext(
-    provider: .claude, window: window, cellLabel: "CC·5h", shortLabel: "CC 5h", decimals: decimals, planName: plan,
-    credits: credits,
-    now: fixedNow)
-}
-
 @Test func templateParserHandlesEscapesAndNewlines() {
   #expect(StatusTemplate.parse("a{{b}}c\\nd\ne") == [.text("a{b}c"), .newline, .text("d"), .newline, .text("e")])
   #expect(StatusTemplate.parse("{pct}") == [.placeholder("pct")])
@@ -46,6 +30,15 @@ private func context(
   #expect(StatusTemplate.render("\n\n", context: context()).isEmpty)
 }
 
+private func context(
+  _ window: QuotaWindow = session, decimals: Int = 0, plan: String? = "Max 20x", credits: String? = "$5.00"
+) -> StatusCellContext {
+  StatusCellContext(
+    provider: .claude, window: window, cellLabel: "CC·5h", shortLabel: "CC 5h", decimals: decimals, planName: plan,
+    credits: credits,
+    now: fixedNow)
+}
+
 @Test func templateDetectsCountdownUsage() {
   #expect(StatusTemplate.referencesCountdown("{reset}"))
   #expect(!StatusTemplate.referencesCountdown("{resetClock}"))
@@ -68,6 +61,28 @@ private func context(
   ])
 func windowTagsAbbreviate(window: QuotaWindow, tag: String) {
   #expect(StatusTemplate.windowTag(window) == tag)
+}
+
+private let session = QuotaWindow(
+  id: "session", label: "Current session", group: .session, usedPercent: 36.4,
+  resetsAt: fixedNow.addingTimeInterval(4 * 3600 + 24 * 60), duration: 18000)
+private let fable = QuotaWindow(
+  id: "weekly:fable", label: "Fable", group: .weekly, usedPercent: 61, resetsAt: fixedNow.addingTimeInterval(3 * 86400),
+  duration: 604_800, scope: "Fable")
+
+@Test func defaultSelectionPrefersSessionAndWeeklyWindows() {
+  let keys = StatusItemBuilder.defaultSelection(input().snapshots)
+  #expect(keys.map(\.storageKey) == ["claude:session", "claude:weekly:fable", "codex:weekly"])
+  let odd: [ProviderID: ProviderSnapshot] = [
+    .codex: ProviderSnapshot(
+      provider: .codex,
+      windows: [
+        QuotaWindow(id: "a", label: "A", group: .other, usedPercent: 1, resetsAt: nil),
+        QuotaWindow(id: "b", label: "B", group: .other, usedPercent: 1, resetsAt: nil),
+        QuotaWindow(id: "c", label: "C", group: .other, usedPercent: 1, resetsAt: nil),
+      ], fetchedAt: fixedNow)
+  ]
+  #expect(StatusItemBuilder.defaultSelection(odd).map(\.windowID) == ["a", "b"])
 }
 
 private func input(
@@ -101,21 +116,6 @@ private func input(
     labels: labels,
     now: fixedNow
   )
-}
-
-@Test func defaultSelectionPrefersSessionAndWeeklyWindows() {
-  let keys = StatusItemBuilder.defaultSelection(input().snapshots)
-  #expect(keys.map(\.storageKey) == ["claude:session", "claude:weekly:fable", "codex:weekly"])
-  let odd: [ProviderID: ProviderSnapshot] = [
-    .codex: ProviderSnapshot(
-      provider: .codex,
-      windows: [
-        QuotaWindow(id: "a", label: "A", group: .other, usedPercent: 1, resetsAt: nil),
-        QuotaWindow(id: "b", label: "B", group: .other, usedPercent: 1, resetsAt: nil),
-        QuotaWindow(id: "c", label: "C", group: .other, usedPercent: 1, resetsAt: nil),
-      ], fetchedAt: fixedNow)
-  ]
-  #expect(StatusItemBuilder.defaultSelection(odd).map(\.windowID) == ["a", "b"])
 }
 
 @Test func builderRendersStackedCells() {

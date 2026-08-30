@@ -3,18 +3,6 @@ import Testing
 
 @testable import TokenMenuBarCore
 
-private func rolloutLine(
-  primary: Double, secondary: Double? = 34, plan: String = "pro", timestamp: String = "2026-08-29T10:00:00.000Z"
-) -> String {
-  let secondaryText =
-    secondary.map { #"{"used_percent":\#($0),"window_minutes":10080,"resets_at":1788544000}"# } ?? "null"
-  return #"{"timestamp":"\#(timestamp)","type":"event_msg","payload":{"type":"token_count","#
-    + #""rate_limits":{"primary":{"used_percent":\#(primary),"window_minutes":300,"#
-    + #""resets_at":1788205600},"secondary":\#(secondaryText),"#
-    + #""credits":{"has_credits":true,"unlimited":false,"balance":"9.5"},"#
-    + #""plan_type":"\#(plan)","rate_limit_reached_type":null}}}"#
-}
-
 @Test func rolloutReaderPicksLastRateLimitsInNewestFile() throws {
   let root = temporaryDirectory()
   let older = root.appendingPathComponent("2026/08/28")
@@ -86,4 +74,16 @@ private func rolloutLine(
   let noPercent = CodexRolloutReader.parse(line: #"{"rate_limits":{"primary":{"window_minutes":5}}}"#)!
   #expect(noPercent.rateLimit.primaryWindow == nil)
   #expect(CodexRolloutReader.findRateLimits(.string("x")) == nil)
+}
+
+private func rolloutLine(
+  primary: Double, secondary: Double? = 34, plan: String = "pro", timestamp: String = "2026-08-29T10:00:00.000Z"
+) -> String {
+  let secondaryText =
+    secondary.map { #"{"used_percent":\#($0),"window_minutes":10080,"resets_at":1788544000}"# } ?? "null"
+  return #"{"timestamp":"\#(timestamp)","type":"event_msg","payload":{"type":"token_count","#
+    + #""rate_limits":{"primary":{"used_percent":\#(primary),"window_minutes":300,"#
+    + #""resets_at":1788205600},"secondary":\#(secondaryText),"#
+    + #""credits":{"has_credits":true,"unlimited":false,"balance":"9.5"},"#
+    + #""plan_type":"\#(plan)","rate_limit_reached_type":null}}}"#
 }

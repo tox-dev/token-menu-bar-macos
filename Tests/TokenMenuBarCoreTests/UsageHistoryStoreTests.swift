@@ -3,21 +3,6 @@ import Testing
 
 @testable import TokenMenuBarCore
 
-private func snapshot(
-  _ percent: Double, resets: TimeInterval = 3600, at date: Date = fixedNow, provider: ProviderID = .claude
-) -> ProviderSnapshot {
-  ProviderSnapshot(
-    provider: provider,
-    windows: [
-      QuotaWindow(
-        id: "session", label: "Current session", group: .session, usedPercent: percent,
-        resetsAt: date.addingTimeInterval(resets), duration: 18000),
-      QuotaWindow(id: "weekly", label: "Weekly", group: .weekly, usedPercent: percent / 2, resetsAt: nil),
-    ],
-    fetchedAt: date
-  )
-}
-
 @Test func historyRecordsThrottlesAndReloads() async throws {
   let url = temporaryDirectory().appendingPathComponent("history/usage.sqlite")
   let store = try UsageHistoryStore(url: url)
@@ -33,6 +18,21 @@ private func snapshot(
   let reopened = try UsageHistoryStore(url: url)
   #expect(try await reopened.record(snapshot(21, resets: 7200), now: fixedNow.addingTimeInterval(660)) == 0)
   #expect(try await reopened.record(snapshot(30, resets: 7200), now: fixedNow.addingTimeInterval(700)) == 1)
+}
+
+private func snapshot(
+  _ percent: Double, resets: TimeInterval = 3600, at date: Date = fixedNow, provider: ProviderID = .claude
+) -> ProviderSnapshot {
+  ProviderSnapshot(
+    provider: provider,
+    windows: [
+      QuotaWindow(
+        id: "session", label: "Current session", group: .session, usedPercent: percent,
+        resetsAt: date.addingTimeInterval(resets), duration: 18000),
+      QuotaWindow(id: "weekly", label: "Weekly", group: .weekly, usedPercent: percent / 2, resetsAt: nil),
+    ],
+    fetchedAt: date
+  )
 }
 
 @Test func historyQueriesFilterByKeysAndRange() async throws {

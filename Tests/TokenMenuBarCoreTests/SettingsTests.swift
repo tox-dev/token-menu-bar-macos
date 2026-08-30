@@ -3,14 +3,6 @@ import Testing
 
 @testable import TokenMenuBarCore
 
-@MainActor
-private func freshDefaults() -> UserDefaults {
-  let suite = "tests-settings-\(UUID().uuidString)"
-  let defaults = UserDefaults(suiteName: suite)!
-  defaults.removePersistentDomain(forName: suite)
-  return defaults
-}
-
 @Test @MainActor func settingsDefaultsAndClamping() {
   let defaults = freshDefaults()
   let settings = Settings(defaults: defaults)
@@ -36,6 +28,14 @@ private func freshDefaults() -> UserDefaults {
   settings.statusFormat = .custom
   settings.customTemplate = "{pct}"
   #expect(settings.activeTemplate == "{pct}")
+}
+
+@MainActor
+private func freshDefaults() -> UserDefaults {
+  let suite = "tests-settings-\(UUID().uuidString)"
+  let defaults = UserDefaults(suiteName: suite)!
+  defaults.removePersistentDomain(forName: suite)
+  return defaults
 }
 
 @Test @MainActor func menuBarSettingsSurviveAReload() {

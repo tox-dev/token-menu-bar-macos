@@ -6,48 +6,6 @@ import WidgetKit
 @testable import TokenMenuBarCore
 @testable import TokenMenuBarWidgets
 
-private let fixedNow = Date(timeIntervalSince1970: 1_788_030_000)
-
-@MainActor
-private var hostingWindows: [NSWindow] = []
-
-@MainActor
-private func host<Content: View>(_ view: Content, width: CGFloat, height: CGFloat) -> NSHostingView<Content> {
-  let hosting = NSHostingView(rootView: view)
-  hosting.frame = NSRect(x: 0, y: 0, width: width, height: height)
-  let window = NSWindow(contentRect: hosting.frame, styleMask: [.borderless], backing: .buffered, defer: false)
-  window.isReleasedWhenClosed = false
-  window.contentView = hosting
-  hosting.layoutSubtreeIfNeeded()
-  hosting.displayIfNeeded()
-  hostingWindows.append(window)
-  return hosting
-}
-
-@MainActor
-private func inkFraction<Content: View>(_ view: Content, width: CGFloat, height: CGFloat) -> Double {
-  let hosting = host(view, width: width, height: height)
-  guard let rep = hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds) else { return 0 }
-  hosting.cacheDisplay(in: hosting.bounds, to: rep)
-  guard let image = rep.cgImage, image.width > 0, image.height > 0 else { return 0 }
-  var pixels = [UInt8](repeating: 0, count: image.width * image.height * 4)
-  let context = CGContext(
-    data: &pixels, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: image.width * 4,
-    space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
-  context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
-  let inked = stride(from: 3, to: pixels.count, by: 4).count { pixels[$0] > 8 }
-  return Double(inked) / Double(image.width * image.height)
-}
-
-private let populatedEntry = UsageEntry(
-  date: fixedNow,
-  snapshot: WidgetSnapshot(rows: WidgetSnapshot.placeholder.rows, attention: true, updatedAt: fixedNow))
-
-private func temporaryStore() -> WidgetSnapshotStore {
-  let root = FileManager.default.temporaryDirectory.appendingPathComponent("tmb-widget-\(UUID().uuidString)")
-  return WidgetSnapshotStore(url: root.appendingPathComponent("widget.json"))
-}
-
 @Test func timelineProviderReadsStoreOrPlaceholder() throws {
   let store = temporaryStore()
   let provider = UsageTimelineProvider(store: store, now: { fixedNow })
@@ -71,12 +29,38 @@ private func temporaryStore() -> WidgetSnapshotStore {
   #expect(UsageTimelineProvider.defaultStore().url.lastPathComponent == WidgetSnapshot.fileName)
 }
 
+private let fixedNow = Date(timeIntervalSince1970: 1_788_030_000)
+
+private func temporaryStore() -> WidgetSnapshotStore {
+  let root = FileManager.default.temporaryDirectory.appendingPathComponent("tmb-widget-\(UUID().uuidString)")
+  return WidgetSnapshotStore(url: root.appendingPathComponent("widget.json"))
+}
+
 @Test(arguments: [WidgetFamily.systemSmall, .systemMedium, .systemLarge])
 @MainActor func widgetViewsRenderEveryFamily(family: WidgetFamily) {
   let view = UsageWidgetView(entry: populatedEntry, family: family)
   #expect(view.rows.count == min(view.rowLimit, 3))
   #expect(inkFraction(view, width: 300, height: 300) > 0)
 }
+
+@MainActor
+private func inkFraction<Content: View>(_ view: Content, width: CGFloat, height: CGFloat) -> Double {
+  let hosting = host(view, width: width, height: height)
+  guard let rep = hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds) else { return 0 }
+  hosting.cacheDisplay(in: hosting.bounds, to: rep)
+  guard let image = rep.cgImage, image.width > 0, image.height > 0 else { return 0 }
+  var pixels = [UInt8](repeating: 0, count: image.width * image.height * 4)
+  let context = CGContext(
+    data: &pixels, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: image.width * 4,
+    space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+  context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+  let inked = stride(from: 3, to: pixels.count, by: 4).count { pixels[$0] > 8 }
+  return Double(inked) / Double(image.width * image.height)
+}
+
+private let populatedEntry = UsageEntry(
+  date: fixedNow,
+  snapshot: WidgetSnapshot(rows: WidgetSnapshot.placeholder.rows, attention: true, updatedAt: fixedNow))
 
 @Test @MainActor func widgetViewsHostEntryAndRows() {
   let entry = populatedEntry
@@ -91,4 +75,20 @@ private func temporaryStore() -> WidgetSnapshotStore {
   #expect(row.color != Color.clear)
   #expect(UsageWidget.kind.hasPrefix("dev.tox"))
   _ = UsageWidget().body
+}
+
+@MainActor
+private var hostingWindows: [NSWindow] = []
+
+@MainActor
+private func host<Content: View>(_ view: Content, width: CGFloat, height: CGFloat) -> NSHostingView<Content> {
+  let hosting = NSHostingView(rootView: view)
+  hosting.frame = NSRect(x: 0, y: 0, width: width, height: height)
+  let window = NSWindow(contentRect: hosting.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+  window.isReleasedWhenClosed = false
+  window.contentView = hosting
+  hosting.layoutSubtreeIfNeeded()
+  hosting.displayIfNeeded()
+  hostingWindows.append(window)
+  return hosting
 }

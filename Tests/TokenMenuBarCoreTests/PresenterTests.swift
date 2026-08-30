@@ -3,26 +3,9 @@ import Testing
 
 @testable import TokenMenuBarCore
 
-private func snapshot(source: DataSource = .network) -> ProviderSnapshot {
-  ProviderSnapshot(
-    provider: .claude,
-    identity: ProviderIdentity(
-      planName: "Max 20x", tier: "t", email: "user@example.com", organization: "user@example.com's Organization",
-      subscriptionActiveUntil: fixedNow.addingTimeInterval(86400)),
-    windows: [
-      QuotaWindow(
-        id: "session", label: "Current session", group: .session, usedPercent: 36,
-        resetsAt: fixedNow.addingTimeInterval(3600), duration: 18000)
-    ],
-    credits: CreditBalance(balance: 12.5, currency: "USD", hasCredits: true, approxLocalMessages: 5...10),
-    spend: SpendControl(
-      enabled: true, used: Money(amountMinor: 100, currency: "USD"), limit: Money(amountMinor: 1000, currency: "USD"),
-      percent: 10),
-    resetCredits: ResetCredits(available: 1, applicable: 1),
-    notices: [Notice(kind: .info, text: "hi")],
-    source: source,
-    fetchedAt: fixedNow.addingTimeInterval(-30)
-  )
+@Test func usagePresenterOrdersCardsByProvider() {
+  #expect(presentedCards().map(\.provider) == [.claude, .codex])
+  #expect(presentedCards()[0].id == .claude)
 }
 
 private func presentedCards() -> [ProviderCard] {
@@ -32,11 +15,6 @@ private func presentedCards() -> [ProviderCard] {
     .codex: ProviderState(availability: .authenticationRequired, lastError: "expired"),
   ]
   return UsagePresenter.cards(state: state, enabled: [.claude, .codex], samples: [:], now: fixedNow)
-}
-
-@Test func usagePresenterOrdersCardsByProvider() {
-  #expect(presentedCards().map(\.provider) == [.claude, .codex])
-  #expect(presentedCards()[0].id == .claude)
 }
 
 @Test func usagePresenterBuildsIdentityChips() {
@@ -85,6 +63,28 @@ private func presentedCards() -> [ProviderCard] {
   let cards = UsagePresenter.cards(state: state, enabled: [], samples: [:], now: fixedNow)
   #expect(cards.map(\.provider) == [.claude])
   #expect(cards[0].isStale)
+}
+
+private func snapshot(source: DataSource = .network) -> ProviderSnapshot {
+  ProviderSnapshot(
+    provider: .claude,
+    identity: ProviderIdentity(
+      planName: "Max 20x", tier: "t", email: "user@example.com", organization: "user@example.com's Organization",
+      subscriptionActiveUntil: fixedNow.addingTimeInterval(86400)),
+    windows: [
+      QuotaWindow(
+        id: "session", label: "Current session", group: .session, usedPercent: 36,
+        resetsAt: fixedNow.addingTimeInterval(3600), duration: 18000)
+    ],
+    credits: CreditBalance(balance: 12.5, currency: "USD", hasCredits: true, approxLocalMessages: 5...10),
+    spend: SpendControl(
+      enabled: true, used: Money(amountMinor: 100, currency: "USD"), limit: Money(amountMinor: 1000, currency: "USD"),
+      percent: 10),
+    resetCredits: ResetCredits(available: 1, applicable: 1),
+    notices: [Notice(kind: .info, text: "hi")],
+    source: source,
+    fetchedAt: fixedNow.addingTimeInterval(-30)
+  )
 }
 
 @Test func usagePresenterChipsAndEmptyStates() {
@@ -158,21 +158,11 @@ private func presentedCards() -> [ProviderCard] {
   #expect(Chip(text: "x").id == "x")
 }
 
-@MainActor
-private func makePresenter() throws -> (HistoryPresenter, UsageHistoryStore, Settings) {
-  let settings = Settings(defaults: UserDefaults(suiteName: "history-presenter-\(UUID().uuidString)")!)
-  let history = try UsageHistoryStore(url: nil)
-  return (HistoryPresenter(history: history, settings: settings, clock: testClock), history, settings)
-}
-
-private func sample(_ provider: ProviderID, _ percent: Double, at date: Date) -> ProviderSnapshot {
-  ProviderSnapshot(
-    provider: provider,
-    windows: [
-      QuotaWindow(
-        id: "session", label: "Session", group: .session, usedPercent: percent, resetsAt: date.addingTimeInterval(3600),
-        duration: 18000)
-    ], fetchedAt: date)
+@Test @MainActor func historyPresenterLoadsOneSeriesPerWindow() async throws {
+  let (presenter, _, data) = try await loadedPresenter()
+  #expect(data.series.map(\.label) == ["Claude Session", "Codex Session"])
+  #expect(presenter.availableWindows.count == 2)
+  #expect(presenter.earliest == fixedNow.addingTimeInterval(-3600))
 }
 
 @MainActor
@@ -199,13 +189,6 @@ private func loadedPresenter() async throws -> (HistoryPresenter, Settings, Hist
     throw CancellationError()
   }
   return (presenter, settings, data)
-}
-
-@Test @MainActor func historyPresenterLoadsOneSeriesPerWindow() async throws {
-  let (presenter, _, data) = try await loadedPresenter()
-  #expect(data.series.map(\.label) == ["Claude Session", "Codex Session"])
-  #expect(presenter.availableWindows.count == 2)
-  #expect(presenter.earliest == fixedNow.addingTimeInterval(-3600))
 }
 
 @Test @MainActor func historyPresenterGroupsAnalyticsByMetric() async throws {
@@ -260,6 +243,13 @@ private func loadedPresenter() async throws -> (HistoryPresenter, Settings, Hist
   #expect(settings.historyRange == .week)
   presenter.setRange(.today)
   #expect(settings.historyRollup == .hour)
+}
+
+@MainActor
+private func makePresenter() throws -> (HistoryPresenter, UsageHistoryStore, Settings) {
+  let settings = Settings(defaults: UserDefaults(suiteName: "history-presenter-\(UUID().uuidString)")!)
+  let history = try UsageHistoryStore(url: nil)
+  return (HistoryPresenter(history: history, settings: settings, clock: testClock), history, settings)
 }
 
 @Test @MainActor func historyPresenterRequestCarriesTheDisplayChoices() async throws {
@@ -390,4 +380,14 @@ private func loadedPresenter() async throws -> (HistoryPresenter, Settings, Hist
   let firstRun = card(ProviderState(availability: .loading, isRefreshing: true))
   #expect(firstRun.statusText == "Fetching…")
   #expect(card(ProviderState(availability: .unavailable)).statusText == QuotaAvailability.unavailable.title)
+}
+
+private func sample(_ provider: ProviderID, _ percent: Double, at date: Date) -> ProviderSnapshot {
+  ProviderSnapshot(
+    provider: provider,
+    windows: [
+      QuotaWindow(
+        id: "session", label: "Session", group: .session, usedPercent: percent, resetsAt: date.addingTimeInterval(3600),
+        duration: 18000)
+    ], fetchedAt: date)
 }
