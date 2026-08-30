@@ -75,7 +75,9 @@ public final class SQLiteDatabase {
     _ = try query(sql, parameters) { _ in () }
   }
 
-  public func query<T>(_ sql: String, _ parameters: [SQLiteValue] = [], _ row: (SQLiteRow) throws -> T) throws -> [T] {
+  public func query<Row>(
+    _ sql: String, _ parameters: [SQLiteValue] = [], _ row: (SQLiteRow) throws -> Row
+  ) throws -> [Row] {
     var statement: OpaquePointer?
     guard sqlite3_prepare_v2(handle, sql, -1, &statement, nil) == SQLITE_OK, let statement else {
       throw SQLiteError.prepare(sql, errorMessage)
@@ -91,7 +93,7 @@ public final class SQLiteDatabase {
       case .text(let value): sqlite3_bind_text(statement, index, value, -1, transient)
       }
     }
-    var rows: [T] = []
+    var rows: [Row] = []
     while true {
       let status = sqlite3_step(statement)
       if status == SQLITE_DONE { break }

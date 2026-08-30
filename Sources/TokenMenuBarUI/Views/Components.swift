@@ -145,15 +145,16 @@ public struct WrappingHStack: Layout {
   }
 
   public func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-    var y = bounds.minY
+    var rowTop = bounds.minY
     for row in layoutRows(width: bounds.width, subviews: subviews) {
-      var x = bounds.minX
+      var itemLeft = bounds.minX
       for index in row.indices {
         let size = subviews[index].sizeThatFits(.unspecified)
-        subviews[index].place(at: CGPoint(x: x, y: y + (row.height - size.height) / 2), proposal: .unspecified)
-        x += size.width + horizontalSpacing
+        subviews[index].place(
+          at: CGPoint(x: itemLeft, y: rowTop + (row.height - size.height) / 2), proposal: .unspecified)
+        itemLeft += size.width + horizontalSpacing
       }
-      y += row.height + verticalSpacing
+      rowTop += row.height + verticalSpacing
     }
   }
 

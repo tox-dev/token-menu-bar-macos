@@ -94,11 +94,11 @@ public enum StatusItemRenderer {
     let heights = lines.map { $0.size().height }
     let total = heights.reduce(0, +)
     return NSImage(size: CGSize(width: width, height: height), flipped: true) { rect in
-      var y = (rect.height - total) / 2
+      var lineTop = (rect.height - total) / 2
       for line in lines {
         let size = line.size()
-        line.draw(at: CGPoint(x: (rect.width - size.width) / 2, y: y))
-        y += size.height
+        line.draw(at: CGPoint(x: (rect.width - size.width) / 2, y: lineTop))
+        lineTop += size.height
       }
       return true
     }
@@ -117,14 +117,15 @@ public enum StatusItemRenderer {
         in: CGRect(x: cellPadding, y: glyphY, width: glyph.size.width, height: glyph.size.height), from: .zero,
         operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
       let rowHeight = rect.height / CGFloat(max(bars.count, 1))
-      let x = cellPadding + glyph.size.width + 4
+      let labelLeft = cellPadding + glyph.size.width + 4
       for (index, bar) in bars.enumerated() {
         let centerY = rowHeight * CGFloat(index) + rowHeight / 2
         let label = NSAttributedString(
           string: bar.label, attributes: [.font: labelFont, .foregroundColor: color(for: .label, dark: dark)])
-        label.draw(at: CGPoint(x: x, y: centerY - label.size().height / 2))
+        label.draw(at: CGPoint(x: labelLeft, y: centerY - label.size().height / 2))
         let trackRect = CGRect(
-          x: x + ceil(labelWidth) + 3, y: centerY - barHeight / 2, width: barWidth, height: barHeight)
+          x: labelLeft + ceil(labelWidth) + 3, y: centerY - barHeight / 2, width: barWidth,
+          height: barHeight)
         color(for: .label, dark: dark).withAlphaComponent(0.18).setFill()
         NSBezierPath(roundedRect: trackRect, xRadius: barHeight / 2, yRadius: barHeight / 2).fill()
         let filled = max(barWidth * CGFloat(min(max(bar.percent, 0), 100) / 100), 2.5)

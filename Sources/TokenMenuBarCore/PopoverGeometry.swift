@@ -81,8 +81,8 @@ public enum PopoverGeometry {
   }
 
   public static func pinnedOrigin(lastTopCenter: CGPoint, size: CGSize, visibleFrame: CGRect) -> CGPoint {
-    let x = min(max(lastTopCenter.x - size.width / 2, visibleFrame.minX), visibleFrame.maxX - size.width)
-    let y = min(max(lastTopCenter.y - size.height, visibleFrame.minY), visibleFrame.maxY - size.height)
-    return CGPoint(x: x, y: y)
+    return CGPoint(
+      x: min(max(lastTopCenter.x - size.width / 2, visibleFrame.minX), visibleFrame.maxX - size.width),
+      y: min(max(lastTopCenter.y - size.height, visibleFrame.minY), visibleFrame.maxY - size.height))
   }
 }

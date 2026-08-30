@@ -37,15 +37,17 @@ public struct SettingsTab: View {
     .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
   }
 
-  public func setting<T>(_ keyPath: ReferenceWritableKeyPath<TokenMenuBarCore.Settings, T>) -> Binding<T> {
+  public func setting<Value>(_ keyPath: ReferenceWritableKeyPath<TokenMenuBarCore.Settings, Value>) -> Binding<Value> {
     Binding(get: { settings[keyPath: keyPath] }, set: { settings[keyPath: keyPath] = $0 })
   }
 
-  public func menuBarSetting<T>(_ keyPath: ReferenceWritableKeyPath<TokenMenuBarCore.Settings, T>) -> Binding<T> {
+  public func menuBarSetting<Value>(
+    _ keyPath: ReferenceWritableKeyPath<TokenMenuBarCore.Settings, Value>
+  ) -> Binding<Value> {
     Binding(get: { settings[keyPath: keyPath] }, set: { update(keyPath, to: $0) })
   }
 
-  func update<T>(_ keyPath: ReferenceWritableKeyPath<TokenMenuBarCore.Settings, T>, to value: T) {
+  func update<Value>(_ keyPath: ReferenceWritableKeyPath<TokenMenuBarCore.Settings, Value>, to value: Value) {
     settings[keyPath: keyPath] = value
     environment.actions.settingsChanged()
   }

@@ -24,7 +24,7 @@ enum Fixtures {
     return document.merging("tokens", .object(tokens))
   }
 
-  static func decode<T: Decodable>(_ type: T.Type, _ name: String) -> T {
+  static func decode<Value: Decodable>(_ type: Value.Type, _ name: String) -> Value {
     try! JSONDecoder().decode(type, from: data(name))
   }
 }

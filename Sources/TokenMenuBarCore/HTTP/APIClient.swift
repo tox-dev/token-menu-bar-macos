@@ -80,14 +80,16 @@ public struct APIClient: Sendable {
       operation: operation)
   }
 
-  public func getJSON<T: Decodable>(
-    _ type: T.Type, _ url: URL, headers: [String: String], operation: String
-  ) async throws(APIError) -> T {
+  public func getJSON<Payload: Decodable>(
+    _ type: Payload.Type, _ url: URL, headers: [String: String], operation: String
+  ) async throws(APIError) -> Payload {
     let data = try await get(url, headers: headers, operation: operation)
     return try decode(type, data, operation: operation)
   }
 
-  public func decode<T: Decodable>(_ type: T.Type, _ data: Data, operation: String) throws(APIError) -> T {
+  public func decode<Payload: Decodable>(
+    _ type: Payload.Type, _ data: Data, operation: String
+  ) throws(APIError) -> Payload {
     do {
       return try decoder.decode(type, from: data)
     } catch {

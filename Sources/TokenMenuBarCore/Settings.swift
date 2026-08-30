@@ -190,12 +190,13 @@ public final class Settings {
     }
   }
 
-  private func storeCodable<T: Encodable>(_ value: T, key: Key) {
+  private func storeCodable<Value: Encodable>(_ value: Value, key: Key) {
     guard !loading, let data = try? encoder.encode(value) else { return }
     defaults.set(data, forKey: key.rawValue)
   }
 
-  private static func loadCodable<T: Decodable>(_ type: T.Type, _ defaults: UserDefaults, _ key: Key) -> T? {
+  private static func loadCodable<Value: Decodable>(_ type: Value.Type, _ defaults: UserDefaults, _ key: Key) -> Value?
+  {
     defaults.data(forKey: key.rawValue).flatMap { try? JSONDecoder().decode(type, from: $0) }
   }
 }

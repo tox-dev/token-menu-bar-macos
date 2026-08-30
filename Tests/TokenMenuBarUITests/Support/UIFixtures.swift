@@ -91,7 +91,7 @@ func makeEnvironment(settings: TokenMenuBarCore.Settings? = nil, populate: Bool 
 private var hostingWindows: [NSWindow] = []
 
 @MainActor
-func host<V: View>(_ view: V, width: CGFloat = 520, height: CGFloat = 700) -> NSHostingView<V> {
+func host<Content: View>(_ view: Content, width: CGFloat = 520, height: CGFloat = 700) -> NSHostingView<Content> {
   let hosting = NSHostingView(rootView: view)
   hosting.frame = NSRect(x: 0, y: 0, width: width, height: height)
   let window = NSWindow(contentRect: hosting.frame, styleMask: [.borderless], backing: .buffered, defer: false)
@@ -104,7 +104,7 @@ func host<V: View>(_ view: V, width: CGFloat = 520, height: CGFloat = 700) -> NS
 }
 
 @MainActor
-func inkFraction<V: View>(_ view: V, width: CGFloat = 520, height: CGFloat = 700) -> Double {
+func inkFraction<Content: View>(_ view: Content, width: CGFloat = 520, height: CGFloat = 700) -> Double {
   let hosting = host(view, width: width, height: height)
   guard let rep = hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds) else { return 0 }
   hosting.cacheDisplay(in: hosting.bounds, to: rep)

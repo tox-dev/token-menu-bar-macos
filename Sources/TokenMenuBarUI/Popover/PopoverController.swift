@@ -103,9 +103,11 @@ public final class PopoverController: NSObject, NSPopoverDelegate {
     guard popover.isShown, let window = popover.contentViewController?.view.window, let stableCenterX,
       let visibleFrame
     else { return }
-    let x = PopoverGeometry.alignedOriginX(
+    let aligned = PopoverGeometry.alignedOriginX(
       centerX: stableCenterX, width: window.frame.width, visibleFrame: visibleFrame)
-    if abs(window.frame.origin.x - x) > 0.5 { window.setFrameOrigin(CGPoint(x: x, y: window.frame.origin.y)) }
+    if abs(window.frame.origin.x - aligned) > 0.5 {
+      window.setFrameOrigin(CGPoint(x: aligned, y: window.frame.origin.y))
+    }
   }
 
   func installMonitors() {

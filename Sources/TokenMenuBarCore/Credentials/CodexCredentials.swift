@@ -109,9 +109,9 @@ public struct FileCodexAuthStore: CodexAuthStore {
 
 public enum ISODate {
   nonisolated(unsafe) private static let fractional: ISO8601DateFormatter = {
-    let f = ISO8601DateFormatter()
-    f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    return f
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    return formatter
   }()
   nonisolated(unsafe) private static let plain = ISO8601DateFormatter()
 

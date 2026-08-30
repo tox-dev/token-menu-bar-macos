@@ -85,9 +85,9 @@ extension AppIcon {
     let bars: [(y: CGFloat, fill: CGFloat)] = [(62, 56), (43, 38), (24, 22)]
     for bar in bars {
       let height = 14 * unit
-      let y = rect.minY + bar.y * unit
+      let bottom = rect.minY + bar.y * unit
       for (width, alpha) in [(CGFloat(56), 0.32), (bar.fill, 1.0)] {
-        let barRect = CGRect(x: rect.minX + 22 * unit, y: y, width: width * unit, height: height)
+        let barRect = CGRect(x: rect.minX + 22 * unit, y: bottom, width: width * unit, height: height)
         context.setFillColor(CGColor(gray: 1, alpha: alpha))
         context.addPath(
           CGPath(roundedRect: barRect, cornerWidth: height / 2, cornerHeight: height / 2, transform: nil))

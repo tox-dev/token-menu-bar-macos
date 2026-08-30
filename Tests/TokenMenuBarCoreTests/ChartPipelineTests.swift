@@ -85,11 +85,12 @@ private func raw(_ minutes: Double, _ value: Double, resets: Double? = nil) -> C
 }
 
 @Test func stackAccumulatesBases() {
-  let a = HistorySeries(
+  let lower = HistorySeries(
     key: key, label: "a",
     points: [SeriesPoint(date: fixedNow, value: 10), SeriesPoint(date: fixedNow.addingTimeInterval(60), value: 20)])
-  let b = HistorySeries(key: other, label: "b", points: [SeriesPoint(date: fixedNow.addingTimeInterval(30), value: 5)])
-  let stacked = ChartPipeline.stack([a, b])
+  let upper = HistorySeries(
+    key: other, label: "b", points: [SeriesPoint(date: fixedNow.addingTimeInterval(30), value: 5)])
+  let stacked = ChartPipeline.stack([lower, upper])
   #expect(stacked[0].points.map(\.value) == [10, 10, 20])
   #expect(stacked[1].points.map(\.stackBase) == [10, 10, 20])
   #expect(stacked[1].points.map(\.value) == [0, 5, 5])

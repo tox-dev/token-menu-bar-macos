@@ -12,7 +12,7 @@ private let fixedNow = Date(timeIntervalSince1970: 1_788_030_000)
 private var hostingWindows: [NSWindow] = []
 
 @MainActor
-private func host<V: View>(_ view: V, width: CGFloat, height: CGFloat) -> NSHostingView<V> {
+private func host<Content: View>(_ view: Content, width: CGFloat, height: CGFloat) -> NSHostingView<Content> {
   let hosting = NSHostingView(rootView: view)
   hosting.frame = NSRect(x: 0, y: 0, width: width, height: height)
   let window = NSWindow(contentRect: hosting.frame, styleMask: [.borderless], backing: .buffered, defer: false)
@@ -25,7 +25,7 @@ private func host<V: View>(_ view: V, width: CGFloat, height: CGFloat) -> NSHost
 }
 
 @MainActor
-private func inkFraction<V: View>(_ view: V, width: CGFloat, height: CGFloat) -> Double {
+private func inkFraction<Content: View>(_ view: Content, width: CGFloat, height: CGFloat) -> Double {
   let hosting = host(view, width: width, height: height)
   guard let rep = hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds) else { return 0 }
   hosting.cacheDisplay(in: hosting.bounds, to: rep)
