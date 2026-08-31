@@ -24,7 +24,6 @@ jobs:
       - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer
-      # pre-commit.ci skips the hooks that need a Swift toolchain, plutil or just, so they run here.
       - name: Run every hook
         run: just lint
 

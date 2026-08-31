@@ -1,8 +1,3 @@
-ci:
-  # These three need a Swift toolchain, plutil or just, none of which pre-commit.ci's Linux image carries. The Lint
-  # job in CI runs the whole set on macOS.
-  skip: [swift-format, plutil, just-format]
-
 exclude: ^(website/public|website/resources|dist)/
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -81,13 +76,17 @@ repos:
         language: system
         types: [swift]
         require_serial: false
-      - id: plutil
+      # plistlib rather than plutil, and just from PyPI, so these run on Linux as well as a Mac
+      - id: plists
         name: property lists parse
-        entry: plutil -lint
-        language: system
+        entry: python -c "import plistlib,sys;[plistlib.loads(open(f,'rb').read()) for f in sys.argv[1:]]"
+        language: python
         files: \.(plist|entitlements|xcprivacy)$
       - id: just-format
         name: justfile formatting
         entry: just --unstable --fmt --check --justfile
-        language: system
+        language: python
+        additional_dependencies: [rust-just]
         files: ^justfile$
+        pass_filenames: false
+        args: [justfile]
