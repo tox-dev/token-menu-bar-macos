@@ -9,7 +9,7 @@ out="dist/direct"
 download_prefix="https://github.com/tox-dev/token-menu-bar-macos/releases/download/v${version}/"
 
 sparkle_bin="$(
-  find ~/Library/Developer/Xcode/DerivedData "$PWD/App" -path '*artifacts/sparkle/Sparkle/bin' -type d 2>/dev/null |
+  find ~/Library/Developer/Xcode/DerivedData "$PWD/App" -path '*artifacts/sparkle/Sparkle/bin' -type d 2> /dev/null |
     head -1 || true
 )"
 if [[ -n "$sparkle_bin" && -n "${SPARKLE_PRIVATE_ED_KEY:-}" ]]; then
@@ -20,7 +20,7 @@ fi
 
 length="$(stat -f %z "$out/TokenMenuBar.zip")"
 build="$(sed -n 's/.*CURRENT_PROJECT_VERSION: "\(.*\)"/\1/p' App/project.yml | head -1)"
-cat > "$out/appcast.xml" <<XML
+cat > "$out/appcast.xml" << XML
 <?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>

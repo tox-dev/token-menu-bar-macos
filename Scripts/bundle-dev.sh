@@ -16,7 +16,7 @@ binary="$(swift build -c "$configuration" --show-bin-path)/TokenMenuBar"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$binary" "$app/Contents/MacOS/TokenMenuBar"
-cat >"$app/Contents/Info.plist" <<PLIST
+cat > "$app/Contents/Info.plist" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -39,7 +39,7 @@ cat >"$app/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 iconset="$(mktemp -d)/TokenMenuBar.iconset"
-"$binary" --export-icon "$iconset" >/dev/null
+"$binary" --export-icon "$iconset" > /dev/null
 iconutil --convert icns --output "$app/Contents/Resources/AppIcon.icns" "$iconset"
 rm -rf "$iconset"
 

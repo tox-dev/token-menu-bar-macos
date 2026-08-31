@@ -19,7 +19,7 @@ repos:
       - id: mixed-line-ending
         args: ["--fix=lf"]
       - id: detect-private-key
-  - repo: https://github.com/executablebooks/mdformat
+  - repo: https://github.com/hukkin/mdformat
     rev: 1.0.0
     hooks:
       - id: mdformat
@@ -29,10 +29,41 @@ repos:
         additional_dependencies:
           - mdformat-gfm>=0.4
           - mdformat-hugo>=0.1
+          - mdformat-beautysh>=1
+          - mdformat-simple-breaks>=0.1
+  - repo: https://github.com/koalaman/shellcheck-precommit
+    rev: v0.11.0
+    hooks:
+      - id: shellcheck
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.13.1-1
+    hooks:
+      - id: shfmt
+        args: ["--indent", "2", "--case-indent", "--space-redirects", "--write"]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.5
+    hooks:
+      - id: ruff-format
+      - id: ruff-check
+        args: ["--fix"]
+  - repo: https://github.com/ComPWA/taplo-pre-commit
+    rev: v0.9.3
+    hooks:
+      - id: taplo-format
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.9.6
+    hooks:
+      - id: prettier
+        # The Hugo templates are Go templates in .html files, which prettier cannot parse
+        files: ^website/assets/.*\.(css|js)$
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.12
     hooks:
       - id: actionlint
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.28.0
+    hooks:
+      - id: zizmor
   - repo: https://github.com/google/yamlfmt
     rev: v0.21.0
     hooks:
@@ -48,3 +79,13 @@ repos:
         language: system
         types: [swift]
         require_serial: false
+      - id: plutil
+        name: property lists parse
+        entry: plutil -lint
+        language: system
+        files: \.(plist|entitlements|xcprivacy)$
+      - id: just-format
+        name: justfile formatting
+        entry: just --unstable --fmt --check --justfile
+        language: system
+        files: ^justfile$

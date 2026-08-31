@@ -10,7 +10,8 @@
 
   const isDark = () =>
     body.classList.contains("theme-dark") ||
-    (body.classList.contains("theme-auto") && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    (body.classList.contains("theme-auto") &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   const paintIcon = () => {
     if (icon) icon.setAttribute("d", isDark() ? sun : moon);
@@ -28,7 +29,9 @@
     });
   }
 
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", paintIcon);
+  window
+    .matchMedia("(prefers-color-scheme: dark)")
+    .addEventListener("change", paintIcon);
   paintIcon();
   requestAnimationFrame(() => body.classList.remove("preload"));
 })();

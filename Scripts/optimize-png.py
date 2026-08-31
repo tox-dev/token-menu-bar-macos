@@ -15,6 +15,7 @@ from typing import Final
 
 _HEADER: Final = b"\x89PNG\r\n\x1a\n"
 _FILTERS: Final = (1, 2, 4)
+_CHANNELS: Final = 4
 
 
 def _chunks(data: bytes) -> list[tuple[bytes, bytes]]:
@@ -27,19 +28,26 @@ def _chunks(data: bytes) -> list[tuple[bytes, bytes]]:
     return out
 
 
-def _predict(kind: int, value: int, left: int, up: int, upleft: int, encode: bool) -> int:
+def _base(kind: int, left: int, up: int, upleft: int) -> int:
     if kind == 1:
-        base = left
-    elif kind == 2:
-        base = up
-    else:
-        estimate = left + up - upleft
-        distances = (abs(estimate - left), abs(estimate - up), abs(estimate - upleft))
-        base = (left, up, upleft)[distances.index(min(distances))]
-    return (value - base if encode else value + base) & 0xFF
+        return left
+    if kind == 2:
+        return up
+    estimate = left + up - upleft
+    distances = (abs(estimate - left), abs(estimate - up), abs(estimate - upleft))
+    return (left, up, upleft)[distances.index(min(distances))]
 
 
-def _rows(raw: bytes, stride: int, height: int) -> list[bytes]:
+def _neighbours(line: bytes, previous: bytes, index: int) -> tuple[int, int, int]:
+    behind = index >= _CHANNELS
+    return (
+        line[index - _CHANNELS] if behind else 0,
+        previous[index],
+        previous[index - _CHANNELS] if behind else 0,
+    )
+
+
+def _decode(raw: bytes, stride: int, height: int) -> list[bytes]:
     rows: list[bytes] = []
     previous = bytes(stride)
     offset = 0
@@ -47,17 +55,41 @@ def _rows(raw: bytes, stride: int, height: int) -> list[bytes]:
         kind = raw[offset]
         line = bytearray(raw[offset + 1 : offset + 1 + stride])
         offset += 1 + stride
-        if kind:
-            for i in range(stride):
-                line[i] = _predict(
-                    kind, line[i], line[i - 4] if i >= 4 else 0, previous[i], previous[i - 4] if i >= 4 else 0, False
-                )
+        for index in range(stride * bool(kind)):
+            line[index] = (line[index] + _base(kind, *_neighbours(line, previous, index))) & 0xFF
         rows.append(bytes(line))
         previous = bytes(line)
     return rows
 
 
+def _encode(rows: list[bytes], stride: int, kind: int) -> bytes:
+    packed = bytearray()
+    previous = bytes(stride)
+    for row in rows:
+        packed.append(kind)
+        for index in range(stride):
+            packed.append((row[index] - _base(kind, *_neighbours(row, previous, index))) & 0xFF)
+        previous = row
+    return zlib.compress(bytes(packed), 9)
+
+
+def _rebuild(header: bytes, data: bytes) -> bytes:
+    out = bytearray(_HEADER)
+    for kind, payload in ((b"IHDR", header), (b"IDAT", data), (b"IEND", b"")):
+        out += struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", zlib.crc32(kind + payload))
+    return bytes(out)
+
+
 def repack(path: pathlib.Path) -> int:
+    """Rewrite one file when a different filter compresses it better.
+
+    Args:
+        path: The PNG to rewrite in place.
+
+    Returns:
+        The number of bytes saved, or zero when the file is already as small as this can make it.
+
+    """
     data = path.read_bytes()
     if data[: len(_HEADER)] != _HEADER:
         return 0
@@ -66,34 +98,20 @@ def repack(path: pathlib.Path) -> int:
     width, height, depth, colour, _, _, interlace = struct.unpack(">IIBBBBB", header)
     if (depth, colour, interlace) != (8, 6, 0):
         return 0
-    stride = width * 4
-    rows = _rows(zlib.decompress(b"".join(payload for kind, payload in parts if kind == b"IDAT")), stride, height)
-    best: bytes | None = None
-    for kind in _FILTERS:
-        packed = bytearray()
-        previous = bytes(stride)
-        for row in rows:
-            packed.append(kind)
-            for i in range(stride):
-                packed.append(
-                    _predict(kind, row[i], row[i - 4] if i >= 4 else 0, previous[i], previous[i - 4] if i >= 4 else 0, True)
-                )
-            previous = row
-        candidate = zlib.compress(bytes(packed), 9)
-        if best is None or len(candidate) < len(best):
-            best = candidate
-    out = bytearray(_HEADER)
-    for kind, payload in ((b"IHDR", header), (b"IDAT", best or b""), (b"IEND", b"")):
-        out += struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", zlib.crc32(kind + payload))
-    saved = len(data) - len(out)
-    if saved > 0:
-        path.write_bytes(bytes(out))
-    return max(saved, 0)
+    stride = width * _CHANNELS
+    raw = zlib.decompress(b"".join(payload for kind, payload in parts if kind == b"IDAT"))
+    rows = _decode(raw, stride, height)
+    best = min((_encode(rows, stride, kind) for kind in _FILTERS), key=len)
+    out = _rebuild(header, best)
+    if len(out) >= len(data):
+        return 0
+    path.write_bytes(out)
+    return len(data) - len(out)
 
 
 def main(paths: list[str]) -> int:
     saved = sum(repack(file) for root in paths for file in sorted(pathlib.Path(root).rglob("*.png")))
-    print(f"saved {saved / 1e6:.2f} MB")
+    sys.stderr.write(f"saved {saved / 1e6:.2f} MB\n")
     return 0
 
 

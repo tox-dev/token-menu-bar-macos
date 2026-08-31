@@ -37,7 +37,8 @@
     window.mermaid.run({ querySelector: "pre.mermaid" });
   };
 
-  const start = () => (window.mermaid ? render() : window.setTimeout(start, 50));
+  const start = () =>
+    window.mermaid ? render() : window.setTimeout(start, 50);
   start();
   document.addEventListener("themechange", render);
 })();

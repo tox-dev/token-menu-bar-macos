@@ -9,7 +9,7 @@ binary="${APP_BINARY:-dist/Token Menu Bar.app/Contents/MacOS/TokenMenuBar}"
 
 if [[ ! -x "$binary" ]]; then
   echo "building the app bundle first" >&2
-  CONFIGURATION=release Scripts/bundle-dev.sh >/dev/null
+  CONFIGURATION=release Scripts/bundle-dev.sh > /dev/null
 fi
 
 mkdir -p "$out"

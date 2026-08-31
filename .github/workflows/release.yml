@@ -15,9 +15,22 @@ on:
         description: The tag to build
         required: true
         type: string
+    secrets:
+      DEVELOPER_ID_CERTIFICATE_BASE64: {required: true}
+      DEVELOPER_ID_CERTIFICATE_PASSWORD: {required: true}
+      APPLE_DISTRIBUTION_CERTIFICATE_BASE64: {required: false}
+      APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD: {required: false}
+      APP_STORE_PROVISIONING_PROFILE_BASE64: {required: false}
+      APP_STORE_WIDGET_PROVISIONING_PROFILE_BASE64: {required: false}
+      APPLE_TEAM_ID: {required: true}
+      APP_STORE_CONNECT_KEY_ID: {required: true}
+      APP_STORE_CONNECT_ISSUER_ID: {required: true}
+      APP_STORE_CONNECT_KEY_BASE64: {required: true}
+      SPARKLE_PUBLIC_ED_KEY: {required: true}
+      SPARKLE_PRIVATE_ED_KEY: {required: true}
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   TAG: ${{ inputs.tag || github.ref_name }}
@@ -54,12 +67,16 @@ jobs:
     name: Direct download (zip, DMG, appcast, cask)
     needs: preflight
     runs-on: macos-26
+    # This job pushes the cask back to main and publishes the release.
+    permissions:
+      contents: write
     outputs:
       signed: ${{ steps.identity.outputs.signed }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ env.TAG }}
+          persist-credentials: false
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer
       - name: Install tools
@@ -125,19 +142,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin main
+          git fetch "$remote" main
           git stash push -- Casks/token-menu-bar.rb
-          git checkout main
+          git checkout FETCH_HEAD
           git stash pop
           if ! git diff --quiet -- Casks/token-menu-bar.rb; then
             git add Casks/token-menu-bar.rb
             git commit -m "Update Homebrew cask for ${TAG}"
-            git push origin main
+            git push "$remote" HEAD:main
           fi
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: direct
           path: |
@@ -147,7 +165,8 @@ jobs:
             dist/direct/appcast.xml
             Casks/token-menu-bar.rb
       - name: Publish GitHub release
-        uses: softprops/action-gh-release@v2
+        # the action uploads the assets and writes the notes in one step
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2 # zizmor: ignore[superfluous-actions]
         with:
           tag_name: ${{ env.TAG }}
           generate_release_notes: true
@@ -163,11 +182,14 @@ jobs:
     name: Mac App Store upload
     needs: [preflight, direct]
     runs-on: macos-26
+    permissions:
+      contents: read
     if: needs.preflight.outputs.app_store == 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ env.TAG }}
+          persist-credentials: false
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer
       - name: Install tools

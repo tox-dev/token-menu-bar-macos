@@ -24,14 +24,18 @@
   --radius-sm: 8px;
   --radius: 12px;
   --radius-lg: 18px;
-  --shadow-sm: 0 1px 2px rgba(15, 17, 23, 0.06), 0 1px 3px rgba(15, 17, 23, 0.05);
+  --shadow-sm:
+    0 1px 2px rgba(15, 17, 23, 0.06), 0 1px 3px rgba(15, 17, 23, 0.05);
   --shadow: 0 10px 30px rgba(15, 17, 23, 0.09);
   --shadow-lg: 0 24px 60px rgba(15, 17, 23, 0.16);
 
   --page: 1240px;
   --prose: 1140px;
-  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Inter, system-ui, sans-serif;
-  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, "Cascadia Mono", monospace;
+  --sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Inter,
+    system-ui, sans-serif;
+  --mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, "Cascadia Mono", monospace;
 }
 
 body.theme-dark,
@@ -318,7 +322,9 @@ td {
   font-size: 0.97rem;
   text-decoration: none;
   border: 1px solid transparent;
-  transition: transform 120ms ease, box-shadow 120ms ease;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
 }
 
 .button:hover {
@@ -349,7 +355,11 @@ td {
   position: absolute;
   inset: -40% 30% auto -10%;
   height: 620px;
-  background: radial-gradient(closest-side, rgba(122, 90, 245, 0.22), transparent);
+  background: radial-gradient(
+    closest-side,
+    rgba(122, 90, 245, 0.22),
+    transparent
+  );
   pointer-events: none;
 }
 
@@ -417,7 +427,6 @@ td {
   max-width: 100%;
   height: auto;
 }
-
 
 .shot-bar {
   max-width: 520px;
@@ -709,12 +718,12 @@ h3:hover .anchor,
   }
 
   .nav a svg {
-  width: 15px;
-  height: 15px;
-  flex: none;
-}
+    width: 15px;
+    height: 15px;
+    flex: none;
+  }
 
-.nav a {
+  .nav a {
     padding: 0.3rem 0.45rem;
     font-size: 0.88rem;
   }
@@ -787,7 +796,9 @@ body.theme-dark .only-light {
 .card-link {
   text-decoration: none;
   display: block;
-  transition: border-color 120ms ease, transform 120ms ease;
+  transition:
+    border-color 120ms ease,
+    transform 120ms ease;
 }
 
 .card-link:hover {

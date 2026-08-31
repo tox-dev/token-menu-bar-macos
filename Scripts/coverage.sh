@@ -8,7 +8,7 @@ rm -rf "$(swift build --show-bin-path)/codecov"
 swift test --enable-code-coverage "$@"
 
 bin_dir="$(swift build --show-bin-path)"
-profdata="$(ls "$bin_dir"/codecov/*.profdata | head -1)"
+profdata="$(find "$bin_dir/codecov" -name "*.profdata" | head -1)"
 bundle="$(find "$bin_dir" -name '*.xctest' -type d | head -1)"
 binary="$bundle/Contents/MacOS/$(basename "$bundle" .xctest)"
 ignore='(\.build|Tests|Sources/TokenMenuBar/|WorkspaceGlue\.swift|WidgetKitGlue\.swift)'
@@ -34,8 +34,8 @@ done
 xcrun llvm-cov report "$binary" -instr-profile "$profdata" -ignore-filename-regex="$ignore" -use-color=false
 
 missed="$(
-  xcrun llvm-cov show "$binary" -instr-profile "$profdata" -ignore-filename-regex="$ignore" -use-color=false \
-    | awk '/^\/.*\.swift:$/ { file = $0; next } /^ +[0-9]+\| +0\|/ { print file " " $0 }'
+  xcrun llvm-cov show "$binary" -instr-profile "$profdata" -ignore-filename-regex="$ignore" -use-color=false |
+    awk '/^\/.*\.swift:$/ { file = $0; next } /^ +[0-9]+\| +0\|/ { print file " " $0 }'
 )"
 
 if [[ -n "$missed" ]]; then

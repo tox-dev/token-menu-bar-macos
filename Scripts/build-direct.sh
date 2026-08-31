@@ -13,7 +13,7 @@ if [[ "$signed" == "true" ]]; then
     -destination 'platform=macOS' -archivePath "$archive" \
     DEVELOPMENT_TEAM="${TEAM_ID:?}" SPARKLE_PUBLIC_ED_KEY="${SPARKLE_PUBLIC_ED_KEY:-}" \
     APP_GROUP_ID="${TEAM_ID}.dev.tox.token-menu-bar" archive | tail -20
-  cat > "$out/export.plist" <<PLIST
+  cat > "$out/export.plist" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
