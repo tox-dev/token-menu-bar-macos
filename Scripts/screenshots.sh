@@ -12,9 +12,20 @@ if [[ ! -x "$binary" ]]; then
   CONFIGURATION=release Scripts/bundle-dev.sh > /dev/null
 fi
 
+if ! command -v cwebp > /dev/null; then
+  echo "cwebp is missing: brew install webp" >&2
+  exit 1
+fi
+
 mkdir -p "$out"
 "$binary" --export-menubar "$out"
 "$binary" --export-popover "$out"
+
+# The app draws PNG, the site serves WebP, and the repository keeps only what the site serves.
+for shot in "$out"/*.png; do
+  cwebp -quiet -q 92 -alpha_q 100 "$shot" -o "${shot%.png}.webp"
+  rm "$shot"
+done
 
 echo "screenshots written to $out"
 ls -la "$out"

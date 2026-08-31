@@ -14,7 +14,10 @@ import zlib
 from typing import Final
 
 _HEADER: Final = b"\x89PNG\r\n\x1a\n"
-_FILTERS: Final = (1, 2, 4)
+_SUB: Final = 1
+_UP: Final = 2
+_PAETH: Final = 4
+_FILTERS: Final = (_SUB, _UP, _PAETH)
 _CHANNELS: Final = 4
 
 
@@ -29,9 +32,9 @@ def _chunks(data: bytes) -> list[tuple[bytes, bytes]]:
 
 
 def _base(kind: int, left: int, up: int, upleft: int) -> int:
-    if kind == 1:
+    if kind == _SUB:
         return left
-    if kind == 2:
+    if kind == _UP:
         return up
     estimate = left + up - upleft
     distances = (abs(estimate - left), abs(estimate - up), abs(estimate - upleft))
@@ -56,9 +59,7 @@ def _decode(raw: bytes, stride: int, height: int) -> list[bytes]:
         line = bytearray(raw[offset + 1 : offset + 1 + stride])
         offset += 1 + stride
         for index in range(stride * bool(kind)):
-            line[index] = (
-                line[index] + _base(kind, *_neighbours(line, previous, index))
-            ) & 0xFF
+            line[index] = (line[index] + _base(kind, *_neighbours(line, previous, index))) & 0xFF
         rows.append(bytes(line))
         previous = bytes(line)
     return rows
@@ -70,9 +71,7 @@ def _encode(rows: list[bytes], stride: int, kind: int) -> bytes:
     for row in rows:
         packed.append(kind)
         for index in range(stride):
-            packed.append(
-                (row[index] - _base(kind, *_neighbours(row, previous, index))) & 0xFF
-            )
+            packed.append((row[index] - _base(kind, *_neighbours(row, previous, index))) & 0xFF)
         previous = row
     return zlib.compress(bytes(packed), 9)
 
@@ -80,12 +79,7 @@ def _encode(rows: list[bytes], stride: int, kind: int) -> bytes:
 def _rebuild(header: bytes, data: bytes) -> bytes:
     out = bytearray(_HEADER)
     for kind, payload in ((b"IHDR", header), (b"IDAT", data), (b"IEND", b"")):
-        out += (
-            struct.pack(">I", len(payload))
-            + kind
-            + payload
-            + struct.pack(">I", zlib.crc32(kind + payload))
-        )
+        out += struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", zlib.crc32(kind + payload))
     return bytes(out)
 
 
@@ -108,9 +102,7 @@ def repack(path: pathlib.Path) -> int:
     if (depth, colour, interlace) != (8, 6, 0):
         return 0
     stride = width * _CHANNELS
-    raw = zlib.decompress(
-        b"".join(payload for kind, payload in parts if kind == b"IDAT")
-    )
+    raw = zlib.decompress(b"".join(payload for kind, payload in parts if kind == b"IDAT"))
     rows = _decode(raw, stride, height)
     best = min((_encode(rows, stride, kind) for kind in _FILTERS), key=len)
     out = _rebuild(header, best)
@@ -121,11 +113,16 @@ def repack(path: pathlib.Path) -> int:
 
 
 def main(paths: list[str]) -> int:
-    saved = sum(
-        repack(file)
-        for root in paths
-        for file in sorted(pathlib.Path(root).rglob("*.png"))
-    )
+    """Repack every PNG under each path, reporting the total saved.
+
+    Args:
+        paths: Directories to walk.
+
+    Returns:
+        A process exit code.
+
+    """
+    saved = sum(repack(file) for root in paths for file in sorted(pathlib.Path(root).rglob("*.png")))
     sys.stderr.write(f"saved {saved / 1e6:.2f} MB\n")
     return 0
 
