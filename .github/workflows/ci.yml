@@ -14,6 +14,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2.4.4
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer
+      # pre-commit.ci skips the hooks that need a Swift toolchain, plutil or just, so they run here.
+      - name: Run every hook
+        run: just lint
+
   test:
     name: Tests and coverage
     runs-on: macos-26
@@ -29,8 +43,6 @@ jobs:
         with:
           path: .build
           key: spm-${{ runner.os }}-${{ hashFiles('Package.swift') }}
-      - name: Lint
-        run: swift-format lint --recursive --strict Sources Tests Package.swift
       - name: Build
         run: swift build -Xswiftc -warnings-as-errors
       - name: Tests with coverage gate

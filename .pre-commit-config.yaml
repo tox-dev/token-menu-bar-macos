@@ -1,6 +1,7 @@
 ci:
-  # swift-format needs a Swift toolchain, which pre-commit.ci's Linux runners do not have; CI covers it on macOS.
-  skip: [swift-format]
+  # These three need a Swift toolchain, plutil or just, none of which pre-commit.ci's Linux image carries. The Lint
+  # job in CI runs the whole set on macOS.
+  skip: [swift-format, plutil, just-format]
 
 exclude: ^(website/public|website/resources|dist)/
 repos:
