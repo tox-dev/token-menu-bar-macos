@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="{{ .Site.Language.Lang }}">
+
+<head>
+  <title>
+    {{- block "title" . -}}
+      {{ if .IsHome }}{{ .Site.Title }}: {{ .Site.Params.tagline }}{{ else }}{{ .Title }} · {{ .Site.Title }}{{ end }}
+    {{- end -}}
+  </title>
+  {{ partial "head.html" . }}
+</head>
+
+<body class="preload theme-auto">
+  {{/* Must stay inline and blocking, ahead of any markup: theme.js is deferred, so a reader whose stored
+       choice differs from their OS preference would paint the wrong theme first and watch it snap over. */}}
+  <script>
+    (() => {
+      const stored = localStorage.getItem("tmb-theme");
+      if (stored === "light" || stored === "dark") {
+        document.body.classList.remove("theme-auto");
+        document.body.classList.add("theme-" + stored);
+      }
+    })();
+  </script>
+
+  <a class="skip" href="#content">Skip to content</a>
+  {{ partial "header.html" . }}
+
+  <main id="content">
+    {{ block "main" . }}{{ end }}
+  </main>
+
+  {{ partial "footer.html" . }}
+
+  {{ if or (.Store.Get "hasMermaid") (strings.Contains .RawContent "```mermaid") }}
+    {{ partial "mermaid.html" . }}
+  {{ end }}
+
+  {{ if hugo.IsServer }}
+    {{ with resources.Get "js/theme.js" }}
+      <script defer src="{{ .RelPermalink }}"></script>
+    {{ end }}
+  {{ else }}
+    {{ with resources.Get "js/theme.js" | resources.Minify | resources.Fingerprint }}
+      <script defer src="{{ .RelPermalink }}" integrity="{{ .Data.Integrity }}" crossorigin="anonymous"></script>
+    {{ end }}
+  {{ end }}
+</body>
+
+</html>

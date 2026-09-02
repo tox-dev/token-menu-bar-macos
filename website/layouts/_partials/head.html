@@ -1,0 +1,10 @@
+{{ partial "head/meta.html" . }}
+<link rel="canonical" href="{{ .Permalink }}">
+{{ partialCached "head/styles.html" . }}
+{{ partialCached "head/icons.html" . }}
+{{ partial "head/schema.html" . }}
+
+{{ range .AlternativeOutputFormats -}}
+  {{ printf `<link rel="%s" type="%s" href="%s" title="%s">` .Rel .MediaType.Type .RelPermalink $.Site.Title
+     | safeHTML }}
+{{ end -}}

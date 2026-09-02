@@ -1,0 +1,7 @@
+{{/* Only the pages that hold a diagram pay for the renderer, and it ships from this origin rather than a CDN. */}}
+{{ $url := printf "https://cdn.jsdelivr.net/npm/mermaid@%s/dist/mermaid.min.js" .Site.Params.mermaidVersion }}
+{{ with resources.GetRemote $url }}
+  {{ $script := . | resources.Copy "js/mermaid.js" | resources.Fingerprint }}
+  <script defer src="{{ $script.RelPermalink }}" integrity="{{ $script.Data.Integrity }}"></script>
+{{ end }}
+<script defer src="{{ (resources.Get "js/diagrams.js" | resources.Minify | resources.Fingerprint).RelPermalink }}"></script>

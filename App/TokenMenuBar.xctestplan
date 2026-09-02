@@ -1,0 +1,29 @@
+{
+  "configurations" : [
+    {
+      "id" : "3844B410-3635-4A9B-80D0-A65177767161",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:TokenMenuBar.xcodeproj",
+      "identifier" : "EDE813082ECDC0E560455657",
+      "name" : "TokenMenuBarDirect"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:TokenMenuBar.xcodeproj",
+        "identifier" : "0C919F3E9C6CF2D0B315AEC5",
+        "name" : "TokenMenuBarApplicationUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

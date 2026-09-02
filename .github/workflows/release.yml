@@ -1,0 +1,303 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to build (v1.2.3)
+        required: true
+  # Prepare Release calls this after tagging, so the whole release is one run and needs no token of its own.
+  workflow_call:
+    inputs:
+      tag:
+        description: The tag to build
+        required: true
+        type: string
+    secrets:
+      DEVELOPER_ID_CERTIFICATE_BASE64: {required: true}
+      DEVELOPER_ID_CERTIFICATE_PASSWORD: {required: true}
+      APPLE_DISTRIBUTION_CERTIFICATE_BASE64: {required: false}
+      APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD: {required: false}
+      MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_BASE64: {required: false}
+      MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_PASSWORD: {required: false}
+      APP_STORE_PROVISIONING_PROFILE_BASE64: {required: false}
+      APP_STORE_WIDGET_PROVISIONING_PROFILE_BASE64: {required: false}
+      APPLE_TEAM_ID: {required: true}
+      APP_STORE_CONNECT_KEY_ID: {required: true}
+      APP_STORE_CONNECT_ISSUER_ID: {required: true}
+      APP_STORE_CONNECT_KEY_BASE64: {required: true}
+      SPARKLE_PUBLIC_ED_KEY: {required: true}
+      SPARKLE_PRIVATE_ED_KEY: {required: true}
+
+permissions:
+  contents: read
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  preflight:
+    name: Which legs can run
+    # Only this repository holds the signing identities; a fork that runs the workflow gets nothing to leak.
+    if: github.repository == 'tox-dev/token-menu-bar-macos'
+    runs-on: ubuntu-24.04
+    # The signing secrets live in this environment, so every job that touches them names it and inherits its
+    # protection rules.
+    environment: release
+    outputs:
+      app_store: ${{ steps.check.outputs.app_store }}
+    steps:
+      # A job cannot read secrets in its own `if`, so the release works out here which legs it can publish.
+      - name: Check the App Store credentials
+        id: check
+        env:
+          APPLE_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_BASE64 }}
+          APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+          MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_BASE64 }}
+          MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+          APP_STORE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APP_STORE_PROVISIONING_PROFILE_BASE64 }}
+          APP_STORE_WIDGET_PROVISIONING_PROFILE_BASE64: ${{ secrets.APP_STORE_WIDGET_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          missing=""
+          for name in APPLE_DISTRIBUTION_CERTIFICATE_BASE64 APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD \
+            MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_BASE64 MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_PASSWORD \
+            APP_STORE_PROVISIONING_PROFILE_BASE64 APP_STORE_WIDGET_PROVISIONING_PROFILE_BASE64; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "app_store=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping the App Store upload, no:$missing" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "app_store=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Require a macOS 27 runtime runner
+        env:
+          MACOS_27_RUNTIME_RUNNER: ${{ vars.MACOS_27_RUNTIME_RUNNER }}
+        run: |
+          if [ -z "$MACOS_27_RUNTIME_RUNNER" ]; then
+            echo "::error::Set MACOS_27_RUNTIME_RUNNER to a self-hosted runner running macOS 27"
+            exit 1
+          fi
+
+  macos-27-runtime:
+    name: Release UI tests (macOS 27 runtime)
+    needs: preflight
+    runs-on: ${{ vars.MACOS_27_RUNTIME_RUNNER }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TAG }}
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          cache: false
+      - name: Select Xcode
+        env:
+          MIN_XCODE_MAJOR: 27
+          EXACT_XCODE_MAJOR: 27
+        run: Scripts/select-xcode.sh
+      - name: Generate project
+        run: just xcode
+      - name: Test the running application
+        run: |
+          set -o pipefail
+          xcodebuild -project App/TokenMenuBar.xcodeproj -scheme TokenMenuBar-Direct -configuration Debug \
+            -destination 'platform=macOS' -derivedDataPath .build/release-ui-derived \
+            -only-testing:TokenMenuBarApplicationUITests test | tail -50
+
+  direct:
+    name: Direct and Homebrew downloads
+    needs: [preflight, macos-27-runtime]
+    runs-on: macos-26
+    environment: release
+    # This job pushes the cask back to main and publishes the release.
+    permissions:
+      contents: write
+    outputs:
+      signed: ${{ steps.identity.outputs.signed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TAG }}
+          persist-credentials: false
+      - name: Select Xcode
+        run: Scripts/select-xcode.sh
+      - name: Install tools
+        run: brew install xcodegen
+      - name: Stamp version
+        run: Scripts/stamp-version.sh "${TAG#v}"
+      - name: Require release credentials
+        # A tag must never publish an app Gatekeeper rejects or a feed Sparkle cannot verify, so the job stops here
+        # rather than falling back to an ad-hoc build. Use the ad-hoc workflow_dispatch build for unsigned testing.
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_KEY_BASE64 }}
+          SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
+          SPARKLE_PRIVATE_ED_KEY: ${{ secrets.SPARKLE_PRIVATE_ED_KEY }}
+        run: |
+          missing=""
+          for name in CERTIFICATE_BASE64 CERTIFICATE_PASSWORD TEAM_ID APP_STORE_CONNECT_KEY_ID \
+            APP_STORE_CONNECT_ISSUER_ID APP_STORE_CONNECT_KEY_BASE64 SPARKLE_PUBLIC_ED_KEY SPARKLE_PRIVATE_ED_KEY; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Cannot publish a release without:$missing"
+            exit 1
+          fi
+      - name: Import Developer ID certificate
+        id: identity
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+        run: |
+          Scripts/import-certificate.sh
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+      - name: Generate project
+        run: cd App && xcodegen generate
+      - name: Archive and export
+        env:
+          SIGNED: ${{ steps.identity.outputs.signed }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
+        run: Scripts/build-direct.sh
+      - name: Archive and export Homebrew
+        env:
+          SIGNED: ${{ steps.identity.outputs.signed }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: Scripts/build-homebrew.sh
+      - name: Notarize and staple applications
+        if: steps.identity.outputs.signed == 'true'
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_KEY_BASE64 }}
+        run: |
+          Scripts/notarize.sh dist/direct
+          Scripts/notarize.sh dist/homebrew
+      - name: Package downloads
+        run: |
+          Scripts/package-direct.sh "${TAG#v}"
+          Scripts/package-homebrew.sh "${TAG#v}"
+      - name: Notarize and staple disk images
+        if: steps.identity.outputs.signed == 'true'
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_KEY_BASE64 }}
+        run: |
+          Scripts/notarize.sh dist/direct
+          Scripts/notarize.sh dist/homebrew
+      - name: Refresh checksums
+        run: |
+          for file in dist/direct/TokenMenuBar.zip dist/direct/TokenMenuBar.dmg \
+            dist/homebrew/TokenMenuBar-Homebrew.zip dist/homebrew/TokenMenuBar-Homebrew.dmg; do
+            shasum -a 256 "$file" | awk '{print $1}' > "$file.sha256"
+          done
+      - name: Generate Sparkle appcast
+        env:
+          SPARKLE_PRIVATE_ED_KEY: ${{ secrets.SPARKLE_PRIVATE_ED_KEY }}
+        run: Scripts/appcast.sh "${TAG#v}"
+      - name: Update Homebrew cask file
+        run: Scripts/update-cask.sh "${TAG#v}" dist/homebrew/TokenMenuBar-Homebrew.dmg
+      - name: Upload artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: downloads
+          path: |
+            dist/direct/*.zip
+            dist/direct/*.dmg
+            dist/direct/*.sha256
+            dist/direct/appcast.xml
+            dist/homebrew/*.zip
+            dist/homebrew/*.dmg
+            dist/homebrew/*.sha256
+            Casks/token-menu-bar.rb
+      - name: Publish GitHub release
+        # the action uploads the assets and writes the notes in one step
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2 # zizmor: ignore[superfluous-actions]
+        with:
+          tag_name: ${{ env.TAG }}
+          generate_release_notes: true
+          files: |
+            dist/direct/TokenMenuBar.zip
+            dist/direct/TokenMenuBar.dmg
+            dist/direct/TokenMenuBar.zip.sha256
+            dist/direct/TokenMenuBar.dmg.sha256
+            dist/direct/appcast.xml
+            dist/homebrew/TokenMenuBar-Homebrew.zip
+            dist/homebrew/TokenMenuBar-Homebrew.dmg
+            dist/homebrew/TokenMenuBar-Homebrew.zip.sha256
+            dist/homebrew/TokenMenuBar-Homebrew.dmg.sha256
+            Casks/token-menu-bar.rb
+      - name: Verify the Homebrew asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release view "$TAG" --json assets --jq '.assets[].name' | grep -Fx 'TokenMenuBar-Homebrew.dmg'
+      - name: Commit the cask back to the default branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch "$remote" main
+          git stash push -- Casks/token-menu-bar.rb
+          git checkout FETCH_HEAD
+          git stash pop
+          if ! git diff --quiet -- Casks/token-menu-bar.rb; then
+            git add Casks/token-menu-bar.rb
+            git commit -m "Update Homebrew cask for ${TAG}"
+            git push "$remote" HEAD:main
+          fi
+
+  app-store:
+    name: Mac App Store upload
+    needs: [preflight, direct]
+    runs-on: macos-26
+    environment: release
+    permissions:
+      contents: read
+    if: needs.preflight.outputs.app_store == 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TAG }}
+          persist-credentials: false
+      - name: Select Xcode
+        run: Scripts/select-xcode.sh
+      - name: Install tools
+        run: brew install xcodegen
+      - name: Stamp version
+        run: Scripts/stamp-version.sh "${TAG#v}"
+      - name: Import App Store certificates
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+          INSTALLER_CERTIFICATE_BASE64: ${{ secrets.MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_BASE64 }}
+          INSTALLER_CERTIFICATE_PASSWORD: ${{ secrets.MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+        run: Scripts/import-certificate.sh
+      - name: Install provisioning profile
+        env:
+          PROVISIONING_PROFILE_BASE64: ${{ secrets.APP_STORE_PROVISIONING_PROFILE_BASE64 }}
+          WIDGET_PROVISIONING_PROFILE_BASE64: ${{ secrets.APP_STORE_WIDGET_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          profiles=~/Library/MobileDevice/Provisioning\ Profiles
+          mkdir -p "$profiles"
+          echo "$PROVISIONING_PROFILE_BASE64" | base64 --decode > "$profiles/token-menu-bar.provisionprofile"
+          echo "$WIDGET_PROVISIONING_PROFILE_BASE64" | base64 --decode \
+            > "$profiles/token-menu-bar-widget.provisionprofile"
+      - name: Generate project
+        run: cd App && xcodegen generate
+      - name: Archive, export and upload
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_KEY_BASE64 }}
+        run: Scripts/build-app-store.sh

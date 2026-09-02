@@ -1,0 +1,14 @@
+<footer class="foot">
+  <div class="wrap">
+    <div>
+      {{ .Site.Title }}, {{ .Site.Params.license }} licensed, by
+      <a href="https://bernat.tech">{{ .Site.Params.author }}</a>. Requires {{ .Site.Params.minimumOS }}.
+    </div>
+    <nav class="foot-links" aria-label="Footer">
+      <a href="{{ .Site.Params.repository }}">Source</a>
+      <a href="{{ .Site.Params.repository }}/issues">Issues</a>
+      <a href="{{ "explanation/" | relURL }}">Privacy</a>
+      <a href="{{ "llms.txt" | relURL }}">llms.txt</a>
+    </nav>
+  </div>
+</footer>

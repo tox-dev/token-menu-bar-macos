@@ -1,0 +1,21 @@
+{{- /* One screenshot, laid out at source width divided by scale, with a candidate set a phone can pick from:
+       the full-resolution file is worth megabytes on a 390px viewport. Takes image, scale, alt, class,
+       and optional loading and fetchpriority. */ -}}
+{{- $img := .image -}}
+{{- $scale := .scale -}}
+{{- $display := int (div $img.Width $scale) -}}
+{{- $cap := int (math.Min $img.Width (mul $display 2)) -}}
+{{- $widths := slice -}}
+{{- range $w := (slice 400 800 $display (mul $display 2)) -}}
+  {{- $w = int (math.Min $w $cap) -}}
+  {{- if not (in $widths $w) }}{{ $widths = $widths | append $w }}{{ end -}}
+{{- end -}}
+{{- $set := slice -}}
+{{- range $w := (sort $widths) -}}
+  {{- $set = $set | append (printf "%s %dw" ($img.Resize (printf "%dx webp" $w)).RelPermalink $w) -}}
+{{- end -}}
+<img class="{{ .class }}" src="{{ ($img.Resize (printf "%dx webp" $display)).RelPermalink }}"
+     srcset="{{ delimit $set ", " }}" sizes="(max-width: {{ $display }}px) 100vw, {{ $display }}px"
+     width="{{ $display }}" height="{{ int (div $img.Height $scale) }}" alt="{{ .alt }}"
+     {{- with .loading }} loading="{{ . }}"{{ end }} decoding="async"
+     {{- with .fetchpriority }} fetchpriority="{{ . }}"{{ end }}>

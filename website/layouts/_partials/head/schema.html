@@ -1,0 +1,67 @@
+{{- /* A Go dict through jsonify, so no field needs hand-escaping. */ -}}
+{{- $author := dict
+  "@type" "Person"
+  "name" .Site.Params.author
+  "url" "https://bernat.tech"
+-}}
+
+{{- if .IsHome }}
+<script type="application/ld+json">
+{{- dict
+  "@context" "https://schema.org"
+  "@type" "SoftwareApplication"
+  "name" .Site.Title
+  "description" .Site.Params.description
+  "url" .Site.BaseURL
+  "applicationCategory" "DeveloperApplication"
+  "applicationSubCategory" "Utility"
+  "operatingSystem" .Site.Params.minimumOS
+  "downloadUrl" .Site.Params.latestRelease
+  "softwareVersion" (.Site.Params.version | default "0.1.0")
+  "license" "https://opensource.org/licenses/MIT"
+  "isAccessibleForFree" true
+  "author" $author
+  "maintainer" $author
+  "offers" (dict "@type" "Offer" "price" "0" "priceCurrency" "USD")
+  "featureList" (slice
+    "Session, weekly and monthly plan windows per provider"
+    "Reset countdowns and pace projections"
+    "60 days of local usage history and charts"
+    "Desktop and Notification Center widgets"
+    "Threshold, reset and sign-in notifications")
+  | jsonify | safeJS -}}
+</script>
+<script type="application/ld+json">
+{{- dict
+  "@context" "https://schema.org"
+  "@type" "WebSite"
+  "name" .Site.Title
+  "url" .Site.BaseURL
+  "description" .Site.Params.description
+  "inLanguage" "en-US"
+  "author" $author
+  | jsonify | safeJS -}}
+</script>
+{{- else }}
+<script type="application/ld+json">
+{{- dict
+  "@context" "https://schema.org"
+  "@type" "TechArticle"
+  "headline" .Title
+  "description" (.Description | default .Site.Params.description)
+  "url" .Permalink
+  "inLanguage" "en-US"
+  "author" $author
+  "isPartOf" (dict "@type" "WebSite" "name" .Site.Title "url" .Site.BaseURL)
+  | jsonify | safeJS -}}
+</script>
+<script type="application/ld+json">
+{{- dict
+  "@context" "https://schema.org"
+  "@type" "BreadcrumbList"
+  "itemListElement" (slice
+    (dict "@type" "ListItem" "position" 1 "name" "Home" "item" .Site.BaseURL)
+    (dict "@type" "ListItem" "position" 2 "name" .Title "item" .Permalink))
+  | jsonify | safeJS -}}
+</script>
+{{- end }}

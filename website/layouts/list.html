@@ -1,0 +1,23 @@
+{{ define "main" }}
+<section class="page page-wide">
+  <div class="wrap">
+    <h1 class="page-title">{{ .Title }}</h1>
+    {{ with .Description }}<p class="page-lede">{{ . }}</p>{{ end }}
+    <div class="prose">{{ .Content }}</div>
+    <div class="cards">
+      {{ range .Pages.ByWeight }}
+        <a class="card card-link" href="{{ .RelPermalink }}">
+          {{ with .Params.icon }}
+            <div class="card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" aria-hidden="true"><path d="{{ . }}" /></svg>
+            </div>
+          {{ end }}
+          <h2>{{ .Title }}</h2>
+          <p>{{ .Description | default .Summary }}</p>
+        </a>
+      {{ end }}
+    </div>
+  </div>
+</section>
+{{ end }}

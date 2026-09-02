@@ -1,0 +1,98 @@
+exclude: ^(website/public|website/resources|dist)/
+ci:
+  # swift-format needs a Swift toolchain, which the Linux runner does not have. The Lint job on macOS is where
+  # every hook, this one included, has to pass.
+  skip: [swift-format]
+  autofix_prs: false
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=4096"]
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+      - id: detect-private-key
+  - repo: https://github.com/hukkin/mdformat
+    rev: 1.0.0
+    hooks:
+      - id: mdformat
+        args: ["--wrap", "120", "--number"]
+        # website/layouts holds Hugo templates rather than prose, and reflowing a shortcode breaks the build
+        exclude: ^(website/layouts|review\.md)
+        additional_dependencies:
+          - mdformat-gfm>=0.4
+          - mdformat-hugo>=0.1
+          - mdformat-beautysh>=1
+          - mdformat-simple-breaks>=0.1
+  # shellcheck-py rather than the upstream hook: pre-commit.ci has no Docker
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.13.1-1
+    hooks:
+      - id: shfmt
+        args: ["--indent", "2", "--case-indent", "--space-redirects", "--write"]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.5
+    hooks:
+      - id: ruff-format
+      - id: ruff-check
+        args: ["--fix"]
+  - repo: https://github.com/ComPWA/taplo-pre-commit
+    rev: v0.9.3
+    hooks:
+      - id: taplo-format
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.9.6
+    hooks:
+      - id: prettier
+        # The Hugo templates are Go templates in .html files, which prettier cannot parse
+        files: ^website/assets/.*\.(css|js)$
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.28.0
+    hooks:
+      - id: zizmor
+  - repo: https://github.com/google/yamlfmt
+    rev: v0.21.0
+    hooks:
+      - id: yamlfmt
+        args: ["--formatter", "max_line_length=120,retain_line_breaks_single=true"]
+        # yamlfmt rewrites folded scalars in the site's data files into marker comments
+        exclude: ^website/data/
+  - repo: local
+    hooks:
+      - id: swift-format
+        name: swift-format
+        # The subcommand rather than the binary: Xcode ships swift-format inside the toolchain, off PATH.
+        entry: swift format lint --strict
+        language: system
+        types: [swift]
+        require_serial: false
+      # plistlib rather than plutil, and just from PyPI, so these run on Linux as well as a Mac
+      - id: plists
+        name: property lists parse
+        entry: python -c "import plistlib,sys;[plistlib.loads(open(f,'rb').read()) for f in sys.argv[1:]]"
+        language: python
+        files: \.(plist|entitlements|xcprivacy)$
+      - id: just-format
+        name: justfile formatting
+        entry: just --unstable --fmt --check --justfile
+        language: python
+        additional_dependencies: [rust-just]
+        files: ^justfile$
+        pass_filenames: false
+        args: [justfile]

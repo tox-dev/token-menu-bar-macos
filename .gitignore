@@ -1,0 +1,12 @@
+.build/
+build/
+App/build/
+.swiftpm/
+*.xcodeproj/
+DerivedData/
+dist/
+.DS_Store
+site/
+App/Widget/Info.plist
+default.profraw
+review.md

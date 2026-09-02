@@ -1,0 +1,23 @@
+{{- $u := urls.Parse .Destination -}}
+{{- $src := $u.String -}}
+{{- $img := false -}}
+{{- if not $u.IsAbs -}}
+  {{- with or (.Page.Resources.Get $u.Path) (resources.Get $u.Path) -}}
+    {{- $img = . -}}
+    {{- $src = .RelPermalink -}}
+  {{- end -}}
+{{- end -}}
+{{- $alt := .Text | default .Title -}}
+{{- if $img -}}
+  {{- $set := slice -}}
+  {{- range $w := (slice 600 900 1400) -}}
+    {{- if ge $img.Width $w -}}
+      {{- $set = $set | append (printf "%s %dw" ($img.Resize (printf "%dx webp" $w)).RelPermalink $w) -}}
+    {{- end -}}
+  {{- end -}}
+  <img src="{{ $src }}" alt="{{ $alt }}" width="{{ $img.Width }}" height="{{ $img.Height }}"
+    {{- with $set }} srcset="{{ delimit . ", " }}" sizes="(min-width: 800px) 760px, 100vw"{{ end }}
+    loading="lazy" decoding="async">
+{{- else -}}
+  <img src="{{ $src }}" alt="{{ $alt }}" loading="lazy" decoding="async">
+{{- end -}}
