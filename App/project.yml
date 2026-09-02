@@ -1,0 +1,248 @@
+name: TokenMenuBar
+options:
+  bundleIdPrefix: dev.tox
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "26.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: false
+configs:
+  Debug: debug
+  Release: release
+  Homebrew: release
+  AppStore: release
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # The git-derived version, which names the commit a dev build came from; see Scripts/version.sh
+    SOURCE_VERSION: "0.1.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    ARCHS: arm64 x86_64
+    ONLY_ACTIVE_ARCH: NO
+    # Archives strip by default, but a plain `xcodebuild build` does not, and the difference is over half the
+    # binary. Naming them means the shipped size does not depend on which invocation produced it.
+    STRIP_INSTALLED_PRODUCT: YES
+    STRIP_STYLE: all
+    DEAD_CODE_STRIPPING: YES
+    APP_GROUP_ID: group.dev.tox.token-menu-bar
+    # The names of the App Store profiles, matched by the export options plist the release writes
+    APP_PROFILE: Token Menu Bar App Store
+    WIDGET_PROFILE: Token Menu Bar Widget App Store
+  configs:
+    Debug:
+      ONLY_ACTIVE_ARCH: YES
+packages:
+  TokenMenuBarPackage:
+    path: ..
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.9.0"
+targetTemplates:
+  Application:
+    type: application
+    platform: macOS
+    sources:
+      - path: ../Sources/TokenMenuBar
+        name: Entry
+      - path: Sources
+        name: App
+        excludes:
+          - SparkleUpdater.swift
+      - path: Assets.xcassets
+      - path: PrivacyInfo.xcprivacy
+    dependencies:
+      - package: TokenMenuBarPackage
+        product: TokenMenuBarUI
+      - package: TokenMenuBarPackage
+        product: TokenMenuBarCore
+      - target: TokenMenuBarWidget
+        embed: true
+    info:
+      path: ${info_path}
+      properties:
+        CFBundleName: Token Menu Bar
+        CFBundleDisplayName: Token Menu Bar
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        TMBSourceVersion: $(SOURCE_VERSION)
+        TMBDistribution: ${distribution}
+        TMBSelfUpdateEnabled: $(SELF_UPDATE_ENABLED)
+        LSUIElement: true
+        LSMinimumSystemVersion: "14.0"
+        LSApplicationCategoryType: public.app-category.developer-tools
+        NSHumanReadableCopyright: "Copyright © 2026 Bernát Gábor. MIT licensed."
+        ITSAppUsesNonExemptEncryption: false
+        NSSupportsAutomaticTermination: false
+        TokenMenuBarAppGroup: $(APP_GROUP_ID)
+    settings:
+      base:
+        PRODUCT_NAME: Token Menu Bar
+        PRODUCT_BUNDLE_IDENTIFIER: dev.tox.token-menu-bar
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_HARDENED_RUNTIME: YES
+        ENABLE_APP_SANDBOX: NO
+        CODE_SIGN_ENTITLEMENTS: ${entitlements}
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: ${condition}
+        TMB_DISTRIBUTION: ${distribution}
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
+targets:
+  TokenMenuBarDirect:
+    templates:
+      - Application
+    templateAttributes:
+      condition: DIRECT
+      distribution: Direct
+      entitlements: Direct.entitlements
+      info_path: Info.plist
+    sources:
+      - path: Sources/SparkleUpdater.swift
+        name: SparkleUpdater
+    dependencies:
+      - package: Sparkle
+        product: Sparkle
+    info:
+      properties:
+        SUFeedURL: https://github.com/tox-dev/token-menu-bar-macos/releases/latest/download/appcast.xml
+        SUPublicEDKey: $(SPARKLE_PUBLIC_ED_KEY)
+        SUEnableInstallerLauncherService: true
+    settings:
+      base:
+        SPARKLE_PUBLIC_ED_KEY: ""
+        SELF_UPDATE_ENABLED: NO
+      configs:
+        Debug:
+          CODE_SIGN_ENTITLEMENTS: ""
+          CODE_SIGN_IDENTITY: "-"
+          CODE_SIGN_STYLE: Manual
+          PRODUCT_NAME: TokenMenuBarDirect
+          PRODUCT_BUNDLE_IDENTIFIER: dev.tox.token-menu-bar.verification
+        Release:
+          CODE_SIGN_IDENTITY: "Developer ID Application"
+          CODE_SIGN_STYLE: Manual
+  TokenMenuBarHomebrew:
+    templates:
+      - Application
+    templateAttributes:
+      condition: HOMEBREW
+      distribution: Homebrew
+      entitlements: Direct.entitlements
+      info_path: Info-Homebrew.plist
+    settings:
+      configs:
+        Homebrew:
+          CODE_SIGN_IDENTITY: "Developer ID Application"
+          CODE_SIGN_STYLE: Manual
+  TokenMenuBarAppStore:
+    templates:
+      - Application
+    templateAttributes:
+      condition: APPSTORE
+      distribution: App Store
+      entitlements: AppStore.entitlements
+      info_path: Info-AppStore.plist
+    settings:
+      base:
+        ENABLE_HARDENED_RUNTIME: NO
+        ENABLE_APP_SANDBOX: YES
+      configs:
+        AppStore:
+          CODE_SIGN_IDENTITY: "Apple Distribution"
+          CODE_SIGN_STYLE: Manual
+          PROVISIONING_PROFILE_SPECIFIER: $(APP_PROFILE)
+  TokenMenuBarWidget:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Widget/Sources
+        name: Widget
+    dependencies:
+      - package: TokenMenuBarPackage
+        product: TokenMenuBarWidgets
+      - package: TokenMenuBarPackage
+        product: TokenMenuBarCore
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+    info:
+      path: Widget/Info.plist
+      properties:
+        CFBundleName: Token Menu Bar Widget
+        CFBundleDisplayName: Token Menu Bar
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        TMBSourceVersion: $(SOURCE_VERSION)
+        TokenMenuBarAppGroup: $(APP_GROUP_ID)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_NAME: TokenMenuBarWidget
+        PRODUCT_BUNDLE_IDENTIFIER: dev.tox.token-menu-bar.widget
+        CODE_SIGN_ENTITLEMENTS: Widget/Widget.entitlements
+        ENABLE_APP_SANDBOX: YES
+        SKIP_INSTALL: YES
+      configs:
+        Debug:
+          CODE_SIGN_ENTITLEMENTS: ""
+          CODE_SIGN_IDENTITY: "-"
+          CODE_SIGN_STYLE: Manual
+          PRODUCT_BUNDLE_IDENTIFIER: dev.tox.token-menu-bar.verification.widget
+        Release:
+          CODE_SIGN_IDENTITY: "Developer ID Application"
+          CODE_SIGN_STYLE: Manual
+        Homebrew:
+          CODE_SIGN_IDENTITY: "Developer ID Application"
+          CODE_SIGN_STYLE: Manual
+        AppStore:
+          CODE_SIGN_IDENTITY: "Apple Distribution"
+          CODE_SIGN_STYLE: Manual
+          PROVISIONING_PROFILE_SPECIFIER: $(WIDGET_PROFILE)
+  TokenMenuBarApplicationUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: UITests
+    dependencies:
+      - target: TokenMenuBarDirect
+      - package: TokenMenuBarPackage
+        product: TokenMenuBarCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.tox.token-menu-bar.application-ui-tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: TokenMenuBarDirect
+schemes:
+  TokenMenuBar-Direct:
+    build:
+      targets:
+        TokenMenuBarDirect: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      testPlans:
+        - path: TokenMenuBar.xctestplan
+          defaultPlan: true
+    archive:
+      config: Release
+  TokenMenuBar-AppStore:
+    build:
+      targets:
+        TokenMenuBarAppStore: all
+    run:
+      config: AppStore
+    archive:
+      config: AppStore
+  TokenMenuBar-Homebrew:
+    build:
+      targets:
+        TokenMenuBarHomebrew: all
+    run:
+      config: Homebrew
+    archive:
+      config: Homebrew

@@ -1,0 +1,12 @@
+# Read the Docs builds the site the same way a laptop does: mise provides the pinned tools, just runs the recipe.
+# https://docs.readthedocs.com/platform/stable/build-customization.html
+version: 2
+
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.13"
+  commands:
+    - curl --fail --location https://mise.run | sh
+    - MISE_SAFE=1 ~/.local/bin/mise install --locked hugo just
+    - MISE_EXEC_AUTO_INSTALL=0 MISE_SAFE=1 ~/.local/bin/mise exec -- just site-readthedocs

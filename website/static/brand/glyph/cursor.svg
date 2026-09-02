@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="img" aria-label="Cursor">
+  <path fill="#737380" d="M9.4 3.6 19.9 12l-4.6 1-2 4.4z"/>
+  <g stroke="#737380" stroke-width="1.7" stroke-linecap="round" opacity="0.6">
+    <path d="M5 4.6 3.4 3"/>
+    <path d="M4.2 9.6H2"/>
+    <path d="M5.4 14.6 3.8 16.2"/>
+  </g>
+</svg>

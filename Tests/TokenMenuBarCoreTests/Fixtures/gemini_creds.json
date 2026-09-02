@@ -1,0 +1,7 @@
+{
+  "access_token": "ya29.test",
+  "refresh_token": "1//0g-refresh",
+  "scope": "https://www.googleapis.com/auth/cloud-platform",
+  "token_type": "Bearer",
+  "expiry_date": 1788033600000
+}

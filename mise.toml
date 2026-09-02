@@ -1,0 +1,10 @@
+# Developer tools, pinned here and checksummed in mise.lock. `mise install` provides them; `just` drives the
+# workflows. The Swift toolchain comes from Xcode or swiftly, since the release builds need Xcode anyway.
+[tools]
+hugo = "0.165.0"
+just = "1.58.0"
+pre-commit = "4.6.0"
+xcodegen = "2.46.0"
+
+[settings]
+lockfile = true

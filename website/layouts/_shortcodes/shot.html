@@ -1,0 +1,13 @@
+{{- $name := .Get "name" -}}
+{{- $alt := .Get "alt" | default "" -}}
+{{- $scale := int (.Get "scale" | default 2) -}}
+<figure class="shot-figure">
+  {{- range $variant := (slice "light" "dark") -}}
+    {{- with resources.Get (printf "images/%s-%s.webp" $name $variant) -}}
+      {{- partial "shot-image.html" (dict
+            "image" . "scale" $scale "alt" $alt "loading" "lazy"
+            "class" (printf "shot only-%s" $variant)) -}}
+    {{- end -}}
+  {{- end -}}
+  {{- with .Get "caption" }}<figcaption>{{ . }}</figcaption>{{ end -}}
+</figure>

@@ -1,0 +1,7 @@
+{
+  "email": "you@example.com",
+  "email_verified": true,
+  "name": "You",
+  "sub": "auth0|user_01ABC",
+  "picture": null
+}

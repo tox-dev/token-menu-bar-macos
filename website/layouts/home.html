@@ -1,0 +1,121 @@
+{{ define "main" }}
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">{{ .Site.Params.minimumOS }} · {{ .Site.Params.license }}</span>
+      <h1>{{ .Site.Params.tagline }}</h1>
+      <p class="lede">{{ .Site.Params.description }}</p>
+      <div class="hero-actions">
+        <a class="button button-primary" href="{{ .Site.Params.latestRelease }}">
+          Download for {{ .Site.Params.minimumOS }}</a>
+        <a class="button button-secondary" href="{{ "start/" | relURL }}">Install options</a>
+      </div>
+      <p class="hero-note">
+        Reads the tokens the CLIs keep on your Mac. It holds no account, sends no telemetry, and leaves your machine
+        for the vendors' own endpoints alone.
+      </p>
+    </div>
+    <div class="hero-media">
+      {{ range $variant := (slice "light" "dark") }}
+        {{ with resources.Get (printf "images/menubar-%s.webp" $variant) }}
+          {{ partial "shot-image.html" (dict
+               "image" . "scale" 3 "fetchpriority" "high"
+               "alt" "Menu bar showing Claude and Codex usage cells"
+               "class" (printf "shot shot-bar only-%s" $variant)) }}
+        {{ end }}
+      {{ end }}
+    </div>
+  </div>
+</section>
+
+<div class="providers">
+  <div class="wrap">
+    <span>Tracks</span>
+    {{ range $p := (slice
+      (dict "id" "claude" "name" "Claude") (dict "id" "codex" "name" "Codex")
+      (dict "id" "gemini" "name" "Gemini CLI") (dict "id" "cursor" "name" "Cursor")
+      (dict "id" "copilot" "name" "GitHub Copilot")) }}
+      <strong class="provider">
+        <img src="{{ (printf "brand/glyph/%s.svg" $p.id) | relURL }}" alt="" width="18" height="18">
+        {{ $p.name }}
+      </strong>
+    {{ end }}
+    <span class="legend">
+      <span><i class="g"></i> under pace</span>
+      <span><i class="o"></i> ahead</span>
+      <span><i class="r"></i> spent</span>
+    </span>
+  </div>
+</div>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Everything the vendor dashboards show, without opening them</h2>
+      <p>One cell per window in the menu bar, the full picture a click away.</p>
+    </div>
+    <div class="cards">
+      {{ range hugo.Data.features }}
+        <div class="card">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="{{ .icon }}" />
+            </svg>
+          </div>
+          <h3>{{ .title }}</h3>
+          <p>{{ .body }}</p>
+        </div>
+      {{ end }}
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>One popover, three tabs</h2>
+      <p>It sizes itself to the screen and holds its position when you switch tabs.</p>
+    </div>
+    <div class="tabshots">
+      {{ $shots := slice
+        (dict "id" "usage" "name" "Usage" "alt" "Usage tab with provider cards"
+          "caption" "Each window with percent, reset countdown and pace.")
+        (dict "id" "history" "name" "History" "alt" "History tab with usage charts"
+          "caption" "Sixty days of samples, reset cliffs and vendor analytics.")
+        (dict "id" "settings" "name" "Settings" "alt" "Settings tab"
+          "caption" "Menu bar format, providers, data, notifications and the log.") }}
+      {{ range $index, $shot := $shots }}
+        <input class="tabshot-input" type="radio" name="tabshot" id="tabshot-{{ $shot.id }}"
+               {{ if eq $index 0 }}checked{{ end }}>
+      {{ end }}
+      <div class="tabshot-bar">
+        {{ range $shots }}<label for="tabshot-{{ .id }}">{{ .name }}</label>{{ end }}
+      </div>
+      <div class="tabshot-panels">
+        {{ range $shots }}
+          <figure class="tabshot-panel" id="panel-{{ .id }}">
+            {{ $shot := . }}
+            <div class="tabshot-frame">
+              {{ range $variant := (slice "light" "dark") }}
+                {{ with resources.Get (printf "images/popover-%s-%s.webp" $shot.id $variant) }}
+                  {{ partial "shot-image.html" (dict
+                       "image" . "scale" 2 "alt" $shot.alt "loading" "lazy"
+                       "class" (printf "shot only-%s" $variant)) }}
+                {{ end }}
+              {{ end }}
+            </div>
+            <figcaption>{{ .caption }}</figcaption>
+          </figure>
+        {{ end }}
+      </div>
+    </div>
+  </div>
+</section>
+
+{{ with .Content }}
+<section class="page">
+  <div class="wrap prose">{{ . }}</div>
+</section>
+{{ end }}
+{{ end }}

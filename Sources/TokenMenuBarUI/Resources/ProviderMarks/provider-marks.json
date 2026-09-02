@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "retrieved": "2026-09-01",
+  "assets": [
+    {
+      "provider": "codex",
+      "brand": "OpenAI",
+      "approvalState": "allowed-under-published-guidelines",
+      "sourcePage": "https://openai.com/brand/",
+      "sourceArchive": "https://cdn.openai.com/brand/OpenAI-Logos-2025.zip",
+      "sourceArchiveSHA256": "b2c4cd1e86bbe76bdc4946a72d014efa455240c177f4878fd68cc9b88c71d2ec",
+      "terms": "https://openai.com/brand/",
+      "variants": [
+        {
+          "appearance": "light",
+          "resource": "OpenAI-white-monoblossom.svg",
+          "archiveMember": "OpenAI-logos(new)/SVGs/OpenAI-white-monoblossom.svg",
+          "sha256": "b94ea61d860fae6f82f43571f36f17111fcf5d348e8e9cc22ae4b441c7560011"
+        },
+        {
+          "appearance": "dark",
+          "resource": "OpenAI-white-monoblossom.svg",
+          "archiveMember": "OpenAI-logos(new)/SVGs/OpenAI-white-monoblossom.svg",
+          "sha256": "b94ea61d860fae6f82f43571f36f17111fcf5d348e8e9cc22ae4b441c7560011"
+        }
+      ]
+    },
+    {
+      "provider": "cursor",
+      "brand": "Cursor",
+      "approvalState": "published-for-consistent-representation",
+      "sourcePage": "https://cursor.com/brand",
+      "sourceArchive": "https://ptht05hbb1ssoooe.public.blob.vercel-storage.com/assets/brand/cursor-brand-assets.zip",
+      "sourceArchiveSHA256": "97488a7751914e60f9ff532bc33810cdeaebdddc017548abe6ca2bc29bbc3928",
+      "terms": "https://cursor.com/brand",
+      "variants": [
+        {
+          "appearance": "light",
+          "resource": "CUBE_2D_DARK.svg",
+          "archiveMember": "General Logos/Cube/SVG/CUBE_2D_DARK.svg",
+          "sha256": "0c1940179c8fe0a877c331a1e19a2cb9437a8f9633594e1d81f9ffba106615ff"
+        },
+        {
+          "appearance": "dark",
+          "resource": "CUBE_2D_DARK.svg",
+          "archiveMember": "General Logos/Cube/SVG/CUBE_2D_DARK.svg",
+          "sha256": "0c1940179c8fe0a877c331a1e19a2cb9437a8f9633594e1d81f9ffba106615ff"
+        }
+      ]
+    },
+    {
+      "provider": "claude",
+      "brand": "Claude",
+      "approvalState": "cc0-source-artwork",
+      "sourcePage": "https://claude.ai",
+      "sourceArchive": "https://registry.npmjs.org/simple-icons/-/simple-icons-16.21.0.tgz",
+      "sourceArchiveSHA256": "9921025b53ce4c29529846e1dd29532e6c991a356c5d7685a2ab487e87affe87",
+      "terms": "https://github.com/simple-icons/simple-icons/blob/16.21.0/LICENSE.md",
+      "variants": [
+        {
+          "appearance": "light",
+          "resource": "Claude.svg",
+          "archiveMember": "package/icons/claude.svg",
+          "sha256": "e141dd986358b96437c4789c0c2fd194047e4e80ac2dc4c5472158828543e2f7"
+        },
+        {
+          "appearance": "dark",
+          "resource": "Claude.svg",
+          "archiveMember": "package/icons/claude.svg",
+          "sha256": "e141dd986358b96437c4789c0c2fd194047e4e80ac2dc4c5472158828543e2f7"
+        }
+      ]
+    },
+    {
+      "provider": "gemini",
+      "brand": "Google Gemini",
+      "approvalState": "cc0-source-artwork",
+      "sourcePage": "https://gemini.google.com",
+      "sourceArchive": "https://registry.npmjs.org/simple-icons/-/simple-icons-16.21.0.tgz",
+      "sourceArchiveSHA256": "9921025b53ce4c29529846e1dd29532e6c991a356c5d7685a2ab487e87affe87",
+      "terms": "https://github.com/simple-icons/simple-icons/blob/16.21.0/LICENSE.md",
+      "variants": [
+        {
+          "appearance": "light",
+          "resource": "GoogleGemini.svg",
+          "archiveMember": "package/icons/googlegemini.svg",
+          "sha256": "c083a589b9db54b6d912cbdd8a2bb998c8a29ac9acc1d739a5c75b522f3af5c0"
+        },
+        {
+          "appearance": "dark",
+          "resource": "GoogleGemini.svg",
+          "archiveMember": "package/icons/googlegemini.svg",
+          "sha256": "c083a589b9db54b6d912cbdd8a2bb998c8a29ac9acc1d739a5c75b522f3af5c0"
+        }
+      ]
+    },
+    {
+      "provider": "copilot",
+      "brand": "GitHub Copilot",
+      "approvalState": "mit-source-artwork",
+      "sourcePage": "https://primer.style/foundations/icons/copilot-24",
+      "sourceArchive": "https://registry.npmjs.org/simple-icons/-/simple-icons-16.21.0.tgz",
+      "sourceArchiveSHA256": "9921025b53ce4c29529846e1dd29532e6c991a356c5d7685a2ab487e87affe87",
+      "terms": "https://github.com/primer/octicons/blob/main/LICENSE",
+      "variants": [
+        {
+          "appearance": "light",
+          "resource": "GitHubCopilot.svg",
+          "archiveMember": "package/icons/githubcopilot.svg",
+          "sha256": "e552ea0d793ff47ee97a52cc69ed5e2c7479d649b738a85243806f68b4db0c27"
+        },
+        {
+          "appearance": "dark",
+          "resource": "GitHubCopilot.svg",
+          "archiveMember": "package/icons/githubcopilot.svg",
+          "sha256": "e552ea0d793ff47ee97a52cc69ed5e2c7479d649b738a85243806f68b4db0c27"
+        }
+      ]
+    }
+  ],
+  "fallbacks": []
+}

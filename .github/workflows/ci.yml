@@ -1,0 +1,365 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - name: Select Xcode
+        run: Scripts/select-xcode.sh
+      - name: Run every hook
+        run: just lint
+
+  package-compatibility:
+    name: Package (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS 14 / Xcode 16
+            runner: ${{ vars.MACOS_14_RUNNER || 'macos-14' }}
+            minimum-xcode: 16
+          - name: macOS 15 / Xcode 26
+            runner: macos-15
+            minimum-xcode: 26
+          - name: Xcode 27 SDK
+            runner: ${{ vars.XCODE_27_RUNNER || 'xcode-27' }}
+            minimum-xcode: 27
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Select Xcode
+        id: xcode
+        env:
+          MIN_XCODE_MAJOR: ${{ matrix.minimum-xcode }}
+          EXACT_XCODE_MAJOR: ${{ matrix.minimum-xcode }}
+        run: |
+          Scripts/select-xcode.sh
+          version="$(xcodebuild -version | tr '\n' '-')"
+          echo "cache=$(printf '%s' "$version" | shasum -a 256 | cut -c 1-12)" >> "$GITHUB_OUTPUT"
+      - name: Cache SwiftPM
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .build
+          key: spm-${{ runner.os }}-${{ runner.arch }}-${{ matrix.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('Package.swift')
+            }}
+      - name: Build
+        run: swift build
+      - name: Test
+        run: Scripts/check-test-isolation.sh && swift test --no-parallel
+
+  coverage:
+    name: Tests and coverage (macOS 26)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - name: Select Xcode
+        id: xcode
+        run: |
+          Scripts/select-xcode.sh
+          version="$(xcodebuild -version | tr '\n' '-')"
+          echo "cache=$(printf '%s' "$version" | shasum -a 256 | cut -c 1-12)" >> "$GITHUB_OUTPUT"
+      - name: Cache SwiftPM
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .build
+          key: spm-${{ runner.os }}-${{ runner.arch }}-macos-26-${{ steps.xcode.outputs.cache }}-${{ hashFiles('Package.swift')
+            }}
+      - name: Build
+        run: swift build
+      - name: Tests with coverage gate
+        run: just coverage
+
+  application-ui:
+    name: Application UI (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS 14
+            runner: ${{ vars.MACOS_14_RUNNER || 'macos-14' }}
+            minimum-xcode: 16
+          - name: macOS 15
+            runner: macos-15
+            minimum-xcode: 26
+          - name: macOS 26
+            runner: macos-26
+            minimum-xcode: 26
+          - name: Xcode 27 SDK
+            runner: ${{ vars.XCODE_27_RUNNER || 'xcode-27' }}
+            minimum-xcode: 27
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - name: Select Xcode
+        id: xcode
+        env:
+          MIN_XCODE_MAJOR: ${{ matrix.minimum-xcode }}
+          EXACT_XCODE_MAJOR: ${{ matrix.minimum-xcode }}
+        run: |
+          Scripts/select-xcode.sh
+          version="$(xcodebuild -version | tr '\n' '-')"
+          echo "cache=$(printf '%s' "$version" | shasum -a 256 | cut -c 1-12)" >> "$GITHUB_OUTPUT"
+      - name: Cache Xcode packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .build/xcode-packages
+          key: xcode-spm-${{ runner.os }}-${{ runner.arch }}-${{ matrix.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('Package.swift',
+            'App/project.yml') }}
+      - name: Generate project
+        run: just xcode
+      - name: Test the running application
+        run: |
+          set -o pipefail
+          xcodebuild -project App/TokenMenuBar.xcodeproj -scheme TokenMenuBar-Direct -configuration Debug \
+            -destination 'platform=macOS' -derivedDataPath .build/ui-derived \
+            -clonedSourcePackagesDirPath .build/xcode-packages \
+            -only-testing:TokenMenuBarApplicationUITests test | tail -50
+
+  application:
+    name: Build ${{ matrix.scheme }} (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS 26
+            runner: macos-26
+            minimum-xcode: 26
+            scheme: TokenMenuBar-Direct
+            target: TokenMenuBarDirect
+            configuration: Release
+            distribution: Direct
+            condition: DIRECT
+            sandbox: NO
+            entitlements: Direct.entitlements
+            updater: required
+          - name: macOS 26
+            runner: macos-26
+            minimum-xcode: 26
+            scheme: TokenMenuBar-AppStore
+            target: TokenMenuBarAppStore
+            configuration: AppStore
+            distribution: App Store
+            condition: APPSTORE
+            sandbox: YES
+            entitlements: AppStore.entitlements
+            updater: forbidden
+          - name: macOS 26
+            runner: macos-26
+            minimum-xcode: 26
+            scheme: TokenMenuBar-Homebrew
+            target: TokenMenuBarHomebrew
+            configuration: Homebrew
+            distribution: Homebrew
+            condition: HOMEBREW
+            sandbox: NO
+            entitlements: Direct.entitlements
+            updater: forbidden
+          - name: Xcode 27 SDK
+            runner: ${{ vars.XCODE_27_RUNNER || 'xcode-27' }}
+            minimum-xcode: 27
+            scheme: TokenMenuBar-Direct
+            target: TokenMenuBarDirect
+            configuration: Release
+            distribution: Direct
+            condition: DIRECT
+            sandbox: NO
+            entitlements: Direct.entitlements
+            updater: required
+          - name: Xcode 27 SDK
+            runner: ${{ vars.XCODE_27_RUNNER || 'xcode-27' }}
+            minimum-xcode: 27
+            scheme: TokenMenuBar-AppStore
+            target: TokenMenuBarAppStore
+            configuration: AppStore
+            distribution: App Store
+            condition: APPSTORE
+            sandbox: YES
+            entitlements: AppStore.entitlements
+            updater: forbidden
+          - name: Xcode 27 SDK
+            runner: ${{ vars.XCODE_27_RUNNER || 'xcode-27' }}
+            minimum-xcode: 27
+            scheme: TokenMenuBar-Homebrew
+            target: TokenMenuBarHomebrew
+            configuration: Homebrew
+            distribution: Homebrew
+            condition: HOMEBREW
+            sandbox: NO
+            entitlements: Direct.entitlements
+            updater: forbidden
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - name: Select Xcode
+        id: xcode
+        env:
+          MIN_XCODE_MAJOR: ${{ matrix.minimum-xcode }}
+          EXACT_XCODE_MAJOR: ${{ matrix.minimum-xcode }}
+        run: |
+          Scripts/select-xcode.sh
+          version="$(xcodebuild -version | tr '\n' '-')"
+          echo "cache=$(printf '%s' "$version" | shasum -a 256 | cut -c 1-12)" >> "$GITHUB_OUTPUT"
+      - name: Cache Xcode packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .build/xcode-packages
+          key: xcode-spm-${{ runner.os }}-${{ runner.arch }}-${{ matrix.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('Package.swift',
+            'App/project.yml') }}
+      - name: Generate project
+        run: just xcode
+      - name: Build
+        env:
+          SCHEME: ${{ matrix.scheme }}
+          CONFIGURATION: ${{ matrix.configuration }}
+        run: |
+          set -o pipefail
+          xcodebuild -project App/TokenMenuBar.xcodeproj -scheme "$SCHEME" -configuration "$CONFIGURATION" \
+            -destination 'platform=macOS' -derivedDataPath .build/app-derived \
+            -clonedSourcePackagesDirPath .build/xcode-packages CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" \
+            SPARKLE_PUBLIC_ED_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= build \
+            | tail -30
+      - name: Verify distribution settings
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          DISTRIBUTION: ${{ matrix.distribution }}
+          CONDITION: ${{ matrix.condition }}
+          SANDBOX: ${{ matrix.sandbox }}
+          ENTITLEMENTS: ${{ matrix.entitlements }}
+          TARGET: ${{ matrix.target }}
+        run: Scripts/verify-build-settings.sh "$TARGET" "$CONFIGURATION" "$DISTRIBUTION" "$CONDITION" "$SANDBOX" "$ENTITLEMENTS"
+      - name: Verify every shipped deployment target
+        run: |
+          app="$(find .build/app-derived/Build/Products -path '*/Token Menu Bar.app' -type d | head -1)"
+          test -n "$app"
+          Scripts/verify-deployment-targets.sh "$app" 14.0
+          Scripts/verify-app-bundle.sh "$app" "${{ matrix.distribution }}" "${{ matrix.updater }}"
+      - name: Package the macOS 14 smoke artifact
+        if: matrix.runner == 'macos-26' && matrix.scheme == 'TokenMenuBar-Direct'
+        run: |
+          app="$(find .build/app-derived/Build/Products -path '*/Token Menu Bar.app' -type d | head -1)"
+          codesign --force --deep --sign - "$app"
+          ditto -c -k --keepParent "$app" .build/token-menu-bar-macos-14-smoke.zip
+      - name: Upload the macOS 14 smoke artifact
+        if: matrix.runner == 'macos-26' && matrix.scheme == 'TokenMenuBar-Direct'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: token-menu-bar-macos-14-smoke
+          path: .build/token-menu-bar-macos-14-smoke.zip
+          if-no-files-found: error
+          retention-days: 1
+
+  macos-14-runtime:
+    name: Release smoke (macOS 14 runtime)
+    needs: application
+    runs-on: ${{ vars.MACOS_14_RUNTIME_RUNNER || 'macos-14' }}
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: token-menu-bar-macos-14-smoke
+          path: smoke
+      - name: Launch with isolated data
+        run: |
+          ditto -x -k smoke/token-menu-bar-macos-14-smoke.zip smoke/app
+          executable="smoke/app/Token Menu Bar.app/Contents/MacOS/Token Menu Bar"
+          runtime="$PWD/smoke/runtime"
+          session="macos-14-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          support="$runtime/token-menu-bar-verify-$session"
+          ready="$support/snapshots-demo.json"
+          mkdir -p "$support"
+          TOKEN_MENU_BAR_VERIFY_SESSION="$session" TOKEN_MENU_BAR_VERIFY_SUPPORT_DIRECTORY="$support" \
+            "$executable" --verify-ui >smoke/launch.log 2>&1 &
+          pid=$!
+          for _ in {1..80}; do
+            if grep -Fq '"claude"' "$ready" 2>/dev/null && grep -Fq '"codex"' "$ready" 2>/dev/null; then
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat smoke/launch.log
+              exit 1
+            fi
+            sleep 0.25
+          done
+          if ! grep -Fq '"claude"' "$ready" 2>/dev/null || ! grep -Fq '"codex"' "$ready" 2>/dev/null; then
+            cat smoke/launch.log
+            test ! -f "$support/log.txt" || cat "$support/log.txt"
+            kill "$pid" 2>/dev/null || true
+            wait "$pid" || true
+            exit 1
+          fi
+          kill "$pid" 2>/dev/null || true
+          wait "$pid" || true
+
+  macos-27-runtime:
+    name: Application UI (macOS 27 runtime)
+    if: vars.MACOS_27_RUNTIME_RUNNER != ''
+    runs-on: ${{ vars.MACOS_27_RUNTIME_RUNNER }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - name: Select Xcode
+        env:
+          MIN_XCODE_MAJOR: 27
+          EXACT_XCODE_MAJOR: 27
+        run: Scripts/select-xcode.sh
+      - name: Generate project
+        run: just xcode
+      - name: Test the running application
+        run: |
+          set -o pipefail
+          xcodebuild -project App/TokenMenuBar.xcodeproj -scheme TokenMenuBar-Direct -configuration Debug \
+            -destination 'platform=macOS' -derivedDataPath .build/ui-derived \
+            -only-testing:TokenMenuBarApplicationUITests test | tail -50
+
+  macos-27-runtime-policy:
+    name: Required macOS 27 runtime
+    if: always()
+    needs: macos-27-runtime
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require real runtime coverage
+        env:
+          RUNNER: ${{ vars.MACOS_27_RUNTIME_RUNNER }}
+          RESULT: ${{ needs.macos-27-runtime.result }}
+        run: |
+          if [ -z "$RUNNER" ]; then
+            echo "::error::Set MACOS_27_RUNTIME_RUNNER to a self-hosted runner running macOS 27"
+            echo "Xcode 27 jobs verify the SDK, not the macOS 27 runtime. This required status stays red until a real runtime runner is configured." \
+              >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          elif [ "$RESULT" != "success" ]; then
+            echo "::error::The configured macOS 27 runtime job did not pass"
+            exit 1
+          else
+            echo "macOS 27 runtime UI tests passed on $RUNNER." >> "$GITHUB_STEP_SUMMARY"
+          fi

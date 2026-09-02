@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "lineLength": 120,
+  "indentation": { "spaces": 2 },
+  "maximumBlankLines": 1,
+  "respectsExistingLineBreaks": true,
+  "lineBreakBeforeControlFlowKeywords": false,
+  "lineBreakBeforeEachArgument": false,
+  "prioritizeKeepingFunctionOutputTogether": true,
+  "rules": {
+    "AlwaysUseLowerCamelCase": true,
+    "AmbiguousTrailingClosureOverload": true,
+    "DoNotUseSemicolons": true,
+    "FullyIndirectEnum": true,
+    "NeverForceUnwrap": false,
+    "NeverUseImplicitlyUnwrappedOptionals": true,
+    "NoBlockComments": true,
+    "OrderedImports": true,
+    "ReturnVoidInsteadOfEmptyTuple": true,
+    "UseEarlyExits": true,
+    "UseShorthandTypeNames": true
+  }
+}
