@@ -1,0 +1,28 @@
+{
+  "groups": [
+    {
+      "displayName": "Gemini Models",
+      "buckets": [
+        {
+          "bucketId": "gemini-weekly",
+          "displayName": "Weekly Limit",
+          "window": "weekly",
+          "remainingFraction": 0.4,
+          "resetTime": "2026-09-05T12:05:10Z"
+        }
+      ]
+    },
+    {
+      "displayName": "Claude and GPT models",
+      "buckets": [
+        {
+          "bucketId": "3p-weekly",
+          "displayName": "Weekly Limit",
+          "window": "weekly",
+          "remainingFraction": 0.1,
+          "resetTime": "2026-09-05T12:05:10Z"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" role="img" aria-label="Token Menu Bar">
+  <defs>
+    <linearGradient id="tmb-icon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4C3BE0"/>
+      <stop offset="1" stop-color="#9A6BFF"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="22" ry="22" fill="url(#tmb-icon)"/>
+  <g fill="#FFFFFF">
+    <g opacity="0.34">
+      <rect x="20" y="26" width="60" height="15" rx="7.5"/>
+      <rect x="20" y="59" width="60" height="15" rx="7.5"/>
+    </g>
+    <rect x="20" y="26" width="60" height="15" rx="7.5"/>
+    <rect x="20" y="59" width="30" height="15" rx="7.5"/>
+  </g>
+</svg>

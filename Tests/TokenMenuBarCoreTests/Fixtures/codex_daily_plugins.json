@@ -1,0 +1,142 @@
+{
+  "data": [
+    {
+      "date": "2026-08-07",
+      "plugin_usage_overviews": [
+        {
+          "plugin_id": "github@openai-curated-remote",
+          "plugin_name": "github",
+          "display_name": "Example User",
+          "marketplace": "openai-curated-remote",
+          "invocation_counts": 7
+        },
+        {
+          "plugin_id": "github@openai-curated",
+          "plugin_name": "github",
+          "display_name": "Example User",
+          "marketplace": "openai-curated",
+          "invocation_counts": 3
+        }
+      ]
+    },
+    {
+      "date": "2026-08-08",
+      "plugin_usage_overviews": [
+        {
+          "plugin_id": "github@openai-curated-remote",
+          "plugin_name": "github",
+          "display_name": "Example User",
+          "marketplace": "openai-curated-remote",
+          "invocation_counts": 5
+        },
+        {
+          "plugin_id": "github@openai-curated",
+          "plugin_name": "github",
+          "display_name": "Example User",
+          "marketplace": "openai-curated",
+          "invocation_counts": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-09",
+      "plugin_usage_overviews": [
+        {
+          "plugin_id": "github@openai-curated-remote",
+          "plugin_name": "github",
+          "display_name": "Example User",
+          "marketplace": "openai-curated-remote",
+          "invocation_counts": 9
+        },
+        {
+          "plugin_id": "github@openai-curated",
+          "plugin_name": "github",
+          "display_name": "Example User",
+          "marketplace": "openai-curated",
+          "invocation_counts": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-10",
+      "plugin_usage_overviews": [
+        {
+          "plugin_id": "github@openai-curated-remote",
+          "plugin_name": "github",
+          "display_name": "Example User",
+          "marketplace": "openai-curated-remote",
+          "invocation_counts": 14
+        },
+        {
+          "plugin_id": "github@openai-curated",
+          "plugin_name": "github",
+          "display_name": "Example User",
+          "marketplace": "openai-curated",
+          "invocation_counts": 3
+        }
+      ]
+    },
+    {
+      "date": "2026-08-11",
+      "plugin_usage_overviews": [
+        {
+          "plugin_id": "github@openai-curated-remote",
+          "plugin_name": "github",
+          "display_name": "Example User",
+          "marketplace": "openai-curated-remote",
+          "invocation_counts": 2
+        }
+      ]
+    },
+    {
+      "date": "2026-08-13",
+      "plugin_usage_overviews": [
+        {
+          "plugin_id": "github@openai-curated-remote",
+          "plugin_name": "github",
+          "display_name": "Example User",
+          "marketplace": "openai-curated-remote",
+          "invocation_counts": 3
+        }
+      ]
+    },
+    {
+      "date": "2026-08-14",
+      "plugin_usage_overviews": [
+        {
+          "plugin_id": "github@openai-curated-remote",
+          "plugin_name": "github",
+          "display_name": "Example User",
+          "marketplace": "openai-curated-remote",
+          "invocation_counts": 3
+        }
+      ]
+    },
+    {
+      "date": "2026-08-15",
+      "plugin_usage_overviews": [
+        {
+          "plugin_id": "github@openai-curated-remote",
+          "plugin_name": "github",
+          "display_name": "Example User",
+          "marketplace": "openai-curated-remote",
+          "invocation_counts": 5
+        }
+      ]
+    },
+    {
+      "date": "2026-08-16",
+      "plugin_usage_overviews": [
+        {
+          "plugin_id": "github@openai-curated-remote",
+          "plugin_name": "github",
+          "display_name": "Example User",
+          "marketplace": "openai-curated-remote",
+          "invocation_counts": 1
+        }
+      ]
+    }
+  ],
+  "data_freshness_ts": "2026-08-29T10:50:15.724764Z",
+  "group_by": "day"
+}

@@ -1,0 +1,4 @@
+{{- .Page.Store.Set "hasMermaid" true -}}
+{{- /* A rendered diagram is wider than a phone, so the block scrolls; tabindex makes that reachable from a
+       keyboard. Mermaid reads the accTitle and accDescr lines in the source into the SVG's title and desc. */ -}}
+<pre class="mermaid" tabindex="0">{{- .Inner | htmlEscape | safeHTML -}}</pre>

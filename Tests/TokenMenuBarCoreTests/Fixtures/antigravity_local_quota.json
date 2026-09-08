@@ -1,0 +1,55 @@
+{
+  "response": {
+    "description": "Usage across the model pools",
+    "groups": [
+      {
+        "displayName": "Gemini Models",
+        "description": "Gemini 3 Pro and Flash",
+        "buckets": [
+          {
+            "bucketId": "gemini-weekly",
+            "displayName": "Weekly Limit",
+            "window": "weekly",
+            "remainingFraction": 0.958,
+            "resetTime": "2026-09-05T12:05:10Z"
+          },
+          {
+            "bucketId": "gemini-5h",
+            "displayName": "Five Hour Limit",
+            "window": "5h",
+            "remaining": { "case": "remainingFraction", "value": 0.749 },
+            "resetTime": "2026-08-29T22:05:10Z"
+          }
+        ]
+      },
+      {
+        "displayName": "Claude and GPT models",
+        "buckets": [
+          {
+            "bucketId": "3p-weekly",
+            "displayName": "Weekly Limit",
+            "window": "weekly",
+            "resetTime": "2026-09-05T12:05:10Z"
+          },
+          {
+            "bucketId": "3p-5h",
+            "displayName": "Five Hour Limit",
+            "window": "5h",
+            "remainingFraction": 0.2,
+            "resetTime": "2026-08-29T22:05:10Z",
+            "disabled": true
+          },
+          {
+            "bucketId": "legacy-daily",
+            "window": "daily",
+            "remaining": { "case": "remainingAmount", "value": "12" }
+          },
+          {
+            "displayName": "Unnamed bucket",
+            "remainingFraction": 0.5
+          }
+        ]
+      }
+    ]
+  }
+}

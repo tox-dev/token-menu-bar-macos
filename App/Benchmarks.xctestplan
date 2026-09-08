@@ -1,0 +1,33 @@
+{
+  "configurations": [
+    {
+      "id": "3E27B91B-EE1F-460F-B82F-A6923B3E8B0C",
+      "name": "Performance benchmarks",
+      "options": {}
+    }
+  ],
+  "defaultOptions": {
+    "codeCoverage": false,
+    "preferredScreenCaptureFormat": "screenshot",
+    "uiTestingScreenshotsLifetime": "keepNever",
+    "testTimeoutsEnabled": true,
+    "defaultTestExecutionTimeAllowance": 120,
+    "maximumTestExecutionTimeAllowance": 600,
+    "targetForVariableExpansion": {
+      "containerPath": "container:TokenMenuBar.xcodeproj",
+      "identifier": "EDE813082ECDC0E560455657",
+      "name": "TokenMenuBarDirect"
+    }
+  },
+  "testTargets": [
+    {
+      "parallelizable": false,
+      "target": {
+        "containerPath": "container:TokenMenuBar.xcodeproj",
+        "identifier": "585E549CE68AF1893C7C99A9",
+        "name": "TokenMenuBarPerformanceTests"
+      }
+    }
+  ],
+  "version": 1
+}

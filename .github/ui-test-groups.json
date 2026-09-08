@@ -1,0 +1,73 @@
+{
+  "performance": [
+    "PerformanceBenchmarks/testSixtyDayHistoryPreparation",
+    "PerformanceBenchmarks/testFirstSettingsClickFromFreshLaunch",
+    "PerformanceBenchmarks/testProfileMockedTabSwitches",
+    "PerformanceBenchmarks/testTabSwitchLatencyAndFrameStability"
+  ],
+  "lifecycle": [
+    "TokenMenuBarApplicationUITests/testQuitClosesTheVerificationApplication",
+    "TokenMenuBarApplicationUITests/testDemoCanTurnOffAndBackOnWithoutLeavingVerification",
+    "TokenMenuBarApplicationUITests/testStatusItemReopensThePopoverAfterEscape",
+    "TokenMenuBarApplicationUITests/testEveryTabExposesNamedControls",
+    "TokenMenuBarApplicationUITests/testOpeningAndTabSwitchesKeepTheirAnchor",
+    "TokenMenuBarApplicationUITests/testCommandFFocusesTheModelFilter",
+    "TokenMenuBarApplicationUITests/testEscapeClosesEveryTab"
+  ],
+  "usage": [
+    "LiveControlAuditUITests/testUsageControlsRespond"
+  ],
+  "history": [
+    "LiveControlAuditUITests/testHistoryDatesAndControlsRespond"
+  ],
+  "file-choosers": [
+    "LiveControlAuditUITests/testFileChoosersReturnToThePopover",
+    "LiveControlAuditUITests/testHistoryExportSavesTheSelectedPeriod"
+  ],
+  "settings-menu-bar": [
+    "LiveControlAuditUITests/testSettingsMenuBarControlsRespond",
+    "LiveControlAuditUITests/testCustomTemplateSupportsMultilineEditing"
+  ],
+  "settings-models": [
+    "LiveControlAuditUITests/testSettingsModelSelectionControlsRespond"
+  ],
+  "settings-about": [
+    "LiveControlAuditUITests/testSettingsAboutControlsRespond"
+  ],
+  "settings-providers": [
+    "LiveControlAuditUITests/testSettingsProviderControlsRespond"
+  ],
+  "provider-access": [
+    "LiveControlAuditUITests/testSettingsProviderAccessActionsRespond"
+  ],
+  "settings-data": [
+    "LiveControlAuditUITests/testSettingsDataControlsRespond"
+  ],
+  "settings-notifications": [
+    "LiveControlAuditUITests/testSettingsNotificationControlsRespond"
+  ],
+  "settings-log": [
+    "LiveControlAuditUITests/testSettingsLogControlsRespond"
+  ],
+  "text-wide-light": [
+    "LiveControlAuditUITests/testLongTextAtWideWidthInLightAppearance",
+    "LiveControlAuditUITests/testLongSettingsTextAtWideWidthInLightAppearance"
+  ],
+  "text-narrow-light": [
+    "LiveControlAuditUITests/testLongTextAtNarrowWidthInLightAppearance",
+    "LiveControlAuditUITests/testLongSettingsTextAtNarrowWidthInLightAppearance"
+  ],
+  "text-wide-dark": [
+    "LiveControlAuditUITests/testLongTextAtWideWidthInDarkAppearance",
+    "LiveControlAuditUITests/testLongSettingsTextAtWideWidthInDarkAppearance"
+  ],
+  "text-narrow-dark": [
+    "LiveControlAuditUITests/testLongTextAtNarrowWidthInDarkAppearance",
+    "LiveControlAuditUITests/testLongSettingsTextAtNarrowWidthInDarkAppearance"
+  ],
+  "tooltips": [
+    "LiveControlAuditUITests/testUsageRichTooltipsStayAdjacent",
+    "LiveControlAuditUITests/testHistoryRichTooltipsStayAdjacent",
+    "LiveControlAuditUITests/testSettingsRichTooltipsStayAdjacentAndTabsHaveNone"
+  ]
+}

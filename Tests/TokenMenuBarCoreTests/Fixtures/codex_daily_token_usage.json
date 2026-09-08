@@ -1,0 +1,1282 @@
+{
+  "data": [
+    {
+      "date": "2026-08-01",
+      "product_surface_usage_values": {
+        "cli": 0.0,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-02",
+      "product_surface_usage_values": {
+        "cli": 0.0,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-03",
+      "product_surface_usage_values": {
+        "cli": 0.008616891589564392,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-04",
+      "product_surface_usage_values": {
+        "cli": 0.0,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-05",
+      "product_surface_usage_values": {
+        "cli": 0.0,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-06",
+      "product_surface_usage_values": {
+        "cli": 7.431959807673002,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 1.816577755656448
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-07",
+      "product_surface_usage_values": {
+        "cli": 32.92682533490686,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 15.448646245110535,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 48.37547158001739
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-08",
+      "product_surface_usage_values": {
+        "cli": 13.649294702078462,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 11.635947925033271,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 25.284924688431765
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.00031793867996467016
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-09",
+      "product_surface_usage_values": {
+        "cli": 71.18984992742185,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 2.4534338713719115,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 73.64328379879377
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-10",
+      "product_surface_usage_values": {
+        "cli": 69.36765555872888,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 13.853589784285674,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 82.66435998229976
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.5568853607148061
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-11",
+      "product_surface_usage_values": {
+        "cli": 89.85307528066926,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 3.9551195106344057,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 93.80819479130366
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-12",
+      "product_surface_usage_values": {
+        "cli": 33.7323793227585,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 1.2740618310325609,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 35.006441153791066
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-13",
+      "product_surface_usage_values": {
+        "cli": 8.583601152146494,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.12283446665072245,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 8.706435618797217
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-14",
+      "product_surface_usage_values": {
+        "cli": 6.94889975797563,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 6.948899757975628
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-15",
+      "product_surface_usage_values": {
+        "cli": 9.664126551740603,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 1.6744282803108146,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 11.338554832051418
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-16",
+      "product_surface_usage_values": {
+        "cli": 3.2951091301763,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 3.2951091301763
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-17",
+      "product_surface_usage_values": {
+        "cli": 0.0,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-18",
+      "product_surface_usage_values": {
+        "cli": 0.0,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-19",
+      "product_surface_usage_values": {
+        "cli": 0.0,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-20",
+      "product_surface_usage_values": {
+        "cli": 0.0,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-21",
+      "product_surface_usage_values": {
+        "cli": 0.0,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-22",
+      "product_surface_usage_values": {
+        "cli": 0.9288385270599329,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 0.9288385270599329
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-23",
+      "product_surface_usage_values": {
+        "cli": 2.5012638238559384,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 2.5012638238559384
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-24",
+      "product_surface_usage_values": {
+        "cli": 13.038553787393644,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 13.038553787393644
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-25",
+      "product_surface_usage_values": {
+        "cli": 15.500802492664778,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 15.500802492664778
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-26",
+      "product_surface_usage_values": {
+        "cli": 6.944162424866743,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 6.944162424866743
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 0.0
+        }
+      ]
+    },
+    {
+      "date": "2026-08-27",
+      "product_surface_usage_values": {
+        "cli": 86.35639563462055,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 86.35629768764484
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 9.794697571406566e-05
+        }
+      ]
+    },
+    {
+      "date": "2026-08-28",
+      "product_surface_usage_values": {
+        "cli": 100.0,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 99.99991015290239
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 8.984709761987512e-05
+        }
+      ]
+    },
+    {
+      "date": "2026-08-29",
+      "product_surface_usage_values": {
+        "cli": 38.172517544402055,
+        "vscode": 0.0,
+        "web": 0.0,
+        "work_web": 0.0,
+        "mobile": 0.0,
+        "work_mobile": 0.0,
+        "slack": 0.0,
+        "linear": 0.0,
+        "jetbrains": 0.0,
+        "sdk": 0.0,
+        "exec": 0.0,
+        "github": 0.0,
+        "desktop_app": 0.0,
+        "work_desktop": 0.0,
+        "github_code_review": 0.0,
+        "agent_identity": 0.0,
+        "unknown": 0.0
+      },
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "speed": "standard",
+          "credits": 38.1724716237558
+        },
+        {
+          "model": "gpt-5.4",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "codex-auto-review",
+          "speed": "standard",
+          "credits": 0.0
+        },
+        {
+          "model": "gpt-5.6-luna",
+          "speed": "standard",
+          "credits": 4.5920646265301434e-05
+        }
+      ]
+    }
+  ],
+  "units": "percent",
+  "group_by": "day"
+}

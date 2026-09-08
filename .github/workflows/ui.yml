@@ -1,0 +1,249 @@
+name: Native UI
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        required: true
+        type: string
+      runtime-major:
+        required: true
+        type: number
+      minimum-xcode:
+        required: true
+        type: number
+      group:
+        required: false
+        type: string
+        default: ''
+      test:
+        required: false
+        type: string
+        default: ''
+      profile-startup:
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  UI_SCHEME: ${{ inputs.group == 'performance' && 'TokenMenuBar-Benchmarks' || 'TokenMenuBar-Direct' }}
+  UI_TARGET: ${{ inputs.group == 'performance' && 'TokenMenuBarPerformanceTests' || 'TokenMenuBarApplicationUITests' }}
+  UI_SUITE: ${{ inputs.group == 'performance' && 'performance' || 'functional' }}
+  UI_RUNNER_ID: ${{ inputs.group == 'performance' && 'dev.tox.token-menu-bar.performance-tests.xctrunner' || 'dev.tox.token-menu-bar.application-ui-tests.xctrunner'
+    }}
+
+jobs:
+  build:
+    if: ${{ !inputs.group }}
+    name: Build UI (macOS ${{ inputs.runtime-major }})
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 10
+    outputs:
+      groups: ${{ steps.inventory.outputs.groups }}
+    steps:
+      - &verify_runtime
+        name: Verify runtime
+        env:
+          EXPECTED_MACOS_MAJOR: ${{ inputs.runtime-major }}
+        run: |
+          version="$(sw_vers -productVersion)"
+          [[ "${version%%.*}" == "$EXPECTED_MACOS_MAJOR" ]] || { echo "::error::Unexpected macOS $version"; exit 1; }
+          echo "Runtime: macOS $version" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.9.3
+      - &select_xcode
+        name: Select Xcode
+        id: xcode
+        env:
+          MIN_XCODE_MAJOR: ${{ inputs.minimum-xcode }}
+          EXACT_XCODE_MAJOR: ${{ inputs.minimum-xcode }}
+        run: |
+          Scripts/select-xcode.sh
+          version="$(xcodebuild -version | tr '\n' '-')"
+          echo "cache=$(printf '%s' "$version" | shasum -a 256 | cut -c 1-12)" >> "$GITHUB_OUTPUT"
+      - &generate_project
+        name: Generate project
+        if: ${{ github.job == 'build' || inputs.group != '' }}
+        run: just xcode
+      - &restore_build
+        name: Restore verification build and input timestamps
+        if: ${{ github.job == 'build' || inputs.group != '' }}
+        uses: irgaly/xcode-cache@4141f139f00e335c6e1031fb93e667181f86146f # v1.9.2
+        with:
+          deriveddata-directory: .build/ui-derived
+          sourcepackages-directory: .build/xcode-packages
+          key: ui-build-v3-${{ runner.os }}-${{ runner.arch }}-${{ inputs.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('Package.swift',
+            'App/project.yml') }}-${{ github.sha }}
+          restore-keys: |
+            ui-build-v3-${{ runner.os }}-${{ runner.arch }}-${{ inputs.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('Package.swift', 'App/project.yml') }}-
+          swiftpm-cache-key: xcode-spm-${{ runner.os }}-${{ runner.arch }}-${{ inputs.runner }}-${{ steps.xcode.outputs.cache
+            }}-${{ hashFiles('Package.swift', 'App/project.yml') }}
+          use-default-mtime-targets: false
+          restore-mtime-targets: |
+            Package.swift
+            Sources/**/*
+            App/**/*
+            Tests/TokenMenuBarNativeGuard/**/*
+            Tests/TokenMenuBarTestSupport/**/*
+      - &build_application
+        name: Build the verification application
+        if: ${{ github.job == 'build' || inputs.group != '' }}
+        id: build
+        timeout-minutes: 10
+        run: |
+          set -o pipefail
+          mkdir -p .build
+          xcodebuild -project App/TokenMenuBar.xcodeproj -scheme "$UI_SCHEME" -configuration Verification \
+            -destination "platform=macOS,arch=$(uname -m)" -derivedDataPath .build/ui-derived \
+            -clonedSourcePackagesDirPath .build/xcode-packages \
+            -jobs 2 ONLY_ACTIVE_ARCH=YES -showBuildTimingSummary build-for-testing \
+            2>&1 | tee .build/ui-build.log | tail -50
+      - name: Verify the complete UI inventory
+        id: inventory
+        env:
+          UI_GROUP: ${{ inputs.group }}
+        run: |
+          Scripts/check-ui-test-inventory.sh
+          echo "groups=$(jq -c 'del(.performance) | keys | sort_by(if . == "lifecycle" then 0 elif . == "text-narrow-dark" then 1 else 2 end, .)' .github/ui-test-groups.json)" >> "$GITHUB_OUTPUT"
+      - name: Package test products
+        run: ditto -c -k .build/ui-derived/Build/Products .build/ui-products.zip
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ui-products-macos-${{ inputs.runtime-major }}
+          path: .build/ui-products.zip
+          if-no-files-found: error
+          retention-days: 1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: ui-build-macos-${{ inputs.runtime-major }}
+          path: .build/ui-build.log
+          retention-days: 1
+
+  audit:
+    name: ${{ matrix.group }} (macOS ${{ inputs.runtime-major }})
+    if: ${{ !cancelled() && (needs.build.result == 'success' || (inputs.group != '' && needs.build.result == 'skipped')) }}
+    permissions:
+      actions: read
+      contents: read
+    needs: build
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.group != '' && 15 || 10 }}
+    env:
+      UI_TEST: ${{ inputs.test }}
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        group: ${{ inputs.group != '' && fromJSON(format('[{0}]', toJSON(inputs.group))) || fromJSON(needs.build.outputs.groups)
+          }}
+    steps:
+      - *verify_runtime
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.9.3
+          install_args: ${{ inputs.group != '' && 'uv just xcodegen' || 'uv' }}
+      - *select_xcode
+      - *generate_project
+      - *restore_build
+      - *build_application
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        if: ${{ !inputs.group }}
+        with:
+          name: ui-products-macos-${{ inputs.runtime-major }}
+          path: .build
+          github-token: ${{ github.token }}
+      - name: Unpack shared test products
+        if: ${{ !inputs.group }}
+        run: ditto -x -k .build/ui-products.zip .build/ui-derived/Build/Products
+      - name: Run the UI group
+        timeout-minutes: 8
+        env:
+          UI_GROUP: ${{ matrix.group }}
+          TMB_PROFILE_SAMPLE_SECONDS: ${{ inputs.profile-startup && '8' || matrix.group == 'lifecycle' && '3' || '15' }}
+          TEST_RUNNER_TMB_PROFILE_RELAUNCH: ${{ inputs.profile-startup && '1' || '0' }}
+          TEST_RUNNER_TMB_BENCHMARK_MACOS_MAJOR: ${{ inputs.runtime-major }}
+        run: |
+          set -o pipefail
+          Scripts/check-ui-test-inventory.sh
+          specifications=(.build/ui-derived/Build/Products/"${UI_SCHEME}"_*.xctestrun)
+          [[ "${#specifications[@]}" == 1 ]]
+          selectors=()
+          while IFS= read -r selector; do
+            selectors+=("-only-testing:$UI_TARGET/$selector")
+          done < <(jq -r --arg group "$UI_GROUP" --arg test "$UI_TEST" '.[$group][] | select($test == "" or . == $test)' .github/ui-test-groups.json)
+          [[ "${#selectors[@]}" -gt 0 ]]
+          Scripts/profile-ui-tests.sh Scripts/with-ui-artifacts.sh xcodebuild \
+            -xctestrun "${specifications[0]}" -destination "platform=macOS,arch=$(uname -m)" \
+            -resultBundlePath .build/ui-results.xcresult "${selectors[@]}" test-without-building \
+            2>&1 | tee .build/ui-test.log | awk '/Test Case|Test Suite|error:|warning:|FIRST_SETTINGS|TAB_SWITCH_SUMMARY|CONTROL_AUDIT|LONG_TEXT_AUDIT/ { print; fflush() }'
+      - name: Export UI evidence
+        id: evidence
+        if: ${{ !cancelled() }}
+        run: |
+          if [[ -d .build/ui-results.xcresult ]]; then
+            Scripts/export-ui-results.sh .build/ui-results.xcresult .build/ui-results
+          fi
+      - name: Retain UI results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ui-${{ matrix.group }}-macos-${{ inputs.runtime-major }}
+          path: |
+            .build/ui-results
+            .build/ui-test.log
+            .build/ui-artifacts
+            .build/ui-profiles
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+      - name: Verify every selected method passed once
+        if: ${{ !cancelled() && steps.evidence.outcome == 'success' }}
+        env:
+          UI_GROUP: ${{ matrix.group }}
+        run: |
+          selectors=()
+          while IFS= read -r selector; do
+            selectors+=("$UI_TARGET/$selector")
+          done < <(jq -r --arg group "$UI_GROUP" --arg test "$UI_TEST" '.[$group][] | select($test == "" or . == $test)' .github/ui-test-groups.json)
+          uv run Scripts/local_ui_tests.py --suite "$UI_SUITE" --check-results .build/ui-results/tests.json "${selectors[@]}"
+      - name: Verify result export integrity
+        if: ${{ !cancelled() && matrix.group == 'file-choosers' && steps.evidence.outcome == 'success' }}
+        run: Scripts/test-ui-results.sh .build/ui-results.xcresult
+      - name: Retain an unexportable result bundle
+        if: ${{ !cancelled() && steps.evidence.outcome == 'failure' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ui-raw-${{ matrix.group }}-macos-${{ inputs.runtime-major }}
+          path: .build/ui-results.xcresult
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+      - name: Retain diagnostic build log
+        if: ${{ always() && inputs.group != '' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ui-build-macos-${{ inputs.runtime-major }}
+          path: .build/ui-build.log
+          retention-days: 1
+      - name: Retain rendered-text assertions
+        if: ${{ !cancelled() && startsWith(matrix.group, 'text-') && (inputs.test == '' || startsWith(inputs.test, 'LiveControlAuditUITests/testLongTextAt'))
+          }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rendered-ui-${{ inputs.runtime-major }}-${{ matrix.group }}
+          path: |
+            .build/ui-artifacts/**/banner-*.png
+            .build/ui-artifacts/**/*.ocr.json
+          if-no-files-found: error
+          retention-days: 1
