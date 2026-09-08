@@ -1,0 +1,8 @@
+{{- /* Keep one h1 per page (the title): demote an in-content h1 to h2 and leave deeper levels alone. */ -}}
+{{- $level := .Level -}}
+{{- if le .Level 1 }}{{ $level = 2 }}{{ end -}}
+<h{{ $level }} id="{{ .Anchor | safeURL }}">
+  {{- .Text | safeHTML -}}
+  {{/* Naming every anchor "Link to this section" leaves a screen reader with a list of identical links */}}
+  <a class="anchor" href="#{{ .Anchor | safeURL }}" aria-label="Link to {{ .PlainText }}">#</a>
+</h{{ $level }}>

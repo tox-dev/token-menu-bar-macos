@@ -1,0 +1,29 @@
+# {{ .Site.Title }}
+
+> {{ .Site.Params.description }}
+
+{{ .Site.Title }} is a {{ .Site.Params.license }}-licensed {{ .Site.Params.minimumOS }} menu bar app
+by {{ .Site.Params.author }}.
+It reads the OAuth tokens the Claude Code, Codex, Gemini, Cursor and GitHub Copilot clients keep on the machine, and
+shows how much of each plan's quota is left. Source: {{ .Site.Params.repository }}
+
+Append `index.md` to any page URL, or follow the links below, to fetch that page as clean markdown.
+
+## Pages
+{{ range (slice "/start" "/reference/interface" "/reference/settings" "/explanation" "/troubleshooting" "/contributing") }}
+{{- with $.Site.GetPage . }}
+- [{{ .Title }}]({{ (.OutputFormats.Get "md").Permalink }}){{ with .Description }}: {{ . }}{{ end }}
+{{- end }}{{ end }}
+
+## Facts
+{{ range hugo.Data.features }}
+- {{ .title }}: {{ .body | plainify | chomp }}
+{{- end }}
+
+## Where the data comes from
+
+- Claude: Keychain item `Claude Code-credentials`, `api.anthropic.com/api/oauth/usage`
+- Codex: `~/.codex/auth.json`, `chatgpt.com/backend-api/wham/*`
+- Gemini: `~/.gemini/oauth_creds.json`, `cloudcode-pa.googleapis.com/v1internal:retrieveUserQuota`
+- Cursor: Cursor's `state.vscdb` session, `cursor.com/api/usage-summary`
+- Copilot: `~/.config/github-copilot/hosts.json`, `api.github.com/copilot_internal/user`

@@ -1,0 +1,35 @@
+- title: Provider limits and credits
+  icon: M3 12h4l3 8 4-16 3 8h4
+  body: >-
+    Claude and Codex session and weekly limits, Gemini model buckets, Antigravity pools, Cursor plan and on-demand
+    spend, and Copilot quotas. Reported credits and spend caps remain separate from usage percentages.
+
+- title: Pace beside the percent
+  icon: M12 8v4l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z
+  body: >-
+    Quota rows show the used share, time to reset and pacing when the source supplies a usable period.
+    Weekly restrictions remain visible in the menu bar even if a session has quota left.
+
+- title: History that survives the reset
+  icon: M3 3v18h18M7 15l4-4 3 3 5-6
+  body: >-
+    A local SQLite database retains 60 days by default, adjustable from 7 to 365. One chart switches between quota
+    lines and daily analytics bars; the legend lists applicable series without a top-N cutoff.
+
+- title: Widgets and notifications
+  icon: M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z
+  body: >-
+    Small, medium and large desktop widgets mirror the selected windows. Threshold crossings, resets and sign-in
+    problems arrive as macOS notifications you can tune.
+
+- title: Adapts to available space
+  icon: M4 6h16M4 12h10M4 18h6
+  body: >-
+    The app draws each cell as an image, which holds two lines and per-value colour at any height, and steps down
+    to narrower layouts when the bar runs out of room next to the notch.
+
+- title: Local storage and opt-in token refresh
+  icon: M12 3l7 4v5c0 4.4-3 8.4-7 9-4-0.6-7-4.6-7-9V7z
+  body: >-
+    No Token Menu Bar account or telemetry. Credential refresh starts off. Provider discovery, cached readings and
+    history stay on your Mac; usage requests go to the provider endpoints.

@@ -1,0 +1,43 @@
+{
+  "groups": [
+    {
+      "displayName": "Gemini Models",
+      "buckets": [
+        {
+          "bucketId": "gemini-weekly",
+          "displayName": "Weekly Limit",
+          "window": "weekly",
+          "remainingFraction": 0.9,
+          "resetTime": "2026-09-05T12:05:10Z"
+        },
+        {
+          "bucketId": "gemini-5h",
+          "displayName": "Five Hour Limit",
+          "window": "5h",
+          "remainingFraction": 0.6,
+          "resetTime": "2026-08-29T22:05:10Z"
+        }
+      ]
+    },
+    {
+      "displayName": "Claude and GPT models",
+      "buckets": [
+        {
+          "bucketId": "3p-weekly",
+          "displayName": "Weekly Limit",
+          "window": "weekly",
+          "remainingFraction": 0.3,
+          "resetTime": "2026-09-05T12:05:10Z"
+        },
+        {
+          "bucketId": "3p-5h",
+          "displayName": "Five Hour Limit",
+          "window": "5h",
+          "remainingFraction": 0.85,
+          "resetTime": "2026-08-29T22:05:10Z"
+        }
+      ]
+    },
+    { "displayName": "Image models" }
+  ]
+}

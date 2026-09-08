@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Token Menu Bar: usage limits, resets and pacing">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#241A64"/>
+      <stop offset="1" stop-color="#4C3BE0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#background)"/>
+  <image href="mark.svg" x="76" y="60" width="112" height="112"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#FFFFFF">
+    <text x="80" y="290" font-size="76" font-weight="700">Token Menu Bar</text>
+    <text x="84" y="364" font-size="36">Usage limits, resets and pacing</text>
+    <g font-size="26" fill="#E3DEFF">
+      <text x="84" y="488">Claude · Codex · Gemini · Antigravity</text>
+      <text x="84" y="532">Cursor · GitHub Copilot</text>
+    </g>
+  </g>
+</svg>

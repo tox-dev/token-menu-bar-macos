@@ -1,0 +1,11 @@
+{
+  "github.com": {
+    "user": "octocat",
+    "oauth_token": "gho_test_token_123",
+    "githubAppId": "Iv1.b507a08c87ecfe98"
+  },
+  "ghe.example.com:Iv1.x": {
+    "user": "ent",
+    "oauth_token": "gho_ent"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "currentTier": {
+    "id": "standard-tier",
+    "name": "Gemini Code Assist Standard",
+    "availableCredits": [
+      {
+        "creditType": "GOOGLE_ONE_AI",
+        "creditAmount": "1200"
+      }
+    ]
+  },
+  "allowedTiers": [],
+  "cloudaicompanionProject": "gen-lang-client-0123456789",
+  "paidTier": {
+    "id": "paid",
+    "name": "Google AI Pro",
+    "availableCredits": [
+      {
+        "creditType": "GOOGLE_ONE_AI",
+        "creditAmount": "300"
+      }
+    ]
+  }
+}

@@ -1,0 +1,482 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      package_only:
+        description: Run package tests and coverage without application audits or distribution builds
+        type: boolean
+        default: false
+      ui_group:
+        description: Diagnostic UI group, or performance for opt-in benchmarks on the latest macOS; empty runs functional
+          acceptance
+        type: string
+        default: ''
+      ui_test:
+        description: One method within the diagnostic group; leave empty for the whole group
+        type: string
+        default: ''
+      ui_profile_startup:
+        description: Sample replacement-process startup during diagnosis; not a performance acceptance run
+        type: boolean
+        default: false
+      ui_runtime:
+        description: Runtime for a diagnostic UI group
+        type: choice
+        options: ['14', '15', '26', '27']
+        default: '14'
+
+run-name: ${{ inputs.ui_group == 'performance' && 'Performance benchmarks (latest macOS)' || inputs.ui_profile_startup &&
+  format('Startup profile ({0}, macOS {1})', inputs.ui_group, inputs.ui_runtime) || inputs.ui_group && format('UI diagnosis
+  ({0}, macOS {1})', inputs.ui_group, inputs.ui_runtime) || inputs.package_only && 'Package tests' || 'CI' }}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}${{ inputs.ui_group && format('-diagnostic-{0}-{1}', inputs.ui_runtime, inputs.ui_group) || ''
+    }}
+  cancel-in-progress: true
+
+jobs:
+  runtime-matrix:
+    name: Select deployed macOS runtimes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      runtimes: ${{ steps.matrix.outputs.runtimes }}
+      package: ${{ steps.matrix.outputs.package }}
+      ui: ${{ steps.matrix.outputs.ui }}
+      application: ${{ steps.matrix.outputs.application }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test runtime selection
+        run: Scripts/test-ci-runtime-matrix.sh
+      - name: Check macOS 27 deployment
+        id: matrix
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MACOS_14_RUNNER: ${{ vars.MACOS_14_RUNNER || 'macos-14' }}
+          UI_GROUP: ${{ inputs.ui_group }}
+          UI_TEST: ${{ inputs.ui_test }}
+          UI_PROFILE_STARTUP: ${{ inputs.ui_profile_startup }}
+          PACKAGE_ONLY: ${{ inputs.package_only }}
+          DIAGNOSTIC_UI_RUNTIME: ${{ inputs.ui_group && inputs.ui_runtime || '0' }}
+        run: |
+          [[ -z "$UI_TEST" && "$UI_PROFILE_STARTUP" != true || -n "$UI_GROUP" ]]
+          [[ "$UI_PROFILE_STARTUP" != true || "$UI_GROUP" == lifecycle ]]
+          if [[ -n "$UI_GROUP" ]]; then
+            [[ "$PACKAGE_ONLY" != true ]]
+            Scripts/check-ui-test-inventory.sh
+          fi
+          gh api repos/actions/runner-images/releases/tags/xcode-27-arm64%2F20260907.0173 | Scripts/ci-runtime-matrix.sh
+
+  lint:
+    name: Lint
+    if: ${{ !inputs.ui_group }}
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.9.3
+      - name: Select Xcode
+        run: Scripts/select-xcode.sh
+      - name: Run every hook
+        run: just lint
+      - name: Verify native test execution guards
+        run: Scripts/test-desktop-guard.sh
+      - name: Verify local runner isolation and resource limits
+        run: bash Scripts/test-local-ui-runner.sh
+      - name: Verify UI group coverage
+        run: |
+          Scripts/check-ui-test-inventory.sh
+          Scripts/test-ui-test-inventory.sh
+      - name: Verify deferred render checks
+        run: Scripts/test-render-capture.sh
+
+  package-compatibility:
+    name: Package (${{ matrix.name }}, ${{ matrix.mode }})
+    needs: runtime-matrix
+    if: ${{ !inputs.ui_group }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    env:
+      TOKEN_MENU_BAR_RENDER_CAPTURE_ONLY: 1
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.runtime-matrix.outputs.package) }}
+    steps:
+      - name: Verify runtime
+        env:
+          EXPECTED_MACOS_MAJOR: ${{ matrix.runtime-major }}
+        run: |
+          version="$(sw_vers -productVersion)"
+          [[ "${version%%.*}" == "$EXPECTED_MACOS_MAJOR" ]] || { echo "::error::Unexpected macOS $version"; exit 1; }
+          echo "Runtime: macOS $version" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.9.3
+      - name: Select Xcode
+        id: xcode
+        env:
+          MIN_XCODE_MAJOR: ${{ matrix.minimum-xcode }}
+          EXACT_XCODE_MAJOR: ${{ matrix.minimum-xcode }}
+        run: |
+          Scripts/select-xcode.sh
+          version="$(xcodebuild -version | tr '\n' '-')"
+          echo "cache=$(printf '%s' "$version" | shasum -a 256 | cut -c 1-12)" >> "$GITHUB_OUTPUT"
+      - name: Restore SwiftPM build and input timestamps
+        uses: irgaly/xcode-cache@4141f139f00e335c6e1031fb93e667181f86146f # v1.9.2
+        with:
+          deriveddata-directory: .build
+          key: spm-v4-${{ matrix.mode }}-${{ runner.os }}-${{ runner.arch }}-${{ matrix.runner }}-${{ steps.xcode.outputs.cache
+            }}-${{ hashFiles('Package.swift', 'justfile', 'Scripts/coverage.sh') }}-${{ github.sha }}
+          restore-keys: |
+            spm-v4-${{ matrix.mode }}-${{ runner.os }}-${{ runner.arch }}-${{ matrix.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('Package.swift', 'justfile', 'Scripts/coverage.sh') }}-
+          use-default-mtime-targets: false
+          restore-mtime-targets: |
+            Package.swift
+            Sources/**/*
+            Tests/**/*
+      - name: Check toolchain
+        id: toolchain
+        run: Scripts/check-toolchain.sh
+      - name: Test without native presentation
+        if: matrix.mode == 'nonpresenting'
+        env:
+          TOKEN_MENU_BAR_RENDER_ARTIFACTS: ${{ runner.temp }}/settings-render
+        run: just test
+      - name: Test native presentation
+        if: matrix.mode == 'native'
+        env:
+          TOKEN_MENU_BAR_RENDER_ARTIFACTS: ${{ runner.temp }}/settings-render
+        run: just test-native
+      - name: Retain mock Settings renders
+        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rendered-package-${{ matrix.runtime-major }}-${{ matrix.mode }}
+          path: ${{ runner.temp }}/settings-render
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Retain native test crash reports
+        if: ${{ failure() && matrix.mode == 'native' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: package-crashes-${{ matrix.runtime-major }}
+          path: ~/Library/Logs/DiagnosticReports/*.ips
+          if-no-files-found: ignore
+          retention-days: 1
+
+  coverage:
+    name: Tests and coverage
+    if: ${{ !inputs.ui_group }}
+    runs-on: macos-26
+    timeout-minutes: 10
+    env:
+      TOKEN_MENU_BAR_RENDER_CAPTURE_ONLY: 1
+    steps:
+      - name: Verify runtime
+        run: |
+          version="$(sw_vers -productVersion)"
+          [[ "${version%%.*}" == 26 ]] || { echo "::error::Unexpected macOS $version"; exit 1; }
+          echo "Runtime: macOS $version" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.9.3
+      - name: Select Xcode
+        id: xcode
+        run: |
+          Scripts/select-xcode.sh
+          version="$(xcodebuild -version | tr '\n' '-')"
+          echo "cache=$(printf '%s' "$version" | shasum -a 256 | cut -c 1-12)" >> "$GITHUB_OUTPUT"
+      - name: Restore SwiftPM build and input timestamps
+        uses: irgaly/xcode-cache@4141f139f00e335c6e1031fb93e667181f86146f # v1.9.2
+        with:
+          deriveddata-directory: .build
+          key: spm-v4-coverage-${{ runner.os }}-${{ runner.arch }}-macos-26-${{ steps.xcode.outputs.cache }}-${{ hashFiles('Package.swift',
+            'justfile', 'Scripts/coverage.sh') }}-${{ github.sha }}
+          restore-keys: |
+            spm-v4-coverage-${{ runner.os }}-${{ runner.arch }}-macos-26-${{ steps.xcode.outputs.cache }}-${{ hashFiles('Package.swift', 'justfile', 'Scripts/coverage.sh') }}-
+          use-default-mtime-targets: false
+          restore-mtime-targets: |
+            Package.swift
+            Sources/**/*
+            Tests/**/*
+      - name: Check toolchain
+        id: toolchain
+        run: Scripts/check-toolchain.sh
+      - name: Tests with coverage gate
+        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+        env:
+          TOKEN_MENU_BAR_RENDER_ARTIFACTS: ${{ runner.temp }}/settings-render
+        run: just coverage
+      - name: Retain mock Settings renders
+        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rendered-package-26-native
+          path: ${{ runner.temp }}/settings-render
+          if-no-files-found: error
+          retention-days: 1
+      - name: Retain native test crash reports
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: package-crashes-26
+          path: ~/Library/Logs/DiagnosticReports/*.ips
+          if-no-files-found: ignore
+          retention-days: 1
+
+  application-ui:
+    name: Application UI (${{ matrix.name }})
+    permissions:
+      actions: read
+      contents: read
+    needs: runtime-matrix
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.package_only }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.runtime-matrix.outputs.ui) }}
+    # https://github.com/rhysd/actionlint/blob/v1.7.12/rule_workflow_call.go
+    uses: ./.github/workflows/ui.yml # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ workflow calls
+    with:
+      runner: ${{ matrix.runner }}
+      runtime-major: ${{ matrix.runtime-major }}
+      minimum-xcode: ${{ matrix.minimum-xcode }}
+      group: ${{ inputs.ui_group || '' }}
+      test: ${{ inputs.ui_test || '' }}
+      profile-startup: ${{ inputs.ui_profile_startup || false }}
+
+  rendered-text:
+    name: Rendered text
+    permissions:
+      actions: read
+      contents: read
+    needs: [runtime-matrix, package-compatibility, coverage, application-ui]
+    if: ${{ !cancelled() && needs.runtime-matrix.result == 'success' && !inputs.ui_group }}
+    runs-on: macos-26
+    timeout-minutes: 10
+    env:
+      RUNTIMES: ${{ join(fromJSON(needs.runtime-matrix.outputs.runtimes), ' ') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the pinned OCR engine
+        run: Scripts/install-ocr.sh
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: rendered-*
+          github-token: ${{ github.token }}
+          path: .build/rendered
+      - name: Check every package render
+        run: |
+          result=0
+          for runtime in $RUNTIMES; do
+            for mode in nonpresenting native; do
+              directory=".build/rendered/rendered-package-$runtime-$mode"
+              Scripts/check-rendered-text.sh "$directory" 16 || result=1
+              fixtures=("$directory"/run.*/verifier-present.png)
+              [[ "${#fixtures[@]}" == 1 ]]
+              Scripts/test-rendered-text.sh "${fixtures[0]}" || result=1
+            done
+          done
+          exit "$result"
+      - name: Check every long-text UI group
+        if: ${{ !cancelled() && (github.event_name != 'workflow_dispatch' || !inputs.package_only) }}
+        run: |
+          result=0
+          for runtime in $RUNTIMES; do
+            while IFS= read -r group; do
+              Scripts/check-rendered-text.sh ".build/rendered/rendered-ui-$runtime-$group" 1 || result=1
+            done < <(jq -r 'keys[] | select(startswith("text-"))' .github/ui-test-groups.json)
+          done
+          exit "$result"
+
+  application:
+    name: >-
+      ${{ matrix.runtime-major == 26 && format('Build app flavors ({0}, {1})', matrix.scheme, matrix.configuration) || format('Build
+      {0} ({1})', matrix.scheme, matrix.name) }}
+    needs: runtime-matrix
+    if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.package_only && !inputs.ui_group) }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.runtime-matrix.outputs.application) }}
+    steps:
+      - name: Verify runtime
+        env:
+          EXPECTED_MACOS_MAJOR: ${{ matrix.runtime-major }}
+        run: |
+          version="$(sw_vers -productVersion)"
+          [[ "${version%%.*}" == "$EXPECTED_MACOS_MAJOR" ]] || { echo "::error::Unexpected macOS $version"; exit 1; }
+          echo "Runtime: macOS $version" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.9.3
+      - name: Select Xcode
+        id: xcode
+        env:
+          MIN_XCODE_MAJOR: ${{ matrix.minimum-xcode }}
+          EXACT_XCODE_MAJOR: ${{ matrix.minimum-xcode }}
+        run: |
+          Scripts/select-xcode.sh
+          version="$(xcodebuild -version | tr '\n' '-')"
+          echo "cache=$(printf '%s' "$version" | shasum -a 256 | cut -c 1-12)" >> "$GITHUB_OUTPUT"
+      - name: Cache Xcode packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .build/xcode-packages
+          key: xcode-spm-${{ runner.os }}-${{ runner.arch }}-${{ matrix.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('Package.swift',
+            'App/project.yml') }}
+      - name: Generate project
+        run: just xcode
+      - name: Restore distribution build
+        id: distribution-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .build/app-derived/Build
+            .build/app-derived/ModuleCache.noindex
+            .build/app-derived/SDKStatCaches.noindex
+            .build/app-derived/CompilationCache.noindex
+          key: distribution-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.runner }}-${{ steps.xcode.outputs.cache }}-${{
+            matrix.configuration }}-${{ hashFiles('Package.swift', 'App/project.yml') }}-${{ hashFiles('Sources/**', 'App/**')
+            }}
+          restore-keys: |
+            distribution-v1-${{ runner.os }}-${{ runner.arch }}-${{ matrix.runner }}-${{ steps.xcode.outputs.cache }}-${{ matrix.configuration }}-${{ hashFiles('Package.swift', 'App/project.yml') }}-
+      - name: Build
+        env:
+          SCHEME: ${{ matrix.scheme }}
+          CONFIGURATION: ${{ matrix.configuration }}
+        run: |
+          set -o pipefail
+          mkdir -p .build
+          xcodebuild -project App/TokenMenuBar.xcodeproj -scheme "$SCHEME" -configuration "$CONFIGURATION" \
+            -destination 'platform=macOS' -derivedDataPath .build/app-derived -jobs 2 \
+            -clonedSourcePackagesDirPath .build/xcode-packages CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" \
+            SPARKLE_PUBLIC_ED_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= build \
+            2>&1 | tee .build/distribution-build.log | tail -30
+      - name: Save distribution build
+        if: steps.distribution-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .build/app-derived/Build
+            .build/app-derived/ModuleCache.noindex
+            .build/app-derived/SDKStatCaches.noindex
+            .build/app-derived/CompilationCache.noindex
+          key: ${{ steps.distribution-cache.outputs.cache-primary-key }}
+      - name: Retain distribution build log
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: distribution-${{ matrix.configuration }}-${{ matrix.runner }}
+          path: .build/distribution-build.log
+          retention-days: 1
+      - name: Verify distribution settings
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          DISTRIBUTION: ${{ matrix.distribution }}
+          CONDITION: ${{ matrix.condition }}
+          SANDBOX: ${{ matrix.sandbox }}
+          ENTITLEMENTS: ${{ matrix.entitlements }}
+          TARGET: ${{ matrix.target }}
+        run: Scripts/verify-build-settings.sh "$TARGET" "$CONFIGURATION" "$DISTRIBUTION" "$CONDITION" "$SANDBOX" "$ENTITLEMENTS"
+      - name: Verify every shipped deployment target
+        env:
+          DISTRIBUTION: ${{ matrix.distribution }}
+          UPDATER: ${{ matrix.updater }}
+        run: |
+          app="$(find .build/app-derived/Build/Products -path '*/Token Menu Bar.app' -type d | head -1)"
+          test -n "$app"
+          Scripts/verify-deployment-targets.sh "$app" 14.0
+          Scripts/verify-app-bundle.sh "$app" "$DISTRIBUTION" "$UPDATER"
+      - name: Package the macOS 14 smoke artifact
+        if: matrix.runner == 'macos-26' && matrix.scheme == 'TokenMenuBar-Direct'
+        run: |
+          app="$(find .build/app-derived/Build/Products -path '*/Token Menu Bar.app' -type d | head -1)"
+          codesign --force --deep --sign - "$app"
+          ditto -c -k --keepParent "$app" .build/token-menu-bar-macos-14-smoke.zip
+      - name: Upload the macOS 14 smoke artifact
+        if: matrix.runner == 'macos-26' && matrix.scheme == 'TokenMenuBar-Direct'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: token-menu-bar-macos-14-smoke
+          path: .build/token-menu-bar-macos-14-smoke.zip
+          if-no-files-found: error
+          retention-days: 1
+
+  macos-14-runtime:
+    name: Release smoke (macOS 14 runtime)
+    permissions:
+      actions: read
+      contents: read
+    needs: [runtime-matrix, application]
+    if: ${{ !cancelled() && needs.runtime-matrix.result == 'success' && (github.event_name != 'workflow_dispatch' || (!inputs.package_only
+      && !inputs.ui_group)) }}
+    runs-on: ${{ vars.MACOS_14_RUNTIME_RUNNER || 'macos-14' }}
+    steps:
+      - name: Verify runtime
+        run: |
+          version="$(sw_vers -productVersion)"
+          [[ "${version%%.*}" == 14 ]] || { echo "::error::Unexpected macOS $version"; exit 1; }
+          echo "Runtime: macOS $version" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: token-menu-bar-macos-14-smoke
+          path: smoke
+          github-token: ${{ github.token }}
+      - name: Launch with isolated data
+        run: |
+          ditto -x -k smoke/token-menu-bar-macos-14-smoke.zip smoke/app
+          executable="smoke/app/Token Menu Bar.app/Contents/MacOS/Token Menu Bar"
+          runtime="$PWD/smoke/runtime"
+          session="macos-14-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          support="$runtime/token-menu-bar-verify-$session"
+          ready="$support/snapshots-demo.json"
+          mkdir -p "$support"
+          TOKEN_MENU_BAR_VERIFY_SESSION="$session" TOKEN_MENU_BAR_VERIFY_SUPPORT_DIRECTORY="$support" \
+            "$executable" --verify-ui >smoke/launch.log 2>&1 &
+          pid=$!
+          for _ in {1..80}; do
+            if grep -Fq '"claude"' "$ready" 2>/dev/null && grep -Fq '"codex"' "$ready" 2>/dev/null; then
+              break
+            fi
+            if ! kill -0 "$pid" 2>/dev/null; then
+              cat smoke/launch.log
+              exit 1
+            fi
+            sleep 0.25
+          done
+          if ! grep -Fq '"claude"' "$ready" 2>/dev/null || ! grep -Fq '"codex"' "$ready" 2>/dev/null; then
+            cat smoke/launch.log
+            test ! -f "$support/log.txt" || cat "$support/log.txt"
+            kill "$pid" 2>/dev/null || true
+            wait "$pid" || true
+            exit 1
+          fi
+          kill "$pid" 2>/dev/null || true
+          wait "$pid" || true

@@ -1,0 +1,21 @@
+name: Scroll event diagnosis
+
+on:
+  push:
+    branches: [diagnostic/macos14]
+
+permissions:
+  contents: read
+
+jobs:
+  scroll:
+    permissions:
+      actions: read
+      contents: read
+    uses: ./.github/workflows/ui.yml # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ workflow calls
+    with:
+      runner: macos-26
+      runtime-major: 26
+      minimum-xcode: 26
+      group: text-wide-dark
+      test: LiveControlAuditUITests/testLongSettingsTextAtWideWidthInDarkAppearance

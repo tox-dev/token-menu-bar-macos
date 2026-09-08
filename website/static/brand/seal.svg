@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Token Menu Bar for macOS">
+  <defs>
+    <linearGradient id="tmb-seal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4C3BE0"/>
+      <stop offset="1" stop-color="#9A6BFF"/>
+    </linearGradient>
+    <path id="tmb-seal-arc" d="M60 108a48 48 0 1 1 0-96 48 48 0 0 1 0 96" fill="none"/>
+  </defs>
+  <circle cx="60" cy="60" r="58" fill="none" stroke="url(#tmb-seal)" stroke-width="3"/>
+  <circle cx="60" cy="60" r="50" fill="none" stroke="url(#tmb-seal)" stroke-width="1" opacity="0.45"/>
+  <g transform="translate(34,34) scale(0.52)" fill="url(#tmb-seal)">
+    <g opacity="0.3">
+      <rect x="22" y="24" width="56" height="14" rx="7"/>
+      <rect x="22" y="43" width="56" height="14" rx="7"/>
+      <rect x="22" y="62" width="56" height="14" rx="7"/>
+    </g>
+    <rect x="22" y="24" width="56" height="14" rx="7"/>
+    <rect x="22" y="43" width="38" height="14" rx="7"/>
+    <rect x="22" y="62" width="22" height="14" rx="7"/>
+  </g>
+  <text fill="currentColor" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif" font-size="9" font-weight="640" letter-spacing="2.4">
+    <textPath href="#tmb-seal-arc" startOffset="50%" text-anchor="middle">TOKEN MENU BAR · macOS</textPath>
+  </text>
+</svg>

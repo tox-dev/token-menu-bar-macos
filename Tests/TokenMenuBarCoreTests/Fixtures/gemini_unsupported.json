@@ -1,0 +1,13 @@
+{
+  "ineligibleTiers": [
+    {
+      "reasonCode": "UNSUPPORTED_CLIENT",
+      "reasonMessage": "Login with Google is no longer supported; migrate to Antigravity.",
+      "tierId": "free-tier",
+      "tierName": "Free"
+    }
+  ],
+  "cloudaicompanionProject": {
+    "id": "projects/legacy-123"
+  }
+}
