@@ -1,0 +1,8 @@
+{
+  "code": 0,
+  "userStatus": {
+    "email": "you@example.com",
+    "userTier": { "id": "google_ai_ultra", "name": "Google AI Ultra" },
+    "planStatus": { "planInfo": { "planName": "Pro" } }
+  }
+}

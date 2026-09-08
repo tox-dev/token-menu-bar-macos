@@ -1,0 +1,35 @@
+- title: The windows the vendors meter
+  icon: M3 12h4l3 8 4-16 3 8h4
+  body: >-
+    Claude's 5-hour session and weekly per-model limits, Codex's weekly and model windows, Gemini's daily buckets,
+    Cursor's plan and on-demand spend, Copilot's premium requests, plus credits and spend caps.
+
+- title: Pace beside the percent
+  icon: M12 8v4l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z
+  body: >-
+    Each window says whether you are ahead of an even pace and when it would hit 100%, so a red bar on Friday
+    arrives with warning.
+
+- title: History that survives the reset
+  icon: M3 3v18h18M7 15l4-4 3 3 5-6
+  body: >-
+    Samples land in a local SQLite store every few minutes. Charts keep 60 days, draw the reset cliffs, and stack
+    windows next to the vendor analytics.
+
+- title: Widgets and notifications
+  icon: M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z
+  body: >-
+    Small, medium and large desktop widgets mirror the selected windows. Threshold crossings, resets and sign-in
+    problems arrive as macOS notifications you can tune.
+
+- title: Fits any menu bar
+  icon: M4 6h16M4 12h10M4 18h6
+  body: >-
+    The app draws each cell as an image, which holds two lines and per-value colour at any height, and steps down
+    to narrower layouts when the bar runs out of room next to the notch.
+
+- title: Private by construction
+  icon: M12 3l7 4v5c0 4.4-3 8.4-7 9-4-0.6-7-4.6-7-9V7z
+  body: >-
+    It keeps no account, sends no telemetry, and refreshes a token only after you opt in. The App Store build runs
+    sandboxed; the direct build carries Apple's notarization and updates through Sparkle.

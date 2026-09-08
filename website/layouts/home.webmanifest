@@ -1,0 +1,14 @@
+{
+  "name": {{ site.Title | jsonify }},
+  "short_name": {{ site.Title | jsonify }},
+  "description": {{ site.Params.description | default "" | jsonify }},
+  "start_url": {{ "" | relURL | jsonify }},
+  "display": "standalone",
+  "background_color": {{ site.Params.themeColor | jsonify }},
+  "theme_color": {{ site.Params.themeColor | jsonify }},
+  "icons": [
+    {"src": {{ "brand/icon.svg" | relURL | jsonify }}, "sizes": "any", "type": "image/svg+xml"},
+    {"src": {{ "brand/icon-32.png" | relURL | jsonify }}, "sizes": "32x32", "type": "image/png"},
+    {"src": {{ "brand/icon-180.png" | relURL | jsonify }}, "sizes": "180x180", "type": "image/png"}
+  ]
+}

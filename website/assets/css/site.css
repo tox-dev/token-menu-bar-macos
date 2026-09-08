@@ -1,0 +1,925 @@
+/* Palette mirrors Sources/TokenMenuBarCore/Brand.swift so the site and the app never drift.
+   The iris gradient stays cool: green, orange and red belong to the usage scale alone. */
+
+:root {
+  color-scheme: light;
+
+  --iris-1: #4c3be0;
+  --iris-2: #9a6bff;
+  --iris: #5a46e8;
+  --iris-soft: rgba(90, 70, 232, 0.1);
+  /* Text printed on a solid --iris fill. The dark theme's iris is light enough that white on it is 2.7:1. */
+  --on-iris: #ffffff;
+
+  --usage-green: #258540;
+  --usage-orange: #db7516;
+  --usage-red: #cc1f1f;
+
+  --ink: #0f1117;
+  --body: #3c4250;
+  --muted: #667085;
+  --paper: #fafafc;
+  --surface: #ffffff;
+  --raised: #f2f2f7;
+  --line: #e3e3ec;
+
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --shadow-sm:
+    0 1px 2px rgba(15, 17, 23, 0.06), 0 1px 3px rgba(15, 17, 23, 0.05);
+  --shadow: 0 10px 30px rgba(15, 17, 23, 0.09);
+  --shadow-lg: 0 24px 60px rgba(15, 17, 23, 0.16);
+
+  --page: 1240px;
+  --prose: 1140px;
+  --sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Inter,
+    system-ui, sans-serif;
+  --mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, "Cascadia Mono", monospace;
+}
+
+body.theme-dark,
+body.theme-auto {
+  --dark-ink: #f4f5f9;
+  --dark-body: #c2c7d6;
+  --dark-muted: #8d94a8;
+  --dark-paper: #0f1117;
+  --dark-surface: #171a22;
+  --dark-raised: #1d2130;
+  --dark-line: #272c3b;
+}
+
+body.theme-dark {
+  color-scheme: dark;
+  --iris: #a78bfa;
+  --iris-soft: rgba(167, 139, 250, 0.14);
+  --on-iris: #0f1117;
+  --usage-green: #46b969;
+  --usage-orange: #f0993f;
+  --usage-red: #e8544e;
+  --ink: var(--dark-ink);
+  --body: var(--dark-body);
+  --muted: var(--dark-muted);
+  --paper: var(--dark-paper);
+  --surface: var(--dark-surface);
+  --raised: var(--dark-raised);
+  --line: var(--dark-line);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.65);
+}
+
+@media (prefers-color-scheme: dark) {
+  body.theme-auto {
+    color-scheme: dark;
+    --iris: #a78bfa;
+    --iris-soft: rgba(167, 139, 250, 0.14);
+    --on-iris: #0f1117;
+    --usage-green: #46b969;
+    --usage-orange: #f0993f;
+    --usage-red: #e8544e;
+    --ink: var(--dark-ink);
+    --body: var(--dark-body);
+    --muted: var(--dark-muted);
+    --paper: var(--dark-paper);
+    --surface: var(--dark-surface);
+    --raised: var(--dark-raised);
+    --line: var(--dark-line);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+    --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.65);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body.preload * {
+  transition: none !important;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--body);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--ink);
+  line-height: 1.2;
+  letter-spacing: -0.022em;
+  margin: 2.2rem 0 0.8rem;
+  font-weight: 640;
+}
+
+h1 {
+  font-size: 2.2rem;
+  margin-top: 0;
+}
+h2 {
+  font-size: 1.5rem;
+}
+h3 {
+  font-size: 1.16rem;
+}
+
+p,
+ul,
+ol {
+  margin: 0 0 1rem;
+}
+
+a {
+  color: var(--iris);
+  text-decoration-color: color-mix(in srgb, var(--iris) 35%, transparent);
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  background: var(--raised);
+  padding: 0.15em 0.38em;
+  border-radius: 5px;
+  /* break-word, not anywhere: a path too long for a phone breaks, but table columns keep their min-content width */
+  overflow-wrap: break-word;
+}
+
+pre {
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.05rem;
+  overflow-x: auto;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* diagrams.js turns Mermaid's own fit-to-container off; this puts the wide-screen behaviour back in CSS,
+   which leaves the phone free to keep the diagram at full size and scroll it. */
+pre.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 2.5rem 0;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.94rem;
+}
+
+th,
+td {
+  border-bottom: 1px solid var(--line);
+  padding: 0.5rem 0.7rem;
+  text-align: left;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.wrap {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 0 1.4rem;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+}
+
+.skip:focus {
+  left: 1rem;
+  top: 1rem;
+  z-index: 100;
+  background: var(--surface);
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+}
+
+:focus-visible {
+  outline: 2px solid var(--iris);
+  outline-offset: 2px;
+}
+
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+
+.masthead .wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  min-height: 60px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 640;
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: -0.02em;
+}
+
+.brand img {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+
+.nav {
+  display: flex;
+  gap: 0.2rem;
+  margin-left: auto;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.nav a svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.94rem;
+  font-weight: 520;
+}
+
+.nav a:hover {
+  color: var(--ink);
+  background: var(--raised);
+}
+
+.nav a[aria-current="page"] {
+  color: var(--iris);
+  background: var(--iris-soft);
+}
+
+.theme-toggle {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.theme-toggle:hover {
+  color: var(--ink);
+  border-color: var(--muted);
+}
+
+.theme-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.62rem 1.15rem;
+  border-radius: 999px;
+  font-weight: 580;
+  font-size: 0.97rem;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.button-primary {
+  /* Stopping at 180% keeps the tokens the app's Brand.swift sets: reaching --iris-2 itself puts white
+     on #9a6bff at 3.55:1, while the corner this ends on is 4.8:1. */
+  background-image: linear-gradient(135deg, var(--iris-1), var(--iris-2) 180%);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(76, 59, 224, 0.35);
+}
+
+.button-secondary {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: 4rem 0 3rem;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: -40% 30% auto -10%;
+  height: 620px;
+  background: radial-gradient(
+    closest-side,
+    rgba(122, 90, 245, 0.22),
+    transparent
+  );
+  pointer-events: none;
+}
+
+.hero .wrap {
+  position: relative;
+  display: grid;
+  gap: 2rem;
+  justify-items: start;
+  max-width: 780px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 620;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--iris);
+  background: var(--iris-soft);
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  margin-bottom: 1rem;
+}
+
+.hero h1 {
+  font-size: clamp(2.1rem, 4.4vw, 3.1rem);
+  letter-spacing: -0.032em;
+  font-weight: 700;
+  margin-bottom: 0.9rem;
+}
+
+.hero .lede {
+  font-size: 1.1rem;
+  color: var(--muted);
+  margin-bottom: 1.6rem;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.hero-note {
+  margin-top: 0.9rem;
+  font-size: 0.87rem;
+  color: var(--muted);
+}
+
+.hero-media {
+  display: grid;
+  gap: 0.9rem;
+  width: 100%;
+}
+
+.shot {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.shot-bar {
+  max-width: 520px;
+  border-radius: var(--radius);
+}
+
+.providers {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  padding: 1.1rem 0;
+}
+
+.providers .wrap {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.providers strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.section {
+  padding: 3.4rem 0;
+}
+
+.section-head {
+  max-width: 640px;
+  margin-bottom: 1.8rem;
+}
+
+.section-head p {
+  color: var(--muted);
+  margin: 0;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.card h2,
+.card h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1.02rem;
+}
+
+.card p {
+  margin: 0;
+  font-size: 0.94rem;
+  color: var(--muted);
+}
+
+.card-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.7rem;
+  background: var(--iris-soft);
+  color: var(--iris);
+}
+
+.card-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* One popover at a time, switched by the radios above it, so three tall shots do not stack into a scroll marathon */
+.tabshots {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+}
+
+.tabshot-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tabshot-bar {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.tabshot-bar label {
+  padding: 0.4rem 1.15rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 560;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tabshot-bar label:hover {
+  color: var(--ink);
+}
+
+.tabshot-panel {
+  margin: 0;
+  display: none;
+}
+
+/* One tab at a time, each shown whole: no crop, no inner scrollbar */
+.tabshot-frame img {
+  display: block;
+  margin-inline: auto;
+}
+
+.tabshot-panel figcaption {
+  margin-top: 0.7rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+#tabshot-usage:checked ~ .tabshot-bar label[for="tabshot-usage"],
+#tabshot-history:checked ~ .tabshot-bar label[for="tabshot-history"],
+#tabshot-settings:checked ~ .tabshot-bar label[for="tabshot-settings"] {
+  background: var(--iris);
+  color: var(--on-iris);
+}
+
+#tabshot-usage:focus-visible ~ .tabshot-bar label[for="tabshot-usage"],
+#tabshot-history:focus-visible ~ .tabshot-bar label[for="tabshot-history"],
+#tabshot-settings:focus-visible ~ .tabshot-bar label[for="tabshot-settings"] {
+  outline: 2px solid var(--iris);
+  outline-offset: 2px;
+}
+
+#tabshot-usage:checked ~ .tabshot-panels #panel-usage,
+#tabshot-history:checked ~ .tabshot-panels #panel-history,
+#tabshot-settings:checked ~ .tabshot-panels #panel-settings {
+  display: block;
+}
+
+/* The usage scale is semantic: green through red maps to the thresholds the site documents */
+
+.legend {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend i {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.legend .g {
+  background: var(--usage-green);
+}
+.legend .o {
+  background: var(--usage-orange);
+}
+.legend .r {
+  background: var(--usage-red);
+}
+
+.page {
+  padding: 2.6rem 0 3.5rem;
+}
+
+.page .wrap {
+  max-width: var(--prose);
+}
+
+.page-wide .wrap {
+  max-width: var(--page);
+}
+
+.page-title {
+  font-size: 2.1rem;
+  margin-bottom: 0.4rem;
+}
+
+.page-lede {
+  color: var(--muted);
+  font-size: 1.04rem;
+  margin-bottom: 2rem;
+}
+
+.prose img {
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+}
+
+.prose li {
+  margin-bottom: 0.3rem;
+}
+
+.prose blockquote {
+  margin: 1.4rem 0;
+  padding: 0.2rem 1rem;
+  border-left: 3px solid var(--iris);
+  color: var(--muted);
+}
+
+.prose h2,
+.prose h3 {
+  scroll-margin-top: 5rem;
+}
+
+.anchor {
+  color: var(--muted);
+  opacity: 0;
+  margin-left: 0.4rem;
+  text-decoration: none;
+  font-weight: 400;
+}
+
+h2:hover .anchor,
+h3:hover .anchor,
+.anchor:focus,
+.anchor:focus-visible {
+  opacity: 1;
+}
+
+.foot {
+  border-top: 1px solid var(--line);
+  padding: 2rem 0 2.6rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.foot .wrap {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.foot a {
+  color: var(--muted);
+}
+
+.foot a:hover {
+  color: var(--ink);
+}
+
+.foot-links {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 900px) {
+  .hero {
+    padding-top: 2.6rem;
+  }
+}
+
+/* Below this the header no longer fits on one line. The brand takes the first row and the links become a
+   side-scrolling strip, so the sticky header stays one row of links tall instead of wrapping to three. */
+@media (max-width: 720px) {
+  .masthead .wrap {
+    flex-wrap: wrap;
+    row-gap: 0.15rem;
+    min-height: 0;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .brand {
+    width: 100%;
+  }
+
+  .nav {
+    flex: 1 1 auto;
+    min-width: 0;
+    /* The strip scrolls, so it also clips: 4px of padding leaves room for the focus ring, and the negative
+       margin puts the first link back under the brand. */
+    margin-left: -4px;
+    padding: 4px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav a {
+    flex: 0 0 auto;
+  }
+
+  .theme-toggle {
+    flex: none;
+    margin-left: 0.3rem;
+  }
+
+  .prose h2,
+  .prose h3 {
+    scroll-margin-top: 6.5rem;
+  }
+}
+
+@media (max-width: 620px) {
+  body {
+    font-size: 16px;
+  }
+
+  .wrap {
+    padding: 0 1.15rem;
+  }
+
+  .nav a {
+    padding: 0.3rem 0.45rem;
+    font-size: 0.88rem;
+  }
+
+  .section {
+    padding: 2.4rem 0;
+  }
+
+  .page {
+    padding: 1.9rem 0 2.8rem;
+  }
+
+  .providers .wrap {
+    gap: 0.5rem 1rem;
+  }
+
+  .tabshot-bar {
+    max-width: 100%;
+  }
+
+  .tabshot-bar label {
+    padding: 0.4rem 0.85rem;
+  }
+
+  /* Fitted to a 390px column a six-node flowchart's labels fall to a few pixels, so it keeps its size and pans */
+  pre.mermaid svg {
+    max-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.callout {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--iris);
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.1rem;
+  margin: 1.4rem 0;
+}
+
+.callout p:last-child {
+  margin-bottom: 0;
+}
+
+.callout-title {
+  font-weight: 620;
+  color: var(--ink);
+  margin: 0 0 0.3rem;
+}
+
+.shot-figure {
+  margin: 1.5rem 0;
+}
+
+.shot-figure figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+body.theme-light .only-dark,
+body.theme-dark .only-light {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  body.theme-auto .only-light {
+    display: none;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  body.theme-auto .only-dark {
+    display: none;
+  }
+}
+
+.provider {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.provider img {
+  width: 18px;
+  height: 18px;
+}
+
+.card-link {
+  text-decoration: none;
+  display: block;
+  transition:
+    border-color 120ms ease,
+    transform 120ms ease;
+}
+
+.card-link:hover {
+  border-color: var(--iris);
+  transform: translateY(-2px);
+}
+
+.card-link h2,
+.card-link h3 {
+  color: var(--ink);
+}
+
+.breadcrumb {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+
+.breadcrumb a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--iris);
+}

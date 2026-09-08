@@ -1,0 +1,12 @@
+# The repository, CI and pre-commit.ci have to agree on one style, so the settings live here rather than in whatever
+# global configuration a machine happens to carry.
+line-length = 120
+
+[lint]
+select = ["ALL"]
+ignore = [
+  "COM812", # the formatter owns trailing commas
+  "D203",   # incompatible with D211, which this repository follows
+  "D213",   # incompatible with D212, which this repository follows
+  "CPY001", # the licence lives in LICENSE, not atop every file
+]

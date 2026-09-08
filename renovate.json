@@ -1,0 +1,37 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    ":preserveSemverRanges"
+  ],
+  "timezone": "Europe/London",
+  "minimumReleaseAge": "3 days",
+  "schedule": ["before 6am on Tuesday"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on Tuesday"]
+  },
+  "packageRules": [
+    {
+      "description": "Keep action digest updates in one review",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "GitHub Actions"
+    },
+    {
+      "description": "Update the pinned developer tools together",
+      "matchManagers": ["mise"],
+      "groupName": "Developer tools"
+    },
+    {
+      "description": "Update the Swift packages together",
+      "matchManagers": ["swift"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "Swift packages"
+    }
+  ],
+  "pre-commit": {
+    "enabled": true
+  }
+}

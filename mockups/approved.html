@@ -1,0 +1,927 @@
+<title>Token Menu Bar Panel</title>
+<style>
+  :root {
+    --bg: #ecebef;
+    --panel: #fdfdfe;
+    --panel-2: #f4f4f7;
+    --ink: #16151a;
+    --ink-2: #6d6a78;
+    --ink-3: #716e7a;
+    --line: #dedce4;
+    --line-2: #eceaf0;
+    --accent: #c2256d;
+    --accent-ink: #ffffff;
+    --accent-soft: #fbe7f0;
+    --good: #217a46;
+    --warn: #946000;
+    --crit: #c7352a;
+    --field: #ffffff;
+    --btn: #fbfbfc;
+    --btn-line: #cfccd8;
+    --shadow: 0 18px 50px rgba(24, 20, 40, .22), 0 2px 6px rgba(24, 20, 40, .12);
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --row-h: 34px;
+    --gap: 12px;
+    --fs: 13px;
+    --fs-s: 11.5px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17161b;
+      --panel: #242229;
+      --panel-2: #2c2a33;
+      --ink: #f2f1f5;
+      --ink-2: #a5a1b0;
+      --ink-3: #97949f;
+      --line: #3a3743;
+      --line-2: #322f3a;
+      --accent: #f0559b;
+      --accent-ink: #24101a;
+      --accent-soft: #3a1f2d;
+      --good: #4cc47c;
+      --warn: #e3a33c;
+      --crit: #f0675a;
+      --field: #1c1b21;
+      --btn: #322f3a;
+      --btn-line: #46424f;
+      --shadow: 0 18px 50px rgba(0, 0, 0, .55), 0 2px 6px rgba(0, 0, 0, .4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17161b;
+    --panel: #242229;
+    --panel-2: #2c2a33;
+    --ink: #f2f1f5;
+    --ink-2: #a5a1b0;
+    --ink-3: #97949f;
+    --line: #3a3743;
+    --line-2: #322f3a;
+    --accent: #f0559b;
+    --accent-ink: #24101a;
+    --accent-soft: #3a1f2d;
+    --good: #4cc47c;
+    --warn: #e3a33c;
+    --crit: #f0675a;
+    --field: #1c1b21;
+    --btn: #322f3a;
+    --btn-line: #46424f;
+    --shadow: 0 18px 50px rgba(0, 0, 0, .55), 0 2px 6px rgba(0, 0, 0, .4);
+  }
+  :root[data-density="compact"] { --row-h: 28px; --gap: 8px; --fs: 12px; --fs-s: 10.5px; }
+  :root[data-density="roomy"]   { --row-h: 40px; --gap: 16px; --fs: 13.5px; --fs-s: 12px; }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font: 13px/1.45 var(--ui); }
+  .stage { max-width: 1180px; margin: 0 auto; padding: 28px 20px 72px; display: flex; flex-direction: column; gap: 20px; }
+
+  .brief h1 { font-size: 21px; margin: 0 0 6px; letter-spacing: -.015em; }
+  .brief p { margin: 0; color: var(--ink-2); max-width: 68ch; }
+  .brief code { font: 11.5px var(--mono); background: var(--panel-2); padding: 1px 5px; border-radius: 4px; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .cgroup { display: flex; flex-direction: column; gap: 6px; }
+  .cgroup > b { font-size: 10px; text-transform: uppercase; letter-spacing: .075em; color: var(--ink-3); font-weight: 600; }
+  .seg { display: flex; border: 1px solid var(--btn-line); border-radius: 7px; overflow: hidden; }
+  .seg button { font: 12px var(--ui); border: 0; padding: 4px 11px; background: var(--btn); color: var(--ink); cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--btn-line); }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .imps { display: grid; grid-template-columns: repeat(2, minmax(210px, 1fr)); gap: 2px 18px; }
+  .imps label { display: flex; gap: 7px; align-items: baseline; font-size: 12px; color: var(--ink-2); cursor: pointer; }
+  .imps input { margin: 0; accent-color: var(--accent); position: relative; top: 1px; }
+  .imps label b { color: var(--ink); font-weight: 550; }
+
+  .desktop { border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
+    background: linear-gradient(160deg, #3a3550, #6b4a63 55%, #8a5c5c); padding-bottom: 40px; }
+  .menubar { height: 26px; background: rgba(255,255,255,.72); backdrop-filter: blur(12px);
+    display: flex; align-items: center; gap: 16px; padding: 0 12px; font-size: 12.5px; color: #1c1b21; }
+  :root[data-theme="dark"] .menubar { background: rgba(30,28,36,.8); color: #eee; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .menubar { background: rgba(30,28,36,.8); color: #eee; } }
+  .menubar .sp { flex: 1; }
+  .menubar .item { font: 11px/1.05 var(--mono); display: flex; gap: 8px; padding: 2px 7px; border-radius: 5px; background: rgba(0,0,0,.07); }
+  .menubar .item i { font-style: normal; display: block; }
+  .menubar .item .p { font-weight: 600; }
+
+  .panelwrap { display: flex; justify-content: center; margin-top: 4px; }
+  .arrow { width: 0; height: 0; margin: 0 auto -1px; border-left: 11px solid transparent;
+    border-right: 11px solid transparent; border-bottom: 9px solid var(--panel); position: relative; z-index: 2; }
+  .panel { width: 100%; background: var(--panel); border-radius: 11px;
+    box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; }
+
+  .tabs { display: flex; justify-content: center; padding: 11px 0; border-bottom: 1px solid var(--line-2); }
+  .tabs .grp { display: flex; border: 1px solid var(--btn-line); border-radius: 8px; overflow: hidden; }
+  .tabs button { font: 13px var(--ui); border: 0; background: var(--btn); color: var(--ink);
+    padding: 5px 22px; cursor: pointer; }
+  .tabs button + button { border-left: 1px solid var(--btn-line); }
+  .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 550; }
+
+  .scroll { max-height: calc(100vh - 96px); overflow-y: auto; scrollbar-width: auto; }
+  .pane { padding: 14px 18px 18px; display: flex; flex-direction: column; gap: var(--gap); }
+  .pane[hidden] { display: none; }
+
+  h4 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-3);
+    font-weight: 600; margin: 6px 0 0; }
+  .sect { display: flex; flex-direction: column; gap: 7px; }
+  .sect + .sect { border-top: 1px solid var(--line-2); padding-top: 10px; }
+  .row { display: flex; align-items: center; gap: 10px; min-height: 24px; font-size: var(--fs); }
+  .row[hidden] { display: none; }
+  .row .lbl { width: 116px; flex: none; color: var(--ink-2); }
+  .row .sp { flex: 1; }
+  .dim { color: var(--ink-2); }
+  .tiny { font-size: var(--fs-s); color: var(--ink-2); }
+  .path { max-width: 100%; font: var(--fs-s)/1.3 var(--mono); color: var(--ink-2); overflow-x: auto; white-space: nowrap; }
+
+  button.b { font: 12px var(--ui); background: var(--btn); color: var(--ink); border: 1px solid var(--btn-line);
+    border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+  button.b:hover { background: var(--panel-2); }
+  button.b:active { background: var(--line-2); }
+  button.b:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button.b[disabled] { opacity: .45; cursor: default; }
+  button.b.danger { color: var(--crit); }
+  input[type=checkbox] { accent-color: var(--accent); margin: 0; }
+  input.f { font: 12px var(--ui); background: var(--field); color: var(--ink); border: 1px solid var(--btn-line);
+    border-radius: 6px; padding: 3px 7px; }
+  input.f:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+  .step { display: inline-flex; align-items: center; gap: 6px; }
+  .step .sbtn { display: flex; flex-direction: column; border: 1px solid var(--btn-line); border-radius: 5px; overflow: hidden; }
+  .step .sbtn span { font-size: 8px; line-height: 9px; padding: 1px 5px; background: var(--btn); cursor: pointer; }
+  .step .sbtn span + span { border-top: 1px solid var(--btn-line); }
+  .tip { position: fixed; z-index: 99; max-width: 320px; background: var(--panel); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.45;
+    box-shadow: 0 10px 30px rgba(20, 16, 34, .28); pointer-events: none; opacity: 0;
+    transition: opacity .09s ease; }
+  .tip[data-show="1"] { opacity: 1; }
+  .tip b { display: block; font-weight: 600; margin-bottom: 2px; }
+  .tip code { font: 11px var(--mono); background: var(--panel-2); padding: 1px 4px; border-radius: 3px; }
+  .tip .k { color: var(--ink-2); }
+
+  .pick { display: inline-flex; border: 1px solid var(--btn-line); border-radius: 6px; overflow: hidden; }
+  .pick[hidden] { display: none; }
+  .pick span { font-size: 12px; padding: 3px 11px; background: var(--btn); cursor: pointer; }
+  .pick span + span { border-left: 1px solid var(--btn-line); }
+  .pick span[data-on="1"] { background: var(--accent); color: var(--accent-ink); }
+
+  /* preview + model list */
+  .prev { display: flex; gap: 12px; align-items: center; font: 12px var(--mono); }
+  .prev .c { padding: 1px 5px; border-radius: 4px; cursor: default; }
+  .prev .c.hot { background: var(--accent-soft); outline: 1px solid var(--accent); }
+  .mlist { display: flex; flex-direction: column; border: 1px solid var(--line-2);
+    border-radius: 8px; overflow: hidden; }
+  .ghead { display: none; align-items: center; gap: 8px; padding: 6px 10px;
+    background: var(--panel-2); border-bottom: 1px solid var(--line-2); }
+  .ghead + .mrow { border-top: 0; }
+  :root[data-imp-group="1"] .ghead { display: flex; }
+  .ghead .nm { font-weight: 600; font-size: 12px; }
+  .ghead .ct { font-size: var(--fs-s); color: var(--ink-3); }
+  .mrow { display: grid; grid-template-columns: 20px 24px minmax(0, 1fr) 96px 116px 20px;
+    align-items: center; gap: 10px; min-height: var(--row-h); padding: 4px 10px;
+    border-top: 1px solid var(--line-2); }
+  .mrow:first-child { border-top: 0; }
+  .mrow:hover { background: var(--panel-2); }
+  .mrow.hot { background: var(--accent-soft); }
+  :root[data-imp-group="1"] .mrow { grid-template-columns: 20px minmax(0, 1fr) 96px 116px 20px; }
+  :root[data-imp-group="1"] .mrow .ico { display: none; }
+  .ico { width: 20px; height: 20px; border-radius: 5px; display: grid; place-items: center;
+    font-size: 0; color: transparent; background-repeat: no-repeat; background-position: center;
+    background-size: 13px 13px; }
+  .ico.cc { background-color: #a94b32; background-image: none; color: #fff; font-size: 8px; font-weight: 700; }
+  .ico.cx { background-color: #10a37f;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.6l8.1 4.7v9.4L12 21.4 3.9 16.7V7.3z' fill='none' stroke='%23fff' stroke-width='2.2'/%3E%3Cpath d='M12 7.4v9.2M7.9 9.8l8.2 4.4M16.1 9.8l-8.2 4.4' stroke='%23fff' stroke-width='1.4' opacity='.85'/%3E%3C/svg%3E"); }
+  .ico.gm { background-color: #1f5ebd; background-image: none; color: #fff; font-size: 8px; font-weight: 700; }
+  .ico.cu { background-color: #2b2b31;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.5l9 5.2v10.6l-9 5.2-9-5.2V7.7z' fill='none' stroke='%23fff' stroke-width='1.9'/%3E%3Cpath d='M12 8.4l4.7 2.7v5.4L12 19.2l-4.7-2.7v-5.4z' fill='%23fff' opacity='.9'/%3E%3C/svg%3E"); }
+  .ico.gh { background-color: #24292f; background-image: none; color: #fff; font-size: 8px; font-weight: 700; }
+  .ico.lg { width: 26px; height: 26px; border-radius: 7px; background-size: 17px 17px; }
+  .nm { line-height: 1.2; min-width: 0; }
+  .nm b { font-weight: 550; font-size: var(--fs); display: block; overflow-wrap: anywhere; }
+  .nm i { font-style: normal; display: block; font: var(--fs-s) var(--mono); color: var(--ink-3);
+    overflow-wrap: anywhere; }
+  .pct { font-variant-numeric: tabular-nums; font-size: var(--fs); text-align: right; line-height: 1.3; }
+  .pct u { text-decoration: none; color: var(--ink-3); font-size: var(--fs-s); margin-left: 5px; }
+  .bar { display: none; width: 100%; height: 3px; border-radius: 2px; background: var(--line);
+    overflow: hidden; margin-top: 3px; }
+  .bar i { display: block; height: 100%; background: var(--ink-3); }
+  :root[data-imp-bar="1"] .bar { display: block; }
+  .lblwrap { display: flex; align-items: center; gap: 5px; justify-content: flex-end; }
+  .lblwrap input { width: 64px; text-align: center; font: 11.5px var(--mono); flex: none; }
+  .revert { display: none; border: 0; background: transparent; color: var(--ink-3); cursor: pointer; font-size: 12px; padding: 0 2px; }
+  :root[data-imp-override="1"] .mrow.custom .revert { display: block; }
+  .cbudget { display: none; font: 9.5px var(--mono); color: var(--ink-3); }
+  :root[data-imp-budget="1"] .cbudget { display: block; }
+  .drag { visibility: hidden; color: var(--ink-3); cursor: grab; text-align: center; }
+  :root[data-imp-drag="1"] .mrow:hover .drag { visibility: visible; }
+  .filter { display: none; }
+  :root[data-imp-filter="1"] .filter { display: flex; }
+  .zerotog { display: none; }
+  :root[data-imp-zero="1"] .zerotog { display: flex; }
+
+  /* log */
+  .logbox { border: 1px solid var(--line); border-radius: 7px; background: var(--field); overflow: hidden; }
+  .logbox pre { margin: 0; padding: 8px 10px; font: 10.5px/1.5 var(--mono); color: var(--ink-2);
+    overflow: auto; white-space: pre; }
+  :root[data-imp-log="1"] .logbox pre { max-height: 150px; }
+  :root:not([data-imp-log="1"]) .logbox pre { max-height: none; }
+  .logfilter { display: none; gap: 8px; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--line-2); background: var(--panel-2); }
+  :root[data-imp-log="1"] .logfilter { display: flex; }
+
+  /* usage */
+  .ucard { border: 1px solid var(--line-2); border-radius: 9px; overflow: hidden; }
+  .uhead { display: flex; align-items: center; gap: 9px; padding: 8px 11px; background: var(--panel-2); }
+  .uhead .nm2 { font-weight: 600; font-size: 13px; }
+  .chip { font-size: 10.5px; padding: 1px 7px; border-radius: 20px; border: 1px solid var(--line);
+    color: var(--ink-2); background: var(--panel); }
+  .chip.w { color: var(--warn); border-color: var(--warn); }
+  .chip.c { color: var(--crit); border-color: var(--crit); }
+  .ubody { padding: 4px 11px 9px; }
+  .urow { display: grid; grid-template-columns: minmax(0, 1fr) 120px 50px 90px 174px; align-items: center; gap: 10px;
+    min-height: var(--row-h); font-size: var(--fs); }
+  .urow .t { display: flex; align-items: baseline; gap: 7px; min-width: 0; flex-wrap: wrap; }
+  .urow .t i { font-style: normal; font: var(--fs-s) var(--mono); color: var(--ink-3); }
+  .track { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; position: relative; }
+  .track i { display: block; height: 100%; background: var(--good); }
+  .track i.w { background: var(--warn); } .track i.c { background: var(--crit); }
+  .track .expected { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px;
+    background: var(--ink); opacity: .55; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .rst { text-align: right; color: var(--ink-2); font-size: var(--fs-s); font-variant-numeric: tabular-nums; }
+  .pace { color: var(--ink-2); font: var(--fs-s)/1.15 var(--mono); text-align: right; overflow-wrap: anywhere; }
+  .note2 { font-size: var(--fs-s); color: var(--ink-2); padding: 2px 0 0; }
+
+  /* history */
+  .hwrap { display: grid; grid-template-columns: 1fr 210px; gap: 12px; }
+  .plot { border: 1px solid var(--line-2); border-radius: 9px; padding: 10px; background: var(--panel); }
+  .plot g[hidden] { display: none; }
+  .legend { border: 1px solid var(--line-2); border-radius: 9px; padding: 9px; display: flex; flex-direction: column; gap: 4px; }
+  .lrow { display: flex; align-items: center; gap: 7px; font-size: var(--fs-s); padding: 3px 5px; border-radius: 5px; }
+  .lrow:hover { background: var(--panel-2); }
+  .lrow .sw { width: 14px; height: 3px; border-radius: 2px; flex: none; }
+  .lrow .sp { flex: 1; }
+  .lrow.off { opacity: .42; }
+  .lrow button { border: 0; background: transparent; cursor: pointer; color: var(--ink-3); font-size: 11px; padding: 0 2px; }
+  .lrow button:focus-visible { outline: 2px solid var(--accent); border-radius: 3px; }
+
+  .arow { display: flex; align-items: center; gap: 9px; }
+  .ahead { font-size: 13px; font-weight: 600; }
+  .arow select.f { min-width: 190px; }
+  .atotal { display: flex; align-items: baseline; gap: 8px; padding: 2px 0 0; }
+  .atotal b { font: 600 21px/1.1 var(--ui); font-variant-numeric: tabular-nums; }
+  .bars { display: flex; align-items: flex-end; gap: 4px; height: 108px;
+    border-bottom: 1px solid var(--line); padding-top: 4px; }
+  .bars i { flex: 1; background: #b8622e; border-radius: 2px 2px 0 0; min-width: 4px; }
+  .bars i.c2 { background: #3c7f5e; }
+  .axis { display: flex; justify-content: space-between; font: var(--fs-s) var(--mono); color: var(--ink-3); }
+
+  .foot { display: flex; gap: 8px; align-items: center; padding: 9px 14px; border-top: 1px solid var(--line-2); background: var(--panel-2); }
+  .foot .sp { flex: 1; }
+  .direct { display: none; }
+  :root[data-build="direct"] .direct { display: inline-flex; }
+
+  .notes { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .notes h2 { font-size: 13px; margin: 0 0 8px; }
+  .notes ol { margin: 0; padding-left: 20px; color: var(--ink-2); font-size: 12.5px; }
+  .notes li { margin-bottom: 5px; }
+  .notes b { color: var(--ink); font-weight: 550; }
+</style>
+
+<div class="stage">
+  <div class="brief">
+    <h1>Token Menu Bar — panel mockup</h1>
+    <p>Mock data throughout. Styling adapted from your reference: the accent marks state only (selected tab, checked
+      boxes, selected segments), every button carries a real bezel, sections are flat. All six Settings sections are
+      present. Toggle each proposed improvement below to see it on or off.</p>
+  </div>
+
+  <div class="controls">
+    <div class="cgroup"><b>Theme</b>
+      <div class="seg" id="theme">
+        <button data-v="system" aria-pressed="true">System</button>
+        <button data-v="light" aria-pressed="false">Light</button>
+        <button data-v="dark" aria-pressed="false">Dark</button>
+      </div>
+    </div>
+    <div class="cgroup"><b>Density</b>
+      <div class="seg" id="density">
+        <button data-v="compact" aria-pressed="false">Compact</button>
+        <button data-v="regular" aria-pressed="true">Regular</button>
+        <button data-v="roomy" aria-pressed="false">Roomy</button>
+      </div>
+    </div>
+    <div class="cgroup"><b>Build</b>
+      <div class="seg" id="build">
+        <button data-v="store" aria-pressed="true">App&nbsp;Store / brew</button>
+        <button data-v="direct" aria-pressed="false">Direct</button>
+      </div>
+    </div>
+    <div class="cgroup" style="flex:1; min-width:440px"><b>Proposed improvements</b>
+      <div class="imps" id="imps">
+        <label><input type="checkbox" data-k="group" checked><span><b>1 Group by provider</b> — icon once, select-all</span></label>
+        <label><input type="checkbox" data-k="filter" checked><span><b>2 Filter field</b> above the list</span></label>
+        <label><input type="checkbox" data-k="bar" checked><span><b>3 Usage bar</b> behind the percentage</span></label>
+        <label><input type="checkbox" data-k="override" checked><span><b>4 Mark overridden</b> labels, click to revert</span></label>
+        <label><input type="checkbox" data-k="budget" checked><span><b>5 Character budget</b> on labels</span></label>
+        <label><input type="checkbox" data-k="link" checked><span><b>6 Link preview</b> to its row on hover</span></label>
+        <label><input type="checkbox" data-k="log" checked><span><b>7 Fixed-height log</b> + level filter</span></label>
+        <label><input type="checkbox" data-k="drag" checked><span><b>8 Drag to reorder</b> under Stable</span></label>
+        <label><input type="checkbox" data-k="guard" checked><span><b>9 Guard Reset All Settings</b></span></label>
+        <label><input type="checkbox" data-k="zero" checked><span><b>10 Hide unused</b> in range</span></label>
+        <label><input type="checkbox" data-k="keys" checked><span><b>11 Keyboard hints</b> on controls</span></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="desktop">
+    <div class="menubar">
+      <b style="font-weight:600">Token Menu Bar</b><span>File</span><span>View</span><span>Help</span>
+      <span class="sp"></span>
+      <span class="item"><i>OP5<span class="p" style="color:#c98410"> 68%</span></i><i>SPK<span class="p" style="color:#d2402f"> 86%</span></i></span>
+      <span>Wed 14:32</span>
+    </div>
+    <div class="panelwrap"><div style="width:880px;max-width:calc(100% - 32px)">
+      <div class="arrow"></div>
+      <div class="panel">
+        <div class="tabs"><div class="grp" role="tablist">
+          <button role="tab" data-t="usage" aria-selected="true">Usage</button>
+          <button role="tab" data-t="history" aria-selected="false">History</button>
+          <button role="tab" data-t="settings" aria-selected="false">Settings</button>
+        </div></div>
+
+        <div class="scroll">
+          <!-- ============ USAGE ============ -->
+          <div class="pane" data-p="usage">
+            <div class="ucard">
+              <div class="uhead"><span class="ico cc lg">CC</span><span class="nm2">Claude</span>
+                <span class="chip">Max 20×</span><span class="chip w">68% of weekly</span>
+                <span class="sp" style="flex:1"></span>
+                <button class="b" title="Refresh Claude">↻</button></div>
+              <div class="ubody">
+                <div class="urow"><div class="t">Current session <i>5h</i></div>
+                  <div class="track"><i style="width:51%"></i><span class="expected" style="left:34%"></span></div><div class="num">51%</div><div class="rst">resets 3h 12m</div><div class="pace">exp 34% · 1.50× · 100% 16:12</div></div>
+                <div class="urow"><div class="t">Weekly <i>7d</i></div>
+                  <div class="track"><i class="w" style="width:68%"></i><span class="expected" style="left:55%"></span></div><div class="num">68%</div><div class="rst">resets Mon 09:00</div><div class="pace">exp 55% · 1.24× · 100% Sun 03:40</div></div>
+                <div class="urow"><div class="t">Weekly · Opus <i>claude-opus-5</i></div>
+                  <div class="track"><i style="width:30%"></i><span class="expected" style="left:55%"></span></div><div class="num">30%</div><div class="rst">resets Mon 09:00</div><div class="pace">exp 55% · 0.55× · projected 55%</div></div>
+                <div class="note2">The marker shows expected usage now; pace and projection remain visible without hovering.</div>
+              </div>
+            </div>
+
+            <div class="ucard">
+              <div class="uhead"><span class="ico cx lg">CX</span><span class="nm2">Codex</span>
+                <span class="chip">Pro</span><span class="chip c">86% of weekly</span>
+                <span class="sp" style="flex:1"></span>
+                <button class="b" title="Refresh Codex">↻</button></div>
+              <div class="ubody">
+                <div class="urow"><div class="t">GPT-5.3 Spark <i>gpt-5.3-spark</i></div>
+                  <div class="track"><i class="c" style="width:86%"></i><span class="expected" style="left:60%"></span></div><div class="num">86%</div><div class="rst">resets 3h 12m</div><div class="pace">exp 60% · 1.43× · 100% in 2h 10m</div></div>
+                <div class="urow"><div class="t">GPT-5.5 <i>gpt-5.5</i></div>
+                  <div class="track"><i style="width:24%"></i><span class="expected" style="left:60%"></span></div><div class="num">24%</div><div class="rst">resets 3h 12m</div><div class="pace">exp 60% · 0.40× · projected 40%</div></div>
+                <div class="urow"><div class="t">Weekly <i>7d</i></div>
+                  <div class="track"><i class="w" style="width:62%"></i><span class="expected" style="left:55%"></span></div><div class="num">62%</div><div class="rst">resets Fri 00:00</div><div class="pace">exp 55% · 1.13× · 100% Thu 15:20</div></div>
+                <div class="note2">Credits $18.40 remaining · code review 42 runs this week</div>
+              </div>
+            </div>
+
+            <div class="ucard">
+              <div class="uhead"><span class="ico gm lg">GM</span><span class="nm2">Gemini</span>
+                <span class="chip">Code Assist</span>
+                <span class="sp" style="flex:1"></span>
+                <button class="b" title="Refresh Gemini">↻</button></div>
+              <div class="ubody">
+                <div class="urow"><div class="t">2.5 Pro <i>gemini-2.5-pro</i></div>
+                  <div class="track"><i style="width:12%"></i><span class="expected" style="left:48%"></span></div><div class="num">12%</div><div class="rst">resets 00:00 UTC</div><div class="pace">exp 48% · 0.25× · projected 25%</div></div>
+                <div class="urow"><div class="t">2.5 Flash <i>gemini-2.5-flash</i></div>
+                  <div class="track"><i style="width:4%"></i><span class="expected" style="left:48%"></span></div><div class="num">4%</div><div class="rst">resets 00:00 UTC</div><div class="pace">exp 48% · 0.08× · projected 8%</div></div>
+              </div>
+            </div>
+
+            <div class="ucard">
+              <div class="uhead"><span class="ico cu lg">CU</span><span class="nm2">Cursor</span>
+                <span class="chip">Not signed in</span>
+                <span class="sp" style="flex:1"></span></div>
+              <div class="ubody">
+                <div class="note2">Sign-in lives in <b>Settings › Providers</b>. Usage shows data only.</div>
+              </div>
+            </div>
+
+            <div class="ucard">
+              <div class="uhead"><span class="ico gh lg">GH</span><span class="nm2">GitHub Copilot</span>
+                <span class="chip">Business</span>
+                <span class="sp" style="flex:1"></span>
+                <button class="b" title="Refresh Copilot">↻</button></div>
+              <div class="ubody">
+                <div class="urow"><div class="t">Chat <i>monthly</i></div>
+                  <div class="track"><i style="width:41%"></i><span class="expected" style="left:50%"></span></div><div class="num">41%</div><div class="rst">resets Sep 1</div><div class="pace">exp 50% · 0.82× · projected 82%</div></div>
+                <div class="urow"><div class="t">Completions <i>monthly</i></div>
+                  <div class="track"><i style="width:9%"></i><span class="expected" style="left:50%"></span></div><div class="num">9%</div><div class="rst">resets Sep 1</div><div class="pace">exp 50% · 0.18× · projected 18%</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ============ HISTORY ============ -->
+          <div class="pane" data-p="history" hidden>
+            <div class="row">
+              <span class="pick" data-tip="<b>Period</b><span class=&quot;k&quot;>Now follows live and re-centres as data arrives. Today / 7d / 30d / 60d fix the window. Custom enables the two date fields. Paging back with the arrows leaves Now.</span>" id="range"><span data-on="1">Now</span><span>Today</span><span>7d</span><span>30d</span><span>60d</span><span>Custom</span></span>
+              <span class="lbl" style="width:auto;margin-left:6px">Rollup</span>
+              <span class="pick"><span>Minute</span><span data-on="1">Hour</span><span>Day</span></span>
+              <label data-tip="<b>Stacked</b><span class=&quot;k&quot;>Sums the series at each point instead of overlaying them. Useful for totals, misleading for percentages.</span>" style="display:flex;gap:7px;align-items:center;margin-left:10px"><input type="checkbox"> Stacked</label>
+              <span class="sp"></span>
+              <button class="b"data-tip="<b>Export CSV</b><span class=&quot;k&quot;>Writes every sample in the current period, streamed in chunks so a long history does not load into memory.</span>" >Export CSV</button>
+            </div>
+            <div class="row">
+              <button class="b" title="Previous period">‹</button>
+              <input class="f" type="datetime-local" value="2026-08-31T00:00">
+              <span class="dim">→</span>
+              <input class="f" type="datetime-local" value="2026-08-31T23:59">
+              <button class="b" title="Next period">›</button>
+              <span class="sp"></span>
+              <span class="tiny">Earliest sample Jun 2, 2026 · paging back leaves <b>Now</b></span>
+            </div>
+            <div class="row">
+              <span class="lbl">Metric</span>
+              <select class="f" data-tip="<b>Metric</b><span class=&quot;k&quot;>Grouped by which provider supplies it. Claude reads 8 metrics from local transcripts; Codex fetches 11 from its API. Only the three token metrics exist on both, and they mean different things — Claude breaks down by model, Codex reports one total.</span>" id="metric" style="min-width:250px">
+                <optgroup label="Windows">
+                  <option value="pct" data-mark="line" data-who="every model" data-by="model">Usage %</option>
+                </optgroup>
+                <optgroup label="Both providers">
+                  <option value="in" data-mark="bar" data-who="Claude · Codex" data-by="model (Claude) / total (Codex)">Input tokens</option>
+                  <option value="cached" data-mark="bar" data-who="Claude · Codex" data-by="model (Claude) / total (Codex)">Cached input tokens</option>
+                  <option value="out" data-mark="bar" data-who="Claude · Codex" data-by="model (Claude) / total (Codex)">Output tokens</option>
+                </optgroup>
+                <optgroup label="Claude only">
+                  <option value="cw" data-mark="bar" data-who="Claude" data-by="model">Cache write tokens</option>
+                  <option value="cost" data-mark="bar" data-who="Claude" data-by="model">Cost (USD)</option>
+                  <option value="msg" data-mark="bar" data-who="Claude" data-by="one series">Messages</option>
+                  <option value="ses" data-mark="bar" data-who="Claude" data-by="one series">Sessions</option>
+                  <option value="tool" data-mark="bar" data-who="Claude" data-by="one series">Tool calls</option>
+                </optgroup>
+                <optgroup label="Codex only">
+                  <option value="surf" data-mark="line" data-who="Codex" data-by="surface">Usage by surface</option>
+                  <option value="cred" data-mark="bar" data-who="Codex" data-by="model / surface">Credits</option>
+                  <option value="mcred" data-mark="bar" data-who="Codex" data-by="model">Credits by model</option>
+                  <option value="turns" data-mark="bar" data-who="Codex" data-by="model / surface">Turns</option>
+                  <option value="threads" data-mark="bar" data-who="Codex" data-by="model / surface">Threads</option>
+                  <option value="skill" data-mark="bar" data-who="Codex" data-by="skill">Skill invocations</option>
+                  <option value="plug" data-mark="bar" data-who="Codex" data-by="plugin">Plugin invocations</option>
+                  <option value="cr" data-mark="bar" data-who="Codex" data-by="review type">Code reviews</option>
+                </optgroup>
+              </select>
+              <span class="tiny" id="who">every model</span>
+              <span class="sp"></span>
+              <span class="tiny" id="markfixed">line · sampled rate</span>
+            </div>
+            <div class="hwrap">
+              <div class="plot">
+                <svg viewBox="0 0 620 240" width="100%" height="240" role="img" aria-label="Usage over time by model">
+                  <g stroke="var(--line-2)" stroke-width="1">
+                    <line x1="34" y1="20" x2="610" y2="20"/><line x1="34" y1="72" x2="610" y2="72"/>
+                    <line x1="34" y1="124" x2="610" y2="124"/><line x1="34" y1="176" x2="610" y2="176"/>
+                    <line x1="34" y1="212" x2="610" y2="212"/>
+                  </g>
+                  <g font-size="9" fill="var(--ink-3)" font-family="var(--mono)">
+                    <text x="4" y="24">100</text><text x="10" y="76">75</text><text x="10" y="128">50</text>
+                    <text x="10" y="180">25</text><text x="16" y="216">0</text>
+                    <text x="34" y="230">08:00</text><text x="180" y="230">11:00</text>
+                    <text x="330" y="230">14:00</text><text x="480" y="230">17:00</text>
+                  </g>
+                  <g id="glines">
+                    <polyline fill="none" stroke="#d97757" stroke-width="2" points="34,206 120,192 206,168 292,140 378,112 464,96 550,74 610,66"/>
+                    <polyline fill="none" stroke="#10a37f" stroke-width="2" points="34,210 120,204 206,186 292,150 378,104 464,72 550,48 610,34"/>
+                    <polyline fill="none" stroke="#4285f4" stroke-width="2" stroke-dasharray="5 3" points="34,212 120,211 206,209 292,206 378,202 464,199 550,196 610,194"/>
+                    <circle cx="610" cy="66" r="3" fill="#d97757"/><circle cx="610" cy="34" r="3" fill="#10a37f"/>
+                  </g>
+                  <g id="gbars" hidden>
+                    <g fill="#d97757">
+                      <rect x="40" y="150" width="26" height="62"/><rect x="112" y="120" width="26" height="92"/>
+                      <rect x="184" y="138" width="26" height="74"/><rect x="256" y="92" width="26" height="120"/>
+                      <rect x="328" y="106" width="26" height="106"/><rect x="400" y="70" width="26" height="142"/>
+                      <rect x="472" y="118" width="26" height="94"/><rect x="544" y="58" width="26" height="154"/>
+                    </g>
+                    <g fill="#10a37f">
+                      <rect x="68" y="176" width="26" height="36"/><rect x="140" y="148" width="26" height="64"/>
+                      <rect x="212" y="160" width="26" height="52"/><rect x="284" y="124" width="26" height="88"/>
+                      <rect x="356" y="98" width="26" height="114"/><rect x="428" y="112" width="26" height="100"/>
+                      <rect x="500" y="80" width="26" height="132"/><rect x="572" y="134" width="26" height="78"/>
+                    </g>
+                  </g>
+                </svg>
+              </div>
+              <div class="legend">
+                <div class="tiny" style="padding:0 5px 2px">5 series with data</div>
+                <div class="lrow"><span class="sw" style="background:#3c7f5e"></span><span>GPT-5.3 Spark</span><span class="sp"></span><b>86%</b><button title="Hide">◉</button></div>
+                <div class="lrow"><span class="sw" style="background:#b8622e"></span><span>Claude weekly</span><span class="sp"></span><b>68%</b><button title="Hide">◉</button></div>
+                <div class="lrow"><span class="sw" style="background:#3f6bbf"></span><span>Gemini 2.5 Pro</span><span class="sp"></span><b>12%</b><button title="Hide">◉</button></div>
+                <div class="lrow off"><span class="sw" style="background:var(--ink-3)"></span><span>Sonnet 5</span><span class="sp"></span><b>5%</b><button title="Show">○</button></div>
+                <div class="lrow off"><span class="sw" style="background:var(--ink-3)"></span><span>Haiku 4.5</span><span class="sp"></span><b>0%</b><button title="Show">○</button></div>
+              </div>
+            </div>
+            <div class="tiny">4 812 samples · 13 series · since Jun 2</div>
+
+          </div>
+
+          <!-- ============ SETTINGS ============ -->
+          <div class="pane" data-p="settings" hidden>
+
+            <div class="sect">
+              <h4>About</h4>
+              <div class="row"><span class="lbl">Version</span>
+                <span>0.4.2.dev7+g13de8d9 · <span class="dim">App Store</span></span>
+                <span class="sp"></span>
+                <button class="b" data-tip="<b>Reset All Settings</b><span class=&quot;k&quot;>Restores every app setting, including short labels and hidden series. Asks once before doing it.</span>" id="reset">Reset All Settings…</button></div>
+              <div class="row"><span class="lbl">Startup</span>
+                <label data-tip="<b>Launch at login</b><span class=&quot;k&quot;>Registers the app as a login item via SMAppService. Open Login Items if macOS has it disabled — the system, not the app, owns that switch.</span>" style="display:flex;gap:7px;align-items:center"><input type="checkbox" checked> Launch at login</label>
+                <button class="b">Open Login Items</button></div>
+              <div class="row direct"><span class="lbl">Updates</span>
+                <label style="display:flex;gap:7px;align-items:center"><input type="checkbox" checked> Check for updates automatically</label>
+                <button class="b">Check Now</button></div>
+              <div class="row"><span class="lbl">Diagnostics</span>
+                <button class="b"data-tip="<b>Copy Diagnostics</b><span class=&quot;k&quot;>Version, build channel, per-provider auth and refresh state, and the recent log — the same body Report Issue prefills.</span>" >Copy Diagnostics</button>
+                <button class="b">Report Issue</button>
+                <button class="b">Source</button></div>
+            </div>
+
+            <div class="sect">
+              <h4>Menu bar</h4>
+              <div class="row"><span class="lbl">Order</span>
+                <span class="pick"><span data-on="1">Stable</span><span>Usage</span></span>
+                <span class="lbl" style="width:auto;margin-left:8px">Format</span>
+                <span class="pick" data-tip="<b>Format</b><span class=&quot;k&quot;><code>{cell}\n{pct}</code> stacked, <code>{cell}:{pct}</code> inline, or Custom to write your own. Only Custom exposes the template field, and only Custom can use <code>{label}</code>.</span>" id="fmt"><span>Stacked</span><span data-on="1">Inline</span><span>Custom</span></span>
+                <span class="sp"></span>
+                <span class="step">Decimals: 0 <span class="sbtn"><span>▲</span><span>▼</span></span></span></div>
+              <div class="row"><span class="lbl">Options</span>
+                <label data-tip="<b>Hide 0%</b><span class=&quot;k&quot;>Drops any model at zero from the menu bar, so an idle model costs no width. It stays visible in Usage.</span>" style="display:flex;gap:7px;align-items:center"><input type="checkbox" checked> Hide 0%</label>
+                <label data-tip="<b>Fit to space</b><span class=&quot;k&quot;>Narrows the status item through a ladder of shorter renderings when the menu bar runs out of room, rather than being truncated by the system.</span>" style="display:flex;gap:7px;align-items:center;margin-left:14px"><input type="checkbox" checked> Fit to space</label></div>
+              <div class="row" id="tplrow" hidden><span class="lbl">Template</span>
+                <input class="f" style="flex:1;font-family:var(--mono)" value="{provider} {window} {label}:{pct}">
+                <span class="tiny">{cell} {pct} {label} {provider} {window} {reset}</span></div>
+              <div class="row"><span class="lbl">Preview</span>
+                <span class="prev" id="prev">
+                  <span class="c" data-r="op5">OP5:<b style="color:var(--warn)">68%</b></span>
+                  <span class="c" data-r="spk">SPK:<b style="color:var(--crit)">86%</b></span>
+                  <span class="c" data-r="so">SO:<b style="color:var(--good)">5%</b></span>
+                </span></div>
+
+              <div class="row filter" style="margin-top:2px">
+                <input class="f" style="flex:1" placeholder="Filter models…">
+                <span class="tiny keyhint">⌘F</span>
+                <label class="zerotog" style="gap:7px;align-items:center;margin-left:6px">
+                  <input type="checkbox"> <span class="tiny">Hide unused in range</span></label>
+              </div>
+              <div class="tiny">The menu bar shows checked models only when they have usage today.</div>
+
+              <div class="mlist" id="mlist">
+                <div class="ghead"><span class="ico cc">CC</span><span class="nm">Claude</span>
+                  <span class="ct">3 of 4 shown</span><span style="flex:1"></span>
+                  <label class="tiny" style="display:flex;gap:6px;align-items:center"><input type="checkbox" checked> All</label></div>
+                <div class="mrow" data-r="op5">
+                  <input type="checkbox" checked><span class="ico cc">CC</span>
+                  <span class="nm"><b>Opus 5</b><i>claude-opus-5</i></span>
+                  <span class="pct">30.28%<u>today</u><span class="bar"><i style="width:30%"></i></span></span>
+                  <span class="lblwrap"><input class="f" value="OP5"><button class="revert" title="Revert to default">⟲</button><span class="cbudget">3/6</span></span>
+                  <span class="drag">⠿</span></div>
+                <div class="mrow custom" data-r="so">
+                  <input type="checkbox" checked><span class="ico cc">CC</span>
+                  <span class="nm"><b>Sonnet 5</b><i>claude-sonnet-5</i></span>
+                  <span class="pct">4.57%<u>today</u><span class="bar"><i style="width:5%"></i></span></span>
+                  <span class="lblwrap"><input class="f" value="SO"><button class="revert" title="Revert to default">⟲</button><span class="cbudget">2/6</span></span>
+                  <span class="drag">⠿</span></div>
+                <div class="mrow" data-r="ha">
+                  <input type="checkbox"><span class="ico cc">CC</span>
+                  <span class="nm"><b>Haiku 4.5</b><i>claude-haiku-4-5</i></span>
+                  <span class="pct">0.01%<u>today</u><span class="bar"><i style="width:1%"></i></span></span>
+                  <span class="lblwrap"><input class="f" value="HA"><button class="revert" title="Revert to default">⟲</button><span class="cbudget">2/6</span></span>
+                  <span class="drag">⠿</span></div>
+                <div class="mrow" data-r="cw">
+                  <input type="checkbox" checked><span class="ico cc">CC</span>
+                  <span class="nm"><b>Weekly</b><i>window · 7d</i></span>
+                  <span class="pct">68.00%<u>today</u><span class="bar"><i style="width:68%"></i></span></span>
+                  <span class="lblwrap"><input class="f" value="CC 7d"><button class="revert" title="Revert to default">⟲</button><span class="cbudget">5/6</span></span>
+                  <span class="drag">⠿</span></div>
+
+                <div class="ghead"><span class="ico cx">CX</span><span class="nm">Codex</span>
+                  <span class="ct">2 of 3 shown</span><span style="flex:1"></span>
+                  <label class="tiny" style="display:flex;gap:6px;align-items:center"><input type="checkbox"> All</label></div>
+                <div class="mrow custom" data-r="spk">
+                  <input type="checkbox" checked><span class="ico cx">CX</span>
+                  <span class="nm"><b>GPT-5.3 Spark</b><i>gpt-5.3-spark</i></span>
+                  <span class="pct">86.11%<u>today</u><span class="bar"><i style="width:86%"></i></span></span>
+                  <span class="lblwrap"><input class="f" value="SPK"><button class="revert" title="Revert to default">⟲</button><span class="cbudget">3/6</span></span>
+                  <span class="drag">⠿</span></div>
+                <div class="mrow" data-r="g55">
+                  <input type="checkbox" checked><span class="ico cx">CX</span>
+                  <span class="nm"><b>GPT-5.5</b><i>gpt-5.5</i></span>
+                  <span class="pct">23.82%<u>last Aug 18</u><span class="bar"><i style="width:24%"></i></span></span>
+                  <span class="lblwrap"><input class="f" value="GPT"><button class="revert" title="Revert to default">⟲</button><span class="cbudget">3/6</span></span>
+                  <span class="drag">⠿</span></div>
+                <div class="mrow" data-r="xw">
+                  <input type="checkbox"><span class="ico cx">CX</span>
+                  <span class="nm"><b>Weekly</b><i>window · 7d</i></span>
+                  <span class="pct">62.40%<u>today</u><span class="bar"><i style="width:62%"></i></span></span>
+                  <span class="lblwrap"><input class="f" value="CX 7d"><button class="revert" title="Revert to default">⟲</button><span class="cbudget">5/6</span></span>
+                  <span class="drag">⠿</span></div>
+
+                <div class="ghead"><span class="ico gm">GM</span><span class="nm">Gemini</span>
+                  <span class="ct">1 of 2 shown</span><span style="flex:1"></span>
+                  <label class="tiny" style="display:flex;gap:6px;align-items:center"><input type="checkbox"> All</label></div>
+                <div class="mrow" data-r="gpro">
+                  <input type="checkbox" checked><span class="ico gm">GM</span>
+                  <span class="nm"><b>2.5 Pro</b><i>gemini-2.5-pro</i></span>
+                  <span class="pct">12.04%<u>today</u><span class="bar"><i style="width:12%"></i></span></span>
+                  <span class="lblwrap"><input class="f" value="G25"><button class="revert" title="Revert to default">⟲</button><span class="cbudget">3/6</span></span>
+                  <span class="drag">⠿</span></div>
+                <div class="mrow" data-r="gfl">
+                  <input type="checkbox"><span class="ico gm">GM</span>
+                  <span class="nm"><b>2.5 Flash</b><i>gemini-2.5-flash</i></span>
+                  <span class="pct">3.90%<u>today</u><span class="bar"><i style="width:4%"></i></span></span>
+                  <span class="lblwrap"><input class="f" value="GFL"><button class="revert" title="Revert to default">⟲</button><span class="cbudget">3/6</span></span>
+                  <span class="drag">⠿</span></div>
+
+                <div class="ghead"><span class="ico gh">GH</span><span class="nm">GitHub Copilot</span>
+                  <span class="ct">1 of 2 shown</span><span style="flex:1"></span>
+                  <label class="tiny" style="display:flex;gap:6px;align-items:center"><input type="checkbox"> All</label></div>
+                <div class="mrow" data-r="ghc">
+                  <input type="checkbox" checked><span class="ico gh">GH</span>
+                  <span class="nm"><b>Chat</b><i>window · monthly</i></span>
+                  <span class="pct">41.20%<u>today</u><span class="bar"><i style="width:41%"></i></span></span>
+                  <span class="lblwrap"><input class="f" value="GHC"><button class="revert" title="Revert to default">⟲</button><span class="cbudget">3/6</span></span>
+                  <span class="drag">⠿</span></div>
+                <div class="mrow" data-r="ghx">
+                  <input type="checkbox"><span class="ico gh">GH</span>
+                  <span class="nm"><b>Completions</b><i>window · monthly</i></span>
+                  <span class="pct">9.10%<u>today</u><span class="bar"><i style="width:9%"></i></span></span>
+                  <span class="lblwrap"><input class="f" value="GHX"><button class="revert" title="Revert to default">⟲</button><span class="cbudget">3/6</span></span>
+                  <span class="drag">⠿</span></div>
+              </div>
+            </div>
+
+            <div class="sect">
+              <h4>Providers</h4>
+              <div class="row"><label style="width:116px;display:flex;gap:7px;align-items:center"><input type="checkbox" checked> Claude</label>
+                <span class="tiny">Token valid until Aug 31, 22:24</span><span class="sp"></span>
+                <span class="step tiny">Every 2 min <span class="sbtn"><span>▲</span><span>▼</span></span></span></div>
+              <div class="row"><label style="width:116px;display:flex;gap:7px;align-items:center"><input type="checkbox" checked> Codex</label>
+                <span class="tiny">Token valid until Sep 7</span><span class="sp"></span>
+                <span class="step tiny">Every 1 min <span class="sbtn"><span>▲</span><span>▼</span></span></span></div>
+              <div class="row"><label style="width:116px;display:flex;gap:7px;align-items:center"><input type="checkbox" checked> Gemini</label>
+                <span class="tiny" style="color:var(--warn)">No credentials — run <code style="font-family:var(--mono)">gemini</code></span>
+                <button class="b">Copy command</button><span class="sp"></span>
+                <span class="step tiny">Every 5 min <span class="sbtn"><span>▲</span><span>▼</span></span></span></div>
+              <div class="row"><label style="width:116px;display:flex;gap:7px;align-items:center"><input type="checkbox"> Cursor</label>
+                <span class="tiny" style="color:var(--warn)">Not signed in</span>
+                <button class="b">Sign in…</button><span class="sp"></span>
+                <span class="step tiny">Every 5 min <span class="sbtn"><span>▲</span><span>▼</span></span></span></div>
+              <div class="row"><label style="width:116px;display:flex;gap:7px;align-items:center"><input type="checkbox" checked> GitHub Copilot</label>
+                <span class="tiny">Token valid until Sep 3</span><span class="sp"></span>
+                <span class="step tiny">Every 5 min <span class="sbtn"><span>▲</span><span>▼</span></span></span>
+                <button class="b">Grant Application Support</button></div>
+              <div class="row" style="margin-top:2px">
+                <label data-tip="<b>Token refresh</b><span class=&quot;k&quot;>Rotates the CLI refresh token and writes it back to its credential file or Keychain. Off means expired providers simply stop updating until you re-auth yourself.</span>" style="display:flex;gap:7px;align-items:center"><input type="checkbox" checked> Refresh expired tokens on my behalf</label>
+                <span class="sp"></span>
+                <span class="tiny">Floors: Claude 2 min, others 1 min; the panel polls at the floor while open.</span></div>
+              <div class="tiny">Token refresh rotates the CLI's refresh token and writes it back to its credential file or Keychain.</div>
+            </div>
+
+            <div class="sect">
+              <h4>Data</h4>
+              <div class="row"><span class="lbl">Analytics</span>
+                <span class="step">Every 15 min <span class="sbtn"><span>▲</span><span>▼</span></span></span></div>
+              <div class="row"><span class="lbl">History</span>
+                <span class="path" title="full path">~/Library/Application Support/TokenMenuBar/history.sqlite3</span>
+                <span class="sp"></span>
+                <button class="b">Open</button><button class="b">Export…</button><button class="b danger">Clear…</button></div>
+            </div>
+
+            <div class="sect">
+              <h4>Notifications</h4>
+              <div class="row"><label style="width:116px;display:flex;gap:7px;align-items:center"><input type="checkbox" checked> Notify at</label>
+                <label style="display:flex;gap:6px;align-items:center"><input type="checkbox"> 50%</label>
+                <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" checked> 75%</label>
+                <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" checked> 90%</label>
+                <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" checked> 100%</label></div>
+              <div class="row"><span class="lbl"></span>
+                <label style="display:flex;gap:7px;align-items:center"><input type="checkbox" checked> Window resets</label>
+                <label style="display:flex;gap:7px;align-items:center;margin-left:14px"><input type="checkbox" checked> Sign-in needed</label></div>
+            </div>
+
+            <div class="sect">
+              <h4>Log</h4>
+              <div class="row">
+                <button class="b">Copy</button><button class="b">Clear</button><button data-tip="<b>Show Full Log</b><span class=&quot;k&quot;>Opens the complete log file, not just the tail shown here.</span>" class="b">Show Full Log</button>
+                <span class="sp"></span>
+                <label data-tip="<b>Detailed logging</b><span class=&quot;k&quot;>Off by default. On, it records panel geometry on every open and resize, tab transitions with the size measured and which tab it was filed under, status-item re-tiers with their trigger, and per-provider refresh outcomes.</span>" style="display:flex;gap:7px;align-items:center"><input type="checkbox"> Detailed logging</label>
+                <span class="tiny">off by default</span></div>
+              <div class="logbox">
+                <div class="logfilter">
+                  <span class="pick"><span data-on="1">All</span><span>Debug</span><span>Info</span><span>Warn</span><span>Error</span></span>
+                  <input class="f" style="flex:1" placeholder="Search log…">
+                </div>
+                <pre>[2026-08-31 14:32:06.136] DEBUG setting popoverTab = Settings
+[2026-08-31 14:32:05.895] DEBUG status item update deferred while popover shown
+[2026-08-31 14:32:04.343] DEBUG status item event=frontmost application changed visible=true
+                          buttonWidth=209 buttonFrame=(1040,1090 209x22) screenFrame=(0,0 1728x1117)
+[2026-08-31 14:32:00.948] DEBUG setting popoverTab = History
+[2026-08-31 14:31:58.024] INFO  refresh claude ok in 412ms windows=3
+[2026-08-31 14:31:57.611] INFO  refresh codex ok in 690ms windows=3 analytics=4
+[2026-08-31 14:31:56.878] WARN  gemini no credentials at ~/.gemini/oauth_creds.json
+[2026-08-31 14:31:56.808] DEBUG popover shown rows=3 anchor=(1040,1090 65x22) max=(1295x1036)
+                          windowFrame=(629,374 886x715) screen=Built-in Retina Display
+[2026-08-31 14:31:56.756] DEBUG running gh arguments=4
+[2026-08-31 14:31:55.204] INFO  history rollup hourly 4812 samples in 13ms
+[2026-08-31 14:31:54.900] DEBUG analytics due: codex (last 16m ago)
+[2026-08-31 14:31:52.118] ERROR cursor 401 unauthorized — token expired, refresh not permitted</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="foot">
+          <button class="b">↻ Refresh <span class="tiny keyhint">⌘R</span></button>
+          <button class="b">Report Issue</button>
+          <button class="b direct">Check for Updates</button>
+          <span class="sp"></span>
+          <button class="b">Quit <span class="tiny keyhint">⌘Q</span></button>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="notes">
+    <h2>What changed against your reference, and why</h2>
+    <ol>
+      <li><b>No “Usage Site”</b> in the footer — you asked for it gone. Removal spans <code>ProviderID.usagePage</code>,
+        the card button, the plan-chip link and the context menu.</li>
+      <li><b>“Check for Updates” and auto-update are absent</b>, not disabled, outside Direct builds. Flip the Build
+        switch above to see the Direct variant.</li>
+      <li><b>Sign-in moved out of Usage</b> into Providers — Cursor's card in Usage now points there instead of
+        carrying a CLI hint.</li>
+      <li><b>“Windows” is now “Models”</b>, with the model id in monospace beneath the name. Genuine rate-limit windows
+        label themselves <code>window · 7d</code> rather than pretending to be models.</li>
+      <li><b>Per-provider refresh intervals</b> kept — they already exist, with per-provider floors.</li>
+      <li><b>All six sections present</b>: About, Menu bar, Providers, Data, Notifications, Log. Earlier mockups
+        dropped three of them.</li>
+      <li>The reference shows only a filename for the history path; this shows the <b>full path</b>, which is more
+        useful when you need to find it.</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+  const root = document.documentElement;
+
+  const tip = document.createElement("div");
+  tip.className = "tip";
+  tip.setAttribute("role", "tooltip");
+  tip.hidden = true;
+  document.body.appendChild(tip);
+  let tipTimer = null;
+  function showTip(el) {
+    tip.innerHTML = el.dataset.tip;
+    tip.hidden = false;
+    const r = el.getBoundingClientRect();
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    let x = r.left + r.width / 2 - w / 2;
+    x = Math.max(8, Math.min(x, innerWidth - w - 8));
+    let y = r.bottom + 7;
+    if (y + h > innerHeight - 8) y = r.top - h - 7;
+    tip.style.left = x + "px";
+    tip.style.top = y + "px";
+    tip.dataset.show = "1";
+  }
+  function hideTip() {
+    clearTimeout(tipTimer);
+    tip.removeAttribute("data-show");
+    tip.hidden = true;
+  }
+  function armTip(e) {
+    const el = e.target.closest("[data-tip]");
+    if (!el) return;
+    clearTimeout(tipTimer);
+    tipTimer = setTimeout(() => showTip(el), 150);
+  }
+  document.addEventListener("mouseover", armTip);
+  document.addEventListener("focusin", armTip);
+  document.addEventListener("mouseout", (e) => { if (e.target.closest("[data-tip]")) hideTip(); });
+  document.addEventListener("focusout", hideTip);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideTip(); });
+  addEventListener("scroll", hideTip, true);
+  function seg(id, attr, dflt) {
+    document.getElementById(id).addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      b.parentElement.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+      if (b.dataset.v === dflt) root.removeAttribute(attr); else root.setAttribute(attr, b.dataset.v);
+    });
+  }
+  seg("theme", "data-theme", "system");
+  seg("density", "data-density", "regular");
+  seg("build", "data-build", "store");
+
+  const imps = document.getElementById("imps");
+  function applyImps() {
+    imps.querySelectorAll("input").forEach(i => {
+      if (i.checked) root.setAttribute("data-imp-" + i.dataset.k, "1");
+      else root.removeAttribute("data-imp-" + i.dataset.k);
+    });
+    root.querySelectorAll(".keyhint").forEach(k => { k.style.display = root.hasAttribute("data-imp-keys") ? "" : "none"; });
+  }
+  imps.addEventListener("change", applyImps);
+  applyImps();
+
+  const tabs = document.querySelector('[role="tablist"]');
+  tabs.addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    tabs.querySelectorAll("button").forEach(x => x.setAttribute("aria-selected", String(x === b)));
+    document.querySelectorAll(".pane").forEach(p => { p.hidden = p.dataset.p !== b.dataset.t; });
+  });
+
+  document.querySelectorAll(".pick").forEach(p => p.addEventListener("click", (e) => {
+    const s = e.target.closest("span[data-on], span:not([data-on])");
+    if (!s || s.parentElement !== p) return;
+    p.querySelectorAll("span").forEach(x => x.removeAttribute("data-on"));
+    s.setAttribute("data-on", "1");
+    if (p.id === "fmt") syncTemplate();
+  }));
+
+  const metric = document.getElementById("metric");
+  const glines = document.getElementById("glines");
+  const gbars = document.getElementById("gbars");
+  const legend = document.querySelector(".legend");
+  const markFixed = document.getElementById("markfixed");
+  const CC = "#d97757", CX = "#10a37f", GM = "#4285f4";
+  const SERIES = {
+    pct: [["Opus 5", CC, "30%"], ["Sonnet 5", CC, "5%"], ["Claude weekly", CC, "68%"],
+          ["GPT-5.3 Spark", CX, "86%"], ["GPT-5.5", CX, "24%"], ["Codex weekly", CX, "62%"],
+          ["Gemini 2.5 Pro", GM, "12%"], ["Gemini 2.5 Flash", GM, "4%"]],
+    tok: [["Claude · opus-5", CC, "2.9M"], ["Claude · sonnet-5", CC, "1.3M"], ["Codex · total", CX, "3.1M"]],
+    cw:  [["Claude · opus-5", CC, "812K"], ["Claude · sonnet-5", CC, "204K"]],
+    one: [["Claude", CC, "1 284"]],
+    cat: [["agent", CX, "412"], ["search", CX, "288"], ["review", CX, "196"],
+          ["refactor", CX, "121"], ["docs", CX, "94"]],
+  };
+  function seriesFor(o) {
+    if (o.value === "pct") return SERIES.pct;
+    if (["in", "cached", "out"].includes(o.value)) return SERIES.tok;
+    if (["cw", "cost"].includes(o.value)) return SERIES.cw;
+    if (["msg", "ses", "tool"].includes(o.value)) return SERIES.one;
+    return SERIES.cat;
+  }
+  function syncMetric() {
+    const o = metric.selectedOptions[0];
+    const isLine = o.dataset.mark === "line";
+    markFixed.textContent = isLine ? "line · sampled rate" : "bars · period total";
+    glines.hidden = !isLine;
+    gbars.hidden = isLine;
+    document.getElementById("who").textContent =
+      (o.value === "pct" ? "every model" : "from " + o.dataset.who) + " · by " + o.dataset.by;
+    const rows = seriesFor(o);
+    legend.innerHTML =
+      '<div class="tiny" style="padding:0 5px 2px">' + rows.length + " series with data</div>" +
+      rows.map(([n, c, v]) =>
+        '<div class="lrow"><span class="sw" style="background:' + c + '"></span><span>' + n +
+        '</span><span class="sp"></span><b>' + v + '</b><button title="Hide">◉</button></div>').join("");
+    legend.querySelectorAll("button[title]").forEach(b => b.addEventListener("click", () => {
+      const r = b.closest(".lrow"); r.classList.toggle("off");
+      b.textContent = r.classList.contains("off") ? "○" : "◉";
+    }));
+  }
+  metric.addEventListener("change", syncMetric);
+  syncMetric();
+
+  const fmt = document.getElementById("fmt");
+  const tplrow = document.getElementById("tplrow");
+  function syncTemplate() {
+    tplrow.hidden = fmt.querySelector('[data-on="1"]').textContent.trim() !== "Custom";
+  }
+  syncTemplate();
+
+  const prev = document.getElementById("prev");
+  function hot(key, on) {
+    if (!root.hasAttribute("data-imp-link")) return;
+    document.querySelectorAll('[data-r="' + key + '"]').forEach(n => n.classList.toggle("hot", on));
+  }
+  prev.querySelectorAll(".c").forEach(c => {
+    c.addEventListener("mouseenter", () => hot(c.dataset.r, true));
+    c.addEventListener("mouseleave", () => hot(c.dataset.r, false));
+  });
+  document.querySelectorAll(".mrow").forEach(r => {
+    r.addEventListener("mouseenter", () => hot(r.dataset.r, true));
+    r.addEventListener("mouseleave", () => hot(r.dataset.r, false));
+  });
+
+  document.querySelectorAll(".revert").forEach(b => b.addEventListener("click", () => {
+    b.closest(".mrow").classList.remove("custom");
+  }));
+
+  document.querySelectorAll(".lrow button").forEach(b => b.addEventListener("click", () => {
+    const r = b.closest(".lrow"); r.classList.toggle("off");
+    b.textContent = r.classList.contains("off") ? "○" : "◉";
+    b.title = r.classList.contains("off") ? "Show" : "Hide";
+  }));
+
+  document.getElementById("reset").addEventListener("click", (e) => {
+    if (!root.hasAttribute("data-imp-guard")) return;
+    const b = e.currentTarget;
+    if (b.dataset.armed) { b.textContent = "Reset All Settings…"; delete b.dataset.armed; return; }
+    b.textContent = "Really reset? Click again";
+    b.dataset.armed = "1";
+    setTimeout(() => { b.textContent = "Reset All Settings…"; delete b.dataset.armed; }, 3000);
+  });
+</script>

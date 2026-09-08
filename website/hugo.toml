@@ -1,0 +1,100 @@
+baseURL = "https://token-menu-bar-macos.readthedocs.io/en/latest/"
+locale = "en-US"
+defaultContentLanguage = "en"
+title = "Token Menu Bar"
+enableRobotsTXT = true
+disableHugoGeneratorInject = true
+disableKinds = ["taxonomy", "term", "rss"]
+timeout = "60s"
+
+[params]
+description = """
+Claude, Codex, Gemini, Cursor and GitHub Copilot plan usage in the macOS menu bar: session and weekly \
+windows, reset countdowns, pace projections, history and widgets.\
+"""
+keywords = """
+claude usage,codex usage,menu bar,macos,claude code limits,copilot quota,cursor usage,gemini quota\
+"""
+tagline = "Your AI coding plan limits, one glance away"
+repository = "https://github.com/tox-dev/token-menu-bar-macos"
+latestRelease = "https://github.com/tox-dev/token-menu-bar-macos/releases/latest"
+minimumOS = "macOS 14"
+license = "MIT"
+author = "Bernát Gábor"
+brandGradientStart = "#4C3BE0"
+brandGradientEnd = "#9A6BFF"
+themeColor = "#5A46E8"
+mermaidVersion = "11.17.2"
+
+[[menu.main]]
+name = "Get started"
+url = "/start/"
+params.icon = "M5 3l14 9-14 9V3z"
+weight = 1
+
+[[menu.main]]
+name = "Reference"
+url = "/reference/"
+params.icon = "M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5zM8 2v20"
+weight = 3
+
+[[menu.main]]
+name = "Explanation"
+url = "/explanation/"
+params.icon = "M12 17h.01M12 13a3 3 0 1 0-3-3M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
+weight = 4
+
+[[menu.main]]
+name = "Troubleshooting"
+url = "/troubleshooting/"
+params.icon = "M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+weight = 5
+
+[[menu.main]]
+name = "Contributing"
+url = "/contributing/"
+params.icon = "M8 6l-6 6 6 6M16 6l6 6-6 6"
+weight = 6
+
+[outputs]
+home = ["HTML", "llms", "webmanifest"]
+page = ["HTML", "md"]
+section = ["HTML", "md"]
+
+# Format defined at llmstxt.org.
+[outputFormats.llms]
+mediaType = "text/plain"
+baseName = "llms"
+isPlainText = true
+rel = "alternate"
+
+# The icons partial links this on every page, so it has to exist.
+[outputFormats.webmanifest]
+mediaType = "application/manifest+json"
+baseName = "site"
+isPlainText = true
+notAlternative = true
+
+[outputFormats.md]
+mediaType = "text/markdown"
+isPlainText = true
+rel = "alternate"
+
+[markup.goldmark.renderer]
+unsafe = true
+
+[markup.tableOfContents]
+startLevel = 2
+endLevel = 3
+
+[imaging]
+quality = 92
+resampleFilter = "Lanczos"
+
+# "drawing" keeps the flat panels and hairlines of a UI screenshot crisp; "picture" softens them.
+[imaging.webp]
+quality = 92
+hint = "drawing"
+
+[minify]
+minifyOutput = true

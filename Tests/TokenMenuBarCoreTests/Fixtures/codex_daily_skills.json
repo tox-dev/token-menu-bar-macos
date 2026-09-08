@@ -1,0 +1,640 @@
+{
+  "data": [
+    {
+      "date": "2026-08-06",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 9
+        },
+        {
+          "skill_name": "simp",
+          "display_name": "Simp",
+          "skill_ids": [],
+          "invocation_counts": 7
+        },
+        {
+          "skill_name": "commit",
+          "display_name": "Commit",
+          "skill_ids": [],
+          "invocation_counts": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-07",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 72
+        },
+        {
+          "skill_name": "github:github",
+          "display_name": "Github: Github",
+          "skill_ids": [],
+          "invocation_counts": 5
+        },
+        {
+          "skill_name": "github:gh-fix-ci",
+          "display_name": "Github: Gh Fix Ci",
+          "skill_ids": [],
+          "invocation_counts": 2
+        },
+        {
+          "skill_name": "simp",
+          "display_name": "Simp",
+          "skill_ids": [],
+          "invocation_counts": 2
+        },
+        {
+          "skill_name": "commit",
+          "display_name": "Commit",
+          "skill_ids": [],
+          "invocation_counts": 1
+        },
+        {
+          "skill_name": "pr",
+          "display_name": "Pr",
+          "skill_ids": [],
+          "invocation_counts": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-08",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 76
+        },
+        {
+          "skill_name": "commit",
+          "display_name": "Commit",
+          "skill_ids": [],
+          "invocation_counts": 3
+        },
+        {
+          "skill_name": "github:github",
+          "display_name": "Github: Github",
+          "skill_ids": [],
+          "invocation_counts": 3
+        },
+        {
+          "skill_name": "github:gh-fix-ci",
+          "display_name": "Github: Gh Fix Ci",
+          "skill_ids": [],
+          "invocation_counts": 2
+        },
+        {
+          "skill_name": "simp",
+          "display_name": "Simp",
+          "skill_ids": [],
+          "invocation_counts": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-09",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 51
+        },
+        {
+          "skill_name": "simp",
+          "display_name": "Simp",
+          "skill_ids": [],
+          "invocation_counts": 17
+        },
+        {
+          "skill_name": "commit",
+          "display_name": "Commit",
+          "skill_ids": [],
+          "invocation_counts": 9
+        },
+        {
+          "skill_name": "pr",
+          "display_name": "Pr",
+          "skill_ids": [],
+          "invocation_counts": 9
+        },
+        {
+          "skill_name": "github:gh-fix-ci",
+          "display_name": "Github: Gh Fix Ci",
+          "skill_ids": [],
+          "invocation_counts": 8
+        },
+        {
+          "skill_name": "github:github",
+          "display_name": "Github: Github",
+          "skill_ids": [],
+          "invocation_counts": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-10",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 151
+        },
+        {
+          "skill_name": "simp",
+          "display_name": "Simp",
+          "skill_ids": [],
+          "invocation_counts": 51
+        },
+        {
+          "skill_name": "github:gh-fix-ci",
+          "display_name": "Github: Gh Fix Ci",
+          "skill_ids": [],
+          "invocation_counts": 6
+        },
+        {
+          "skill_name": "commit",
+          "display_name": "Commit",
+          "skill_ids": [],
+          "invocation_counts": 5
+        },
+        {
+          "skill_name": "github:github",
+          "display_name": "Github: Github",
+          "skill_ids": [],
+          "invocation_counts": 5
+        },
+        {
+          "skill_name": "commit-pr",
+          "display_name": "Commit Pr",
+          "skill_ids": [],
+          "invocation_counts": 2
+        },
+        {
+          "skill_name": "github:gh-address-comments",
+          "display_name": "Github: Gh Address Comments",
+          "skill_ids": [],
+          "invocation_counts": 2
+        },
+        {
+          "skill_name": "pr",
+          "display_name": "Pr",
+          "skill_ids": [],
+          "invocation_counts": 2
+        },
+        {
+          "skill_name": "github:yeet",
+          "display_name": "Github: Yeet",
+          "skill_ids": [],
+          "invocation_counts": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-11",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 138
+        },
+        {
+          "skill_name": "simp",
+          "display_name": "Simp",
+          "skill_ids": [],
+          "invocation_counts": 64
+        },
+        {
+          "skill_name": "pr",
+          "display_name": "Pr",
+          "skill_ids": [],
+          "invocation_counts": 3
+        },
+        {
+          "skill_name": "commit",
+          "display_name": "Commit",
+          "skill_ids": [],
+          "invocation_counts": 2
+        },
+        {
+          "skill_name": "github:gh-fix-ci",
+          "display_name": "Github: Gh Fix Ci",
+          "skill_ids": [],
+          "invocation_counts": 1
+        },
+        {
+          "skill_name": "github:github",
+          "display_name": "Github: Github",
+          "skill_ids": [],
+          "invocation_counts": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-12",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 37
+        },
+        {
+          "skill_name": "simp",
+          "display_name": "Simp",
+          "skill_ids": [],
+          "invocation_counts": 25
+        }
+      ]
+    },
+    {
+      "date": "2026-08-13",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 9
+        },
+        {
+          "skill_name": "commit",
+          "display_name": "Commit",
+          "skill_ids": [],
+          "invocation_counts": 6
+        },
+        {
+          "skill_name": "github:gh-fix-ci",
+          "display_name": "Github: Gh Fix Ci",
+          "skill_ids": [],
+          "invocation_counts": 3
+        },
+        {
+          "skill_name": "simp",
+          "display_name": "Simp",
+          "skill_ids": [],
+          "invocation_counts": 3
+        }
+      ]
+    },
+    {
+      "date": "2026-08-14",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "github:gh-fix-ci",
+          "display_name": "Github: Gh Fix Ci",
+          "skill_ids": [],
+          "invocation_counts": 3
+        },
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 2
+        },
+        {
+          "skill_name": "simp",
+          "display_name": "Simp",
+          "skill_ids": [],
+          "invocation_counts": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-15",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "commit",
+          "display_name": "Commit",
+          "skill_ids": [],
+          "invocation_counts": 6
+        },
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 6
+        },
+        {
+          "skill_name": "github:gh-fix-ci",
+          "display_name": "Github: Gh Fix Ci",
+          "skill_ids": [],
+          "invocation_counts": 4
+        },
+        {
+          "skill_name": "pr",
+          "display_name": "Pr",
+          "skill_ids": [],
+          "invocation_counts": 2
+        },
+        {
+          "skill_name": "github:github",
+          "display_name": "Github: Github",
+          "skill_ids": [],
+          "invocation_counts": 1
+        },
+        {
+          "skill_name": "simp",
+          "display_name": "Simp",
+          "skill_ids": [],
+          "invocation_counts": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-16",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "commit",
+          "display_name": "Commit",
+          "skill_ids": [],
+          "invocation_counts": 1
+        },
+        {
+          "skill_name": "commit-pr",
+          "display_name": "Commit Pr",
+          "skill_ids": [],
+          "invocation_counts": 1
+        },
+        {
+          "skill_name": "github:github",
+          "display_name": "Github: Github",
+          "skill_ids": [],
+          "invocation_counts": 1
+        },
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 1
+        },
+        {
+          "skill_name": "pr",
+          "display_name": "Pr",
+          "skill_ids": [],
+          "invocation_counts": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-22",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "commit",
+          "display_name": "Commit",
+          "skill_ids": [],
+          "invocation_counts": 3
+        },
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 2
+        },
+        {
+          "skill_name": "simp",
+          "display_name": "Simp",
+          "skill_ids": [],
+          "invocation_counts": 2
+        },
+        {
+          "skill_name": "commit-pr",
+          "display_name": "Commit Pr",
+          "skill_ids": [],
+          "invocation_counts": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-23",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 2
+        }
+      ]
+    },
+    {
+      "date": "2026-08-24",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "commit",
+          "display_name": "Commit",
+          "skill_ids": [],
+          "invocation_counts": 3
+        },
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 3
+        },
+        {
+          "skill_name": "simp",
+          "display_name": "Simp",
+          "skill_ids": [],
+          "invocation_counts": 3
+        },
+        {
+          "skill_name": "commit-pr",
+          "display_name": "Commit Pr",
+          "skill_ids": [],
+          "invocation_counts": 1
+        },
+        {
+          "skill_name": "pr",
+          "display_name": "Pr",
+          "skill_ids": [],
+          "invocation_counts": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-25",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 14
+        },
+        {
+          "skill_name": "pr",
+          "display_name": "Pr",
+          "skill_ids": [],
+          "invocation_counts": 6
+        },
+        {
+          "skill_name": "commit",
+          "display_name": "Commit",
+          "skill_ids": [],
+          "invocation_counts": 4
+        },
+        {
+          "skill_name": "commit-pr",
+          "display_name": "Commit Pr",
+          "skill_ids": [],
+          "invocation_counts": 1
+        },
+        {
+          "skill_name": "simp",
+          "display_name": "Simp",
+          "skill_ids": [],
+          "invocation_counts": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-26",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "simp",
+          "display_name": "Simp",
+          "skill_ids": [],
+          "invocation_counts": 7
+        },
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 3
+        },
+        {
+          "skill_name": "commit",
+          "display_name": "Commit",
+          "skill_ids": [],
+          "invocation_counts": 1
+        },
+        {
+          "skill_name": "commit-pr",
+          "display_name": "Commit Pr",
+          "skill_ids": [],
+          "invocation_counts": 1
+        },
+        {
+          "skill_name": "pr",
+          "display_name": "Pr",
+          "skill_ids": [],
+          "invocation_counts": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-27",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "simp",
+          "display_name": "Simp",
+          "skill_ids": [],
+          "invocation_counts": 49
+        },
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 42
+        },
+        {
+          "skill_name": "commit",
+          "display_name": "Commit",
+          "skill_ids": [],
+          "invocation_counts": 17
+        },
+        {
+          "skill_name": "pr",
+          "display_name": "Pr",
+          "skill_ids": [],
+          "invocation_counts": 15
+        },
+        {
+          "skill_name": "openai-docs",
+          "display_name": "Openai Docs",
+          "skill_ids": [],
+          "invocation_counts": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-28",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "simp",
+          "display_name": "Simp",
+          "skill_ids": [],
+          "invocation_counts": 70
+        },
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 40
+        },
+        {
+          "skill_name": "pr",
+          "display_name": "Pr",
+          "skill_ids": [],
+          "invocation_counts": 25
+        },
+        {
+          "skill_name": "commit",
+          "display_name": "Commit",
+          "skill_ids": [],
+          "invocation_counts": 15
+        },
+        {
+          "skill_name": "openai-docs",
+          "display_name": "Openai Docs",
+          "skill_ids": [],
+          "invocation_counts": 2
+        },
+        {
+          "skill_name": "commit-pr",
+          "display_name": "Commit Pr",
+          "skill_ids": [],
+          "invocation_counts": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-29",
+      "skill_usage_overviews": [
+        {
+          "skill_name": "simp",
+          "display_name": "Simp",
+          "skill_ids": [],
+          "invocation_counts": 38
+        },
+        {
+          "skill_name": "no-slop",
+          "display_name": "No Slop",
+          "skill_ids": [],
+          "invocation_counts": 21
+        },
+        {
+          "skill_name": "pr",
+          "display_name": "Pr",
+          "skill_ids": [],
+          "invocation_counts": 5
+        },
+        {
+          "skill_name": "commit",
+          "display_name": "Commit",
+          "skill_ids": [],
+          "invocation_counts": 3
+        }
+      ]
+    }
+  ],
+  "group_by": "day"
+}
