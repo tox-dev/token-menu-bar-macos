@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Testing
+import TokenMenuBarNativeGuard
 import TokenMenuBarTestSupport
 
 @testable import TokenMenuBarCore
