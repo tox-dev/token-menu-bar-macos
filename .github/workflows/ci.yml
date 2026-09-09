@@ -6,19 +6,19 @@ on:
       controls:
         description: Control groups to run after the build
         type: choice
-        options: [data-log, none, readers]
+        options: [data-log, none, readers, native]
         default: data-log
 
 permissions:
   contents: read
 
 concurrency:
-  group: focused-ui-${{ github.ref }}
+  group: focused-ui-${{ github.ref }}-${{ inputs.controls }}
   cancel-in-progress: true
 
 jobs:
   build:
-    if: inputs.controls != 'readers'
+    if: inputs.controls != 'readers' && inputs.controls != 'native'
     runs-on: macos-14
     timeout-minutes: 10
     steps:
@@ -85,7 +85,8 @@ jobs:
           retention-days: 1
 
   readers:
-    if: inputs.controls == 'readers'
+    name: ${{ inputs.controls }}
+    if: inputs.controls == 'readers' || inputs.controls == 'native'
     runs-on: macos-26
     timeout-minutes: 10
     steps:
@@ -105,18 +106,26 @@ jobs:
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: .build
-          key: ocr-tesseract-26-${{ hashFiles('Package.swift', 'Sources/**', 'Tests/**') }}
-          restore-keys: ocr-tesseract-26-
-      - name: Verify bounded background reader work
+          key: ocr-tesseract-26-${{ inputs.controls }}-${{ hashFiles('Package.swift', 'Sources/**', 'Tests/**') }}
+          restore-keys: |
+            ocr-tesseract-26-${{ inputs.controls }}-
+            ocr-tesseract-26-
+      - name: Verify the selected package behavior
+        env:
+          CHECK: ${{ inputs.controls }}
         run: |
           set -o pipefail
           mkdir -p .build
-          just test 'transcriptReaderFinishesAColdTreeOutsideTheProviderPoll|rolloutReaderBoundsTreeEnumerationSlices' \
-            2>&1 | tee .build/reader-tests.log | tail -35
+          if [[ "$CHECK" == native ]]; then
+            Scripts/with-test-desktop.sh swift test --jobs 2 --no-parallel \
+              --filter 'nativeChooser|verificationChoosers|liveDependencyHelpers|rootViewWithoutAChooser|startupClosureControllerRootCallbacks|liveChooserDefaults|popover'
+          else
+            just test 'transcriptReaderFinishesAColdTreeOutsideTheProviderPoll|rolloutReaderBoundsTreeEnumerationSlices'
+          fi 2>&1 | tee .build/reader-tests.log | tail -35
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
-          name: reader-tests-macos-26
+          name: ${{ inputs.controls }}-tests-macos-26
           path: .build/reader-tests.log
           retention-days: 1
 
