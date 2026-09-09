@@ -815,7 +815,17 @@ final class LiveControlAuditUITests: XCTestCase {
   ) -> [ControlAuditRecord] {
     var records: [ControlAuditRecord] = []
     let retention = application.steppers["history-retention"]
-    XCTAssertTrue(reveal(retention, in: surface), "Missing history retention")
+    let retentionReached = reveal(retention, in: surface)
+    if !retentionReached {
+      let before = retention.debugDescription
+      let arrow = retention.descendants(matching: .incrementArrow).firstMatch
+      arrow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
+      let attachment = XCTAttachment(string: "Before click:\n\(before)\nAfter click:\n\(retention.debugDescription)")
+      attachment.name = "Retention native input diagnostic"
+      attachment.lifetime = .keepAlways
+      add(attachment)
+    }
+    XCTAssertTrue(retentionReached, "Missing history retention")
     adjustStepperAndRestore(retention)
     records.append(
       scenarioRecord(tab: "Settings", label: "History retention", element: retention, action: "increment/decrement"))
@@ -910,8 +920,8 @@ final class LiveControlAuditUITests: XCTestCase {
     XCTAssertTrue(level.exists)
     XCTAssertEqual(segments(in: level).count, 5, "Log level must expose All plus four severities")
     for segment in segments(in: level) {
-      XCTAssertTrue(segment.isEnabled)
       XCTAssertTrue(reveal(segment, in: surface))
+      XCTAssertTrue(segment.isEnabled)
       segment.click()
       XCTAssertTrue(waitUntil(timeout: responsivenessBudget) { self.isSelected(segment) })
     }
@@ -957,17 +967,8 @@ final class LiveControlAuditUITests: XCTestCase {
 
   @MainActor
   private func adjustDate(_ picker: XCUIElement, increasing: Bool) {
-    let hittableBeforeFocus = picker.isHittable
-    if !hittableBeforeFocus {
-      let before = picker.debugDescription
-      picker.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: 0.5)).click()
-      let attachment = XCTAttachment(string: "Before focus:\n\(before)\nAfter focus:\n\(picker.debugDescription)")
-      attachment.name = "Date component focus diagnostic"
-      attachment.lifetime = .keepAlways
-      add(attachment)
-    }
     XCTAssertTrue(
-      hittableBeforeFocus,
+      picker.isHittable,
       "Date picker is unreachable: \(picker.debugDescription)")
     picker.click()
     let before = String(describing: picker.value)
@@ -1299,114 +1300,6 @@ final class LiveControlAuditUITests: XCTestCase {
   }
 
   @MainActor
-  private func auditControls(in tab: String, application: XCUIApplication) -> [ControlAuditRecord] {
-    let surface = application.descendants(matching: .any)["popover-surface"]
-    let scrollView = surface.scrollViews.firstMatch
-    var records: [String: ControlAuditRecord] = [:]
-    var unchangedPages = 0
-    var previousKeys: Set<String> = []
-    for _ in 0..<18 {
-      let elements = surface.descendants(matching: .any).allElementsBoundByIndex.filter {
-        Self.audits($0.elementType, identifier: $0.identifier) && $0.frame.intersects(surface.frame)
-      }
-      let keys = Set(elements.map(controlKey))
-      unchangedPages = keys == previousKeys ? unchangedPages + 1 : 0
-      previousKeys = keys
-      for element in elements where records[controlKey(element)] == nil {
-        records[controlKey(element)] = exercise(element, tab: tab, application: application)
-      }
-      if tab != "Settings" || application.buttons["Show Full Log"].isHittable || unchangedPages >= 2 { break }
-      guard scrollView.exists else { break }
-      scrollView.scroll(byDeltaX: 0, deltaY: -520)
-    }
-    return records.values.sorted { ($0.type, $0.label, $0.frame.minY) < ($1.type, $1.label, $1.frame.minY) }
-  }
-
-  @MainActor
-  private func exercise(
-    _ element: XCUIElement, tab: String, application: XCUIApplication
-  ) -> ControlAuditRecord {
-    let type = element.elementType
-    let identifier = element.identifier
-    let label = element.label
-    let value = String(describing: element.value)
-    let frame = FrameRecord(element.frame)
-    guard element.isEnabled else {
-      return ControlAuditRecord(
-        tab: tab, type: String(describing: type), identifier: identifier,
-        label: label, value: value, enabled: false, hittable: element.isHittable,
-        interacted: false, action: "observe-disabled", result: "disabled-by-state", frame: frame)
-    }
-    guard element.isHittable else {
-      return ControlAuditRecord(
-        tab: tab, type: String(describing: type), identifier: identifier,
-        label: label, value: value, enabled: true, hittable: false,
-        interacted: false, action: "interact", result: "failed:not-hittable", frame: frame)
-    }
-
-    let started = ProcessInfo.processInfo.systemUptime
-    var result = "passed"
-    var interacted = true
-    switch type {
-    case .button:
-      if ["Usage", "History", "Settings"].contains(label) {
-        interacted = false
-        result = "tab-covered-separately"
-      } else {
-        element.click()
-        if label.contains("Reset") || label.contains("Clear") { dismissConfirmationIfNeeded(application) }
-        if label == "Show Full Log", application.windows.count > 1 {
-          application.typeKey("w", modifierFlags: .command)
-        }
-      }
-    case .checkBox, .switch:
-      element.click()
-      element.click()
-    case .segmentedControl:
-      for segment in element.buttons.allElementsBoundByIndex where segment.isEnabled && segment.isHittable {
-        segment.click()
-      }
-    case .popUpButton, .comboBox:
-      element.click()
-      application.typeKey(.downArrow, modifierFlags: [])
-      application.typeKey(.enter, modifierFlags: [])
-    case .searchField, .textField, .textView:
-      let original = element.value as? String ?? ""
-      element.click()
-      application.typeKey("a", modifierFlags: .command)
-      element.typeText(identifier == "model-filter" ? "codex" : "VX")
-      application.typeKey("a", modifierFlags: .command)
-      if !original.isEmpty { element.typeText(original) }
-    case .slider:
-      element.click()
-      application.typeKey(.rightArrow, modifierFlags: [])
-      application.typeKey(.leftArrow, modifierFlags: [])
-    case .datePicker:
-      interacted = tab == "History"
-      result = interacted ? "passed:date-covered-separately" : "failed:unexpected-date-picker"
-    case .link, .menuButton, .radioButton, .stepper:
-      element.click()
-    default:
-      interacted = false
-      result = "failed:unsupported-control"
-    }
-    let latency = ProcessInfo.processInfo.systemUptime - started
-    if latency >= responsivenessBudget { result = "failed:latency-\(Int((latency * 1_000).rounded()))ms" }
-    return ControlAuditRecord(
-      tab: tab, type: String(describing: type), identifier: identifier,
-      label: label, value: value, enabled: true, hittable: true,
-      interacted: interacted, action: "generic-interaction", result: result, frame: frame)
-  }
-
-  @MainActor
-  private func dismissConfirmationIfNeeded(_ application: XCUIApplication) {
-    let alert = application.alerts.firstMatch
-    guard alert.waitForExistence(timeout: 0.1) else { return }
-    let cancel = alert.buttons["Cancel"]
-    if cancel.exists { cancel.click() }
-  }
-
-  @MainActor
   private func assertVisibleStringsAndControls(
     in surface: XCUIElement, application: XCUIApplication, snapshot: any XCUIElementSnapshot
   ) -> Int {
@@ -1658,11 +1551,6 @@ final class LiveControlAuditUITests: XCTestCase {
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
     try encoder.encode(value).write(to: url)
-  }
-
-  @MainActor
-  private func controlKey(_ element: XCUIElement) -> String {
-    "\(element.elementType)|\(element.identifier)|\(element.label)|\(Int(element.frame.minX))|\(Int(element.frame.minY))"
   }
 
   private static let auditedTypes: Set<XCUIElement.ElementType> = [
