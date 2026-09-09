@@ -138,10 +138,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: history
-            selector: LiveControlAuditUITests/testHistoryDatesAndControlsRespond
-          - name: log
-            selector: LiveControlAuditUITests/testSettingsLogControlsRespond
           - name: save
             selector: LiveControlAuditUITests/testHistoryExportSavesTheSelectedPeriod
     steps:

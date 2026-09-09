@@ -165,7 +165,7 @@ final class LiveControlAuditUITests: XCTestCase {
     XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
 
     application.buttons["history-export"].click()
-    let save = application.buttons["Save"]
+    let save = application.sheets["save-panel"].buttons["OKButton"]
     XCTAssertTrue(save.waitForExistence(timeout: 2))
     let tree = XCTAttachment(string: application.debugDescription)
     tree.name = "Native Save panel"

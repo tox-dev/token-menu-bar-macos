@@ -55,6 +55,10 @@ final class PersistentTabContainer: NSView {
     NSSize(width: NSView.noIntrinsicMetric, height: NSView.noIntrinsicMetric)
   }
 
+  override func accessibilityChildren() -> [Any]? {
+    slots[selected].map { [$0] } ?? []
+  }
+
   func install(_ host: NSHostingView<AnyView>, for tab: PopoverTab) {
     wantsLayer = true
     let slot = PersistentTabSlot(host: host)
@@ -135,6 +139,10 @@ final class PersistentTabSlot: NSView {
   @available(*, unavailable)
   required init?(coder: NSCoder) {
     fatalError("init(coder:) is unavailable")
+  }
+
+  override func accessibilityChildren() -> [Any]? {
+    isActive ? [host] : []
   }
 
   override func layout() {

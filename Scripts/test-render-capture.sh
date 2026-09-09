@@ -31,18 +31,18 @@ touch "$TOKEN_MENU_BAR_RENDER_ARTIFACTS/sample.ocr.json"
 exit 7
 BASH
 [[ "$status" == 7 ]]
-for outcome in empty interrupted zero failed; do
+for outcome in empty interrupted zero failed restarted; do
   if "${capture[@]}" Scripts/with-render-checks.sh 1 --capture-only \
-    bash -s "$outcome" > "$probe/$outcome-suite" 2>&1 << 'BASH'
+    bash -s "$outcome" > "$probe/$outcome-suite" 2>&1 << 'BASH'; then
 touch "$TOKEN_MENU_BAR_RENDER_ARTIFACTS/sample.ocr.json"
 case "$1" in
   empty) ;;
   interrupted) echo 'Test run started.'; echo 'Test fixture() started.' ;;
   zero) echo 'Test run with 0 tests passed after 0.001 seconds.' ;;
   failed) echo 'Test run with 1 test failed after 0.001 seconds.' ;;
+  restarted) echo 'Test run with 1 test passed after 0.001 seconds.'; echo 'Test run started.' ;;
 esac
 BASH
-  then
     echo "Accepted a $outcome suite without successful completion." >&2
     exit 1
   fi

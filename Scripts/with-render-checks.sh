@@ -23,7 +23,11 @@ else
 fi
 status=0
 TOKEN_MENU_BAR_RENDER_ARTIFACTS="$render_directory" "$@" 2>&1 | tee "$render_directory/test.log" || status=$?
-if [[ "$status" == 0 ]] && ! grep -Eq 'Test run with [1-9][0-9]* tests?( in [0-9]+ suites?)? passed after ' "$render_directory/test.log"; then
+if [[ "$status" == 0 ]] && ! awk '
+  /Test .* started\./ { completed = 0 }
+  /Test run with [1-9][0-9]* tests?( in [0-9]+ suites?)? passed after / { completed = 1 }
+  END { exit !completed }
+' "$render_directory/test.log"; then
   echo "The test process exited without a completed, nonempty passing suite." >&2
   status=1
 fi
