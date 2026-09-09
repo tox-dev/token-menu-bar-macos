@@ -494,7 +494,7 @@ public final class AppController {
         let point = view.convert(CGPoint(x: view.bounds.midX, y: view.bounds.midY), to: root.superview)
         let hit = root.hitTest(point)
         dependencies.log.logInfo(
-          "hit.control class=\(type(of: view)) id=\(view.accessibilityIdentifier() ?? "") frame=\(window.convertToScreen(view.convert(view.bounds, to: nil))) enabled=\((view as? NSControl)?.isEnabled ?? false) hidden=\(view.isHiddenOrHasHiddenAncestor) point=\(point) hit=\(hit.map { String(describing: type(of: $0)) } ?? "nil") responder=\(String(describing: window.firstResponder))"
+          "hit.control class=\(type(of: view)) id=\(view.accessibilityIdentifier()) frame=\(window.convertToScreen(view.convert(view.bounds, to: nil))) enabled=\((view as? NSControl)?.isEnabled ?? false) hidden=\(view.isHiddenOrHasHiddenAncestor) point=\(point) hit=\(hit.map { String(describing: type(of: $0)) } ?? "nil") responder=\(String(describing: window.firstResponder))"
         )
       }
     }

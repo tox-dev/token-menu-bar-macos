@@ -201,7 +201,7 @@ jobs:
 
   live-ocr:
     needs: [ui, ocr]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && needs.ui.result != 'skipped' && needs.ocr.result == 'success' }}
     runs-on: macos-26
     timeout-minutes: 5
     steps:
