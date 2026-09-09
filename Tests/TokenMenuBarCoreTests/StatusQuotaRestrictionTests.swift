@@ -64,9 +64,12 @@ func quotaRestrictionRemainsInTheTooltip(tier: StatusTier) {
   #expect(model.accessibilitySummary == "Claude: Current session limit reached; resets 2 hr 0 min.")
 }
 
-@Test func inactiveSelectedQuotaDoesNotInheritARestriction() {
-  let model = StatusItemBuilder.build(restrictedInput(sessionActive: false))
-  #expect(model.cells[0].percent == 36)
+@Test(arguments: StatusTier.allCases)
+func inactiveSelectedQuotaStillShowsAnActiveWeeklyRestriction(tier: StatusTier) {
+  let model = StatusItemBuilder.build(restrictedInput(sessionActive: false, sessionPercent: 0).with(tier: tier))
+  #expect(model.iconTone == .attention)
+  #expect(model.tooltip.contains("Included quota limited by All models (100% used; resets 2d 0h)."))
+  if tier != .iconOnly { #expect(model.cells.map(\.percent) == [100]) }
 }
 
 @Test func unknownCodexQuotaDoesNotInheritTheAccountWeeklyLimit() {

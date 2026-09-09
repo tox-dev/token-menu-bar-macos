@@ -12,7 +12,15 @@ import TokenMenuBarTestSupport
       ),
       quota: .text(#"{"buckets":[{"modelId":"model","remainingAmount":"0"}]}"#)))
   #expect(snapshot.details?.filter { $0.id.hasPrefix("credit:") }.map(\.id) == ["credit:A", "credit:B"])
-  #expect(snapshot.details?.last?.value == "0 units remaining · Percentage unavailable")
+  #expect(snapshot.details?.last?.value == "0 units remaining")
+}
+
+@Test func geminiOmitsQuotaBucketsWithoutReportedValues() async throws {
+  let snapshot = try #require(
+    await geminiSnapshot(
+      assist: .text(#"{"cloudaicompanionProject":"fixture"}"#),
+      quota: .text(#"{"buckets":[{"modelId":"unknown"}]}"#)))
+  #expect(snapshot.details == nil)
 }
 
 @Test func geminiIgnoresUnusableCreditEntriesWithoutLosingTheValidBalance() async throws {

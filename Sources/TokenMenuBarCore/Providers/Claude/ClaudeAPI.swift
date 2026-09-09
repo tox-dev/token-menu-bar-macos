@@ -392,12 +392,14 @@ enum ClaudeMapper {
     for limit in response.limits.filter({ Severity(raw: $0.severity) == .critical }) {
       let reset = ISODate.parse(limit.resetsAt).map { Format.resetClock($0, now: now) } ?? "later"
       notices.append(
-        Notice(kind: .limitReached, text: "\(window(limit).label) limit reached; resets \(reset)."))
+        Notice(
+          kind: .limitReached, text: "\(window(limit).label) limit reached; resets \(reset).",
+          windowID: window(limit).id))
     }
     return notices
   }
 
-  static func details(_ response: ClaudeAPI.UsageResponse, profile: ClaudeAPI.ProfileResponse?) -> [ProviderDetail] {
+  static func details(profile: ClaudeAPI.ProfileResponse?) -> [ProviderDetail] {
     var details: [ProviderDetail] = []
     if let status = profile?.organization?.subscriptionStatus {
       details.append(
@@ -405,20 +407,6 @@ enum ClaudeMapper {
           id: "subscription", title: "Subscription", value: Format.humanize(status),
           explanation: "Subscription status reported by the Claude OAuth profile."))
     }
-    let spend = spend(response)
-    var unavailable = ["Account-specific promotions"]
-    if spend != nil {
-      if spend?.resetsAt == nil { unavailable.append("Credit reset date") }
-      if spend?.balance == nil { unavailable.append("Prepaid balance") }
-      if spend?.autoReload == nil { unavailable.append("Auto-reload state") }
-    }
-    details.append(
-      ProviderDetail(
-        id: "oauth-availability", title: "Not reported by this source",
-        value: unavailable.joined(separator: " · "),
-        explanation:
-          "The Claude CLI OAuth response does not include these account details. Local transcripts cannot supply billing settings or account-specific promotion terms. No browser session is read to fill missing fields."
-      ))
     return details
   }
 }

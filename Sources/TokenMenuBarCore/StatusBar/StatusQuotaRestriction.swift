@@ -4,7 +4,6 @@ struct StatusQuotaRestriction {
   let windows: [QuotaWindow]
 
   init?(window: QuotaWindow, snapshot: ProviderSnapshot, now: Date) {
-    guard window.isActive else { return nil }
     windows = snapshot.windows.filter { candidate in
       candidate.isActive && candidate.usedPercent >= 100
         && (candidate.resetsAt.map { $0 > now } ?? true)

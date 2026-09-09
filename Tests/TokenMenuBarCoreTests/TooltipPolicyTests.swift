@@ -6,6 +6,7 @@ import TokenMenuBarTestSupport
 
 @Test func tooltipTimingMatchesInteractionContract() {
   #expect(TooltipTiming.presentationDelay == .milliseconds(150))
+  #expect(TooltipTiming.historyPresentationDelay == .milliseconds(1200))
   #expect(TooltipTiming.dismissalDelay == .milliseconds(150))
   #expect(TooltipTiming.fadeDuration == 0.09)
 }

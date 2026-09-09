@@ -69,7 +69,7 @@ public struct UsageChart: View {
       .accessibilityLabel("\(data.metric.title) history")
       .accessibilityValue(data.summaryText)
       .accessibilityChartDescriptor(HistoryChartAccessibility(data: data, timeZone: timeZone))
-      .richHelp(
+      .richHelpAccessibility(
         TooltipContent(
           title: "History chart",
           body:

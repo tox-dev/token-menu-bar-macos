@@ -10,6 +10,7 @@ final class TooltipTrackingView: NSView, TooltipPresentationSource {
   private var hovering = false
   private var tracking: NSTrackingArea?
   var tooltipContent: TooltipContent
+  var tooltipPresentationDelay = TooltipTiming.presentationDelay
 
   init(content: TooltipContent, presenter: TooltipPresenter, tracksHover: Bool = true) {
     tooltipOwner = presenter.makeOwner()
@@ -138,6 +139,7 @@ final class TooltipTrackingView: NSView, TooltipPresentationSource {
 }
 
 struct TooltipAnchor: NSViewRepresentable {
+  @Environment(\.tooltipPresentationDelay) private var presentationDelay
   let content: TooltipContent
   let focused: Bool
   let presenter: TooltipPresenter
@@ -148,10 +150,22 @@ struct TooltipAnchor: NSViewRepresentable {
   }
 
   func updateNSView(_ view: TooltipTrackingView, context: Context) {
+    view.tooltipPresentationDelay = presentationDelay
     view.update(content: content, focused: focused)
   }
 
   static func dismantleNSView(_ view: TooltipTrackingView, coordinator: Void) {
     view.dismantle()
   }
+}
+
+extension EnvironmentValues {
+  var tooltipPresentationDelay: Duration {
+    get { self[TooltipPresentationDelayKey.self] }
+    set { self[TooltipPresentationDelayKey.self] = newValue }
+  }
+}
+
+private struct TooltipPresentationDelayKey: EnvironmentKey {
+  static let defaultValue = TooltipTiming.presentationDelay
 }

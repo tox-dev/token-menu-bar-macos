@@ -153,10 +153,9 @@ enum GeminiMapper {
       if let amount = bucket.remainingAmount { values.append("\(amount) \(bucket.tokenType ?? "units") remaining") }
       if let fraction = bucket.remainingFraction {
         values.append("\(Format.percent((1 - fraction) * 100)) used")
-      } else {
-        values.append("Percentage unavailable")
       }
       if let reset = bucket.resetTime { values.append("Resets \(reset)") }
+      guard !values.isEmpty else { continue }
       details.append(
         ProviderDetail(
           id: "bucket:\(index)", title: bucket.modelId.map(modelLabel) ?? "Quota",

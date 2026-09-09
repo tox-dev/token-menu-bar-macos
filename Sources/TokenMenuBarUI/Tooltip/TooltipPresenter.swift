@@ -14,6 +14,11 @@ protocol TooltipPresentationSource: AnyObject {
   var tooltipContent: TooltipContent { get }
   var tooltipPresentationContext: TooltipPresentationContext? { get }
   var tooltipClipView: NSClipView? { get }
+  var tooltipPresentationDelay: Duration { get }
+}
+
+extension TooltipPresentationSource {
+  var tooltipPresentationDelay: Duration { TooltipTiming.presentationDelay }
 }
 
 @MainActor
@@ -177,9 +182,10 @@ public final class TooltipPresenter {
     observe(source: source, window: context.parentWindow)
     installEventMonitor()
     let sleep = sleep
+    let delay = source.tooltipPresentationDelay
     presentationTask = Task { @MainActor [weak self, weak source] in
       do {
-        try await sleep(TooltipTiming.presentationDelay)
+        try await sleep(delay)
       } catch {
         guard let self, arbiter.pending == request else { return }
         dismiss(owner: request.owner)

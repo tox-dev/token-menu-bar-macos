@@ -210,10 +210,12 @@ public struct Notice: Codable, Sendable, Hashable, Identifiable {
 
   public let kind: Kind
   public let text: String
+  public let windowID: String?
 
-  public init(kind: Kind, text: String) {
+  public init(kind: Kind, text: String, windowID: String? = nil) {
     self.kind = kind
     self.text = text
+    self.windowID = windowID
   }
 
   public var id: String {

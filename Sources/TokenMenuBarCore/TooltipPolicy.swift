@@ -3,6 +3,7 @@ import Foundation
 
 public enum TooltipTiming {
   public static let presentationDelay: Duration = .milliseconds(150)
+  public static let historyPresentationDelay: Duration = .milliseconds(1200)
   public static let dismissalDelay: Duration = .milliseconds(150)
   public static let fadeDuration: TimeInterval = 0.09
 }

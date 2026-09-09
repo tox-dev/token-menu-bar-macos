@@ -190,7 +190,8 @@ public enum StatusItemBuilder {
       return (key, snapshot, restriction?.projected(window) ?? window)
     }
     let exhausted = selectedEntries.filter {
-      $0.2.isActive && $0.2.usedPercent >= 100 && ($0.2.resetsAt.map { $0 > input.now } ?? true)
+      (restrictions[$0.0] != nil || $0.2.isActive) && $0.2.usedPercent >= 100
+        && ($0.2.resetsAt.map { $0 > input.now } ?? true)
     }
     let tone: StatusIconTone =
       !exhausted.isEmpty

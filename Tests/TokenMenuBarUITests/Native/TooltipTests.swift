@@ -130,6 +130,7 @@ private final class TooltipSourceStub: TooltipPresentationSource {
   var tooltipContent: TooltipContent
   var tooltipPresentationContext: TooltipPresentationContext?
   var tooltipClipView: NSClipView?
+  var tooltipPresentationDelay = TooltipTiming.presentationDelay
 
   init(
     presenter: TooltipPresenter,
@@ -218,6 +219,34 @@ private struct TooltipFocusProbe: View {
 
 @Suite(.serialized)
 struct TooltipTests {
+  @Test @MainActor func historyControlsInheritTheLongHoverDelay() throws {
+    let environment = try makeEnvironment()
+    environment.disclosures.setExpanded(true, for: "history.data")
+    let hosting = host(HistoryTab(environment: environment), width: 880, height: 900)
+    let tracking = tooltipTrackingViews(in: hosting)
+    #expect(tracking.contains { $0.tooltipContent.title == "History period" })
+    #expect(Set(tracking.map(\.tooltipPresentationDelay)) == [TooltipTiming.historyPresentationDelay])
+  }
+
+  @Test @MainActor func historyDelayDoesNotChangeOtherViews() {
+    let hosting = host(Text("Usage control").richHelp(TooltipContent(title: "Refresh", body: "Fetch current usage")))
+    #expect(tooltipTrackingViews(in: hosting).map(\.tooltipPresentationDelay) == [TooltipTiming.presentationDelay])
+  }
+
+  @Test @MainActor func historyDiagramDoesNotCreateATextTooltip() throws {
+    let environment = try makeEnvironment(populate: false)
+    let data = HistoryChartModel(
+      series: [
+        HistorySeries(
+          key: WindowKey(provider: .claude, windowID: "session"), label: "Session",
+          points: [SeriesPoint(date: fixedNow, value: 40)])
+      ], domain: fixedNow.addingTimeInterval(-60)...fixedNow.addingTimeInterval(60), yMax: 100)
+    let hosting = host(
+      UsageChart(data: data, presenter: environment.historyPresenter, stacked: false, timeZone: .current),
+      width: 600, height: 300)
+    #expect(tooltipTrackingViews(in: hosting).isEmpty)
+  }
+
   @Test func tooltipContentIncludesTitleAndFlattensRichSpansForAccessibility() {
     let content = TooltipContent(
       title: "Format",
@@ -537,15 +566,17 @@ struct TooltipTests {
     presenter.tearDown()
   }
 
-  @Test @MainActor func tooltipPresenterShowsAfterTheFullHoverThreshold() async {
+  @Test(arguments: [TooltipTiming.presentationDelay, TooltipTiming.historyPresentationDelay]) @MainActor
+  func tooltipPresenterShowsAfterTheFullHoverThreshold(delay: Duration) async {
     let clock = TooltipTestClock()
     let panel = TooltipPanelSpy()
     let presenter = TooltipPresenter(sleep: { try await clock.sleep($0) }, panelFactory: { panel })
     let source = TooltipSourceStub(presenter: presenter, title: "Threshold", window: NSWindow())
+    source.tooltipPresentationDelay = delay
 
     presenter.arm(source: source)
     await waitForSleeps(clock, count: 1)
-    await clock.advance(by: .milliseconds(149))
+    await clock.advance(by: delay - .milliseconds(1))
     await Task.yield()
     #expect(panel.contents.isEmpty)
 
@@ -555,15 +586,17 @@ struct TooltipTests {
     presenter.tearDown()
   }
 
-  @Test @MainActor func tooltipPresenterDoesNotShowWhenHoverEndsBeforeTheEntryThreshold() async {
+  @Test(arguments: [TooltipTiming.presentationDelay, TooltipTiming.historyPresentationDelay]) @MainActor
+  func tooltipPresenterDoesNotShowWhenHoverEndsBeforeTheEntryThreshold(delay: Duration) async {
     let clock = TooltipTestClock()
     let panel = TooltipPanelSpy()
     let presenter = TooltipPresenter(sleep: { try await clock.sleep($0) }, panelFactory: { panel })
     let source = TooltipSourceStub(presenter: presenter, title: "Brief hover", window: NSWindow())
+    source.tooltipPresentationDelay = delay
 
     presenter.arm(source: source)
     await waitForSleeps(clock, count: 1)
-    await clock.advance(by: .milliseconds(149))
+    await clock.advance(by: delay - .milliseconds(1))
     presenter.update(source: source, hovering: false, focused: false)
     await waitForSleeps(clock, count: 1, startedCount: 2)
     await clock.advance(by: TooltipTiming.dismissalDelay)

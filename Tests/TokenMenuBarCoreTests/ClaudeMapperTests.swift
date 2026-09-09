@@ -192,8 +192,30 @@ func claudeNamesThePlanFromTheAccountFlags(profile: String, expected: String) as
     """#
   let notices = try #require(await claudeSnapshot(usage: .text(usage))).notices
   #expect(notices.map(\.kind) == [.spendControl, .limitReached])
+  #expect(notices.map(\.windowID) == [nil, "session"])
   #expect(notices[1].text.contains("Current session"))
   #expect(notices[1].text.contains("2026-") == false)
   let clean = try #require(await claudeSnapshot(usage: .json("claude_usage")))
   #expect(clean.notices.isEmpty)
+}
+
+@Test func claudeDoesNotInventUnreportedProviderDetails() async throws {
+  let snapshot = try #require(await claudeSnapshot(usage: .text(#"{}"#), profile: .text(#"{}"#)))
+  #expect(snapshot.details == nil)
+}
+
+@Test func claudeInactiveSessionInheritsTheMappedWeeklyRestriction() async throws {
+  let snapshot = try #require(
+    await claudeSnapshot(
+      usage: .text(
+        #"""
+        {"limits":[{"kind":"session","percent":0,"is_active":false},
+                   {"kind":"weekly_all","percent":100,"is_active":true}]}
+        """#)))
+  let model = StatusItemBuilder.build(
+    StatusItemInput(
+      snapshots: [.claude: snapshot], availability: [.claude: .current],
+      selectedKeys: [WindowKey(provider: .claude, windowID: "session")], format: .stacked,
+      customTemplate: "", decimals: 0, hideZeroCells: true, order: .provider, labels: [:], now: fixedNow))
+  #expect(StatusTemplate.plainText(model.cells[0].lines) == "CC 5h\nLimit")
 }

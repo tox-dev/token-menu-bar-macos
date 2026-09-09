@@ -148,7 +148,7 @@ public actor ClaudeProvider: UsageProvider {
         localUsage: transcript?.localUsage(
           windowResetsAt: session?.resetsAt, windowDuration: ClaudeMapper.sessionDuration, now: now),
         fetchedAt: now,
-        details: ClaudeMapper.details(response, profile: profile)
+        details: ClaudeMapper.details(profile: profile)
       )
       let analytics = options.includeAnalytics ? transcript?.analytics(now: now) : nil
       return ProviderFetchResult(

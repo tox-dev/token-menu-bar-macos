@@ -51,6 +51,7 @@ public struct HistoryTab: View {
     .onChange(of: environment.state.historyRevision) { presenter.reload() }
     .onChange(of: settings.hidePersonalInformation) { presenter.redraw() }
     .background(HistoryActivity(environment: environment))
+    .environment(\.tooltipPresentationDelay, TooltipTiming.historyPresentationDelay)
   }
 
   private var periodControls: some View {

@@ -157,7 +157,8 @@ func providerDisclosuresMountTheirSupportingContent(group: String) async throws 
   let detail = ProviderDetail(
     id: "origin", title: "Allowance origin", value: "Organization", explanation: "Reported by the provider")
   let snapshot = ProviderSnapshot(
-    provider: .codex, identity: ProviderIdentity(planName: "Pro", email: "fixture@example.com"),
+    provider: .codex,
+    identity: ProviderIdentity(planName: "Pro", email: "fixture@example.com", organization: "Fixture workspace"),
     windows: sampleSnapshot(.codex).windows,
     credits: CreditBalance(balance: 0, approxLocalMessages: 0...0),
     spend: SpendControl(enabled: false, balance: Money(amountMinor: 0, currency: "USD")),
@@ -184,6 +185,21 @@ func providerDisclosuresMountTheirSupportingContent(group: String) async throws 
     return abs(hosting.fittingSize.height - collapsed) < 1
   }
   #expect(abs(hosting.fittingSize.height - collapsed) < 1)
+}
+
+@Test(arguments: [false, true]) @MainActor
+func providerHeaderShowsTheAccountWithoutExpandingDetails(hidden: Bool) throws {
+  let environment = try makeEnvironment(populate: false)
+  let card = UsagePresenter.card(
+    provider: .claude,
+    state: ProviderState(
+      snapshot: ProviderSnapshot(
+        provider: .claude, identity: ProviderIdentity(planName: "Pro", email: "fixture@example.com"),
+        windows: [], fetchedAt: fixedNow), availability: .current),
+    samples: [:], options: UsageDisplayOptions(hidePersonalInformation: hidden), now: fixedNow)
+  let hosting = host(ProviderCardView(card: card, environment: environment, onRefreshProvider: { _ in }), width: 880)
+  #expect(accessibleText(hosting).contains(hidden ? "account" : "fixture@example.com"))
+  if hidden { #expect(!accessibleText(hosting).contains("fixture@example.com")) }
 }
 
 @Test @MainActor func expandedLogReceivesNewEntriesWithoutRemounting() async throws {

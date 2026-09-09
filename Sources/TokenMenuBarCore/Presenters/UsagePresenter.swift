@@ -253,6 +253,7 @@ public enum UsagePresenter {
     let credits = creditsPresentation(snapshot?.credits, resetCredits: snapshot?.resetCredits)
     let local = snapshot?.localUsage.map(localPresentation)
     let identity = snapshot?.identity
+    let visibleLimits = Set(rows.filter { $0.window.usedPercent >= 100 }.map(\.window.id))
     return ProviderCard(
       provider: provider,
       availability: state.availability,
@@ -262,7 +263,9 @@ public enum UsagePresenter {
       credits: snapshot?.credits,
       spend: snapshot?.spend,
       resetCredits: snapshot?.resetCredits,
-      notices: snapshot?.notices ?? [],
+      notices: (snapshot?.notices ?? []).filter {
+        $0.kind != .limitReached || !($0.windowID.map(visibleLimits.contains) ?? false)
+      },
       warnings: state.warnings,
       lastError: state.lastError,
       presentedAt: now,
@@ -278,7 +281,10 @@ public enum UsagePresenter {
       spendPresentation: spend,
       creditsPresentation: credits,
       localPresentation: local,
-      details: snapshot?.details ?? []
+      details: (snapshot?.details ?? []).filter {
+        // Older caches include a row listing fields the provider did not report.
+        $0.id != "oauth-availability" && !$0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      }
     )
   }
 
@@ -459,7 +465,7 @@ public enum UsagePresenter {
     let identity = snapshot.identity
     let shown = hidePersonalInformation ? identity?.hidingPersonalInformation : identity
     if let plan = shown?.planName { chips.append(Chip(text: plan)) }
-    if let email = shown?.email { chips.append(Chip(text: email, isSupportingDetail: true)) }
+    if let email = shown?.email { chips.append(Chip(text: email)) }
     // The personal-organization check runs on the real names; a masked one would never match.
     if let organization = shown?.organization,
       identity?.organization != identity?.email.map({ "\($0)'s Organization" })
