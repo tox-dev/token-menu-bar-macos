@@ -62,9 +62,9 @@ private func recognizedText(_ png: Data) throws -> String {
   try autoreleasepool {
     let request = VNRecognizeTextRequest()
     request.revision = VNRecognizeTextRequestRevision3
-    request.recognitionLevel = .accurate
+    request.recognitionLevel = .fast
     request.recognitionLanguages = ["en-US"]
-    request.usesLanguageCorrection = false
+    request.usesLanguageCorrection = true
     // Hosted VMs must not require GPU or Neural Engine support for text assertions.
     do {
       for (stage, devices) in try request.supportedComputeStageDevices {
