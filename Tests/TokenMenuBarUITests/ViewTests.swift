@@ -18,7 +18,7 @@ import TokenMenuBarTestSupport
       environment: environment, onMeasure: { measured.append($0.tab) }, onTabChange: { selected.append($0) })
     let hosting = host(view)
     #expect(hosting.frame.width == 520)
-    await waitUntil { measured.contains(tab) }
+    try #require(await waitUntil { measured.contains(tab) })
     view.select(.history)
   }
   #expect(selected == [.history, .history])
@@ -57,34 +57,37 @@ import TokenMenuBarTestSupport
   }
 }
 
-@Test @MainActor func rootViewAdvancesUsageDeadlinesOnlyWhileThePopoverIsOpen() async throws {
-  let cases: [(popoverVisible: Bool, tab: PopoverTab, advances: Bool)] = [
-    (false, .usage, false), (true, .history, false), (true, .settings, false), (true, .usage, true),
-  ]
-  for item in cases {
-    let clock = SteppableClock()
-    let environment = try makeEnvironment(clock: Clock(now: { clock.reading }, sleep: { try await clock.sleep($0) }))
-    environment.state.popoverVisible = item.popoverVisible
-    environment.settings.lastTab = item.tab
-    let hosting = host(
-      RootView(environment: environment, onMeasure: { _ in }, onTabChange: { _ in }))
-    #expect(hosting.frame.width == 520)
-    if item.popoverVisible {
-      await waitUntil { environment.samples.count == 6 }
-    }
-    let initialDeadlineNow = environment.usageDeadlineNow
-    let initialNow = environment.now
-
-    let later = fixedNow.addingTimeInterval(600)
-    clock.reading = later
-    if item.advances {
-      await waitUntil { environment.usageDeadlineNow == later }
-    } else {
-      await mainActorTurn()
-    }
-    #expect(environment.usageDeadlineNow == (item.advances ? later : initialDeadlineNow))
-    #expect(environment.now == initialNow)
+@Test(arguments: [(false, PopoverTab.usage), (true, .history), (true, .settings), (true, .usage)])
+@MainActor func rootViewAdvancesUsageDeadlinesOnlyWhileThePopoverIsOpen(
+  popoverVisible: Bool, tab: PopoverTab
+) async throws {
+  let clock = SteppableClock()
+  let environment = try makeEnvironment(clock: Clock(now: { clock.reading }, sleep: { try await clock.sleep($0) }))
+  environment.state.popoverVisible = popoverVisible
+  environment.settings.lastTab = tab
+  var measured = false
+  let hosting = host(
+    RootView(environment: environment, onMeasure: { if $0.tab == tab { measured = true } }, onTabChange: { _ in }))
+  #expect(hosting.frame.width == 520)
+  try #require(await waitUntil { measured })
+  let advances = popoverVisible && tab == .usage
+  if advances {
+    try #require(await waitUntil { environment.samples.count == 6 })
+  } else {
+    #expect(environment.samples.isEmpty)
   }
+  let initialDeadlineNow = environment.usageDeadlineNow
+  let initialNow = environment.now
+
+  let later = fixedNow.addingTimeInterval(600)
+  clock.reading = later
+  if advances {
+    try #require(await waitUntil { environment.usageDeadlineNow == later })
+  } else {
+    await mainActorTurn()
+  }
+  #expect(environment.usageDeadlineNow == (advances ? later : initialDeadlineNow))
+  #expect(environment.now == initialNow)
 }
 
 @Test @MainActor func rootViewStopsTheUsageClockWhenSleepFails() async throws {
@@ -98,7 +101,7 @@ import TokenMenuBarTestSupport
   let hosting = host(RootView(environment: environment, onMeasure: { _ in }, onTabChange: { _ in }))
 
   #expect(hosting.frame.width == 520)
-  await waitUntil { sleeper.calls > 0 }
+  try #require(await waitUntil { sleeper.calls > 0 })
   #expect(sleeper.calls == 1)
   #expect(environment.usageDeadlineNow == initialDeadlineNow)
 }

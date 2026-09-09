@@ -12,10 +12,7 @@ xcrun xcresulttool get test-results summary --path "$bundle" --compact > "$outpu
 xcrun xcresulttool get test-results tests --path "$bundle" --compact > "$output/tests.json"
 xcrun xcresulttool export attachments --path "$bundle" --output-path "$output/attachments" \
   > "$output/attachments.log"
-xcrun xcresulttool export metrics --path "$bundle" --output-path "$output/metrics" \
-  > "$output/metrics.log"
-
-identifiers="$(jq -r '.. | objects | select(.nodeType? == "Test Case") | .nodeIdentifierURL' "$output/tests.json")"
+identifiers="$(jq -r '.. | objects | select(.nodeType? == "Test Case") | .nodeIdentifier' "$output/tests.json")"
 index=0
 while IFS= read -r identifier; do
   [[ -n "$identifier" ]] || continue
@@ -24,6 +21,8 @@ while IFS= read -r identifier; do
     > "$output/test-$index-details.json"
   xcrun xcresulttool get test-results activities --path "$bundle" --compact --test-id "$identifier" \
     > "$output/test-$index-activities.json"
+  xcrun xcresulttool export metrics --path "$bundle" --test-id "$identifier" \
+    --output-path "$output/test-$index-metrics" > "$output/test-$index-metrics.log"
 done <<< "$identifiers"
 echo "Exported $index test records with all attachments, activities and metrics."
 du -sk "$bundle" "$output"

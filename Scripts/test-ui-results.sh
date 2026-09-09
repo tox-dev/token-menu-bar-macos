@@ -23,6 +23,14 @@ activities=("$probe/export"/test-*-activities.json)
 [[ "$expected" -gt 0 && "${#details[@]}" == "$expected" && "${#activities[@]}" == "$expected" ]]
 jq -e . "${details[@]}" "${activities[@]}" > /dev/null
 
+index=0
+while IFS= read -r identifier; do
+  ((index += 1))
+  xcrun xcresulttool export metrics --path "$bundle" --test-id "$identifier" \
+    --output-path "$probe/reference-metrics-$index" > "$probe/reference-metrics-$index.log"
+  diff -r "$probe/reference-metrics-$index" "$probe/export/test-$index-metrics"
+done < <(jq -r '.. | objects | select(.nodeType? == "Test Case") | .nodeIdentifier' "$probe/export/tests.json")
+
 if Scripts/export-ui-results.sh "$bundle" "$probe/export" > "$probe/reused" 2>&1; then
   echo "Result export overwrote existing evidence." >&2
   exit 1

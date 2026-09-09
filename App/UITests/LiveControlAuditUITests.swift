@@ -597,8 +597,9 @@ final class LiveControlAuditUITests: XCTestCase {
       toggleAndRestore(toggle)
       records.append(scenarioRecord(tab: "Settings", label: label, element: toggle, action: "toggle twice"))
     }
-    let preview = application.descendants(matching: .any)["Menu bar preview"]
+    let preview = application.descendants(matching: .any)["menu-bar-preview"]
     XCTAssertTrue(preview.exists)
+    XCTAssertFalse(preview.buttons.allElementsBoundByIndex.isEmpty, "The preview must retain its model-cell buttons")
     records.append(scenarioRecord(tab: "Settings", label: "Live menu bar preview", element: preview, action: "observe"))
     records.append(scenarioRecord(tab: "Settings", label: "Model order", element: order, action: "select Stable"))
     records.append(scenarioRecord(tab: "Settings", label: "Status format", element: format, action: "select Custom"))

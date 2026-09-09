@@ -23,12 +23,14 @@ public struct StatusPreview: View {
       } else {
         HStack(spacing: 0) {
           Image(nsImage: StatusItemRenderer.previewImage(for: model, height: 24, dark: colorScheme == .dark))
-            .accessibilityLabel("Menu bar preview")
             .accessibilityValue(StatusItemRenderer.accessibilityDescription(for: model))
           Spacer(minLength: 0)
         }
       }
     }
+    .accessibilityElement(children: .contain)
+    .accessibilityLabel("Menu bar preview")
+    .accessibilityIdentifier("menu-bar-preview")
     .padding(.horizontal, 6)
     .padding(.vertical, 2)
     .background(
