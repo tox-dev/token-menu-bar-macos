@@ -6,7 +6,7 @@ import TokenMenuBarTestSupport
 
 @testable import TokenMenuBarUI
 
-@Test(arguments: ["startup", "support", "display", "collection", "storage"]) @MainActor
+@Test(arguments: ["display", "collection"]) @MainActor
 func settingsDisclosuresMountAndReleaseTheirSecondaryControls(group: String) async throws {
   let environment = try makeEnvironment()
   environment.launchAtLoginStatus = .enabled

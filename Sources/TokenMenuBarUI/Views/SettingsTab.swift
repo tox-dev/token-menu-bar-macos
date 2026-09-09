@@ -406,16 +406,12 @@ public struct SettingsTab: View {
       PanelRow("Version") { versionSummary }
       PanelRow("Startup") {
         VStack(alignment: .leading, spacing: 4) {
-          WrappingHStack(horizontalSpacing: 8, verticalSpacing: 6) {
+          HStack(spacing: 8) {
             launchAtLoginToggle
-            if context.needsLoginItemAction { openLoginItemsButton }
+            openLoginItemsButton
           }
+          .fixedSize(horizontal: true, vertical: false)
           launchAtLoginExplanation
-        }
-      }
-      if !context.needsLoginItemAction {
-        SupportingDetails("Startup details", id: "settings.startup", state: environment.disclosures) {
-          openLoginItemsButton
         }
       }
       if environment.canCheckForUpdates {
@@ -441,22 +437,7 @@ public struct SettingsTab: View {
           }
         }
       }
-      SupportingDetails("Support and diagnostics", id: "settings.support", state: environment.disclosures) {
-        WrappingHStack(horizontalSpacing: 8, verticalSpacing: 6) {
-          NativeActionButton("Copy Diagnostics", action: environment.actions.copyDiagnostics)
-            .richHelp(
-              TooltipContent(
-                title: "Copy Diagnostics",
-                body:
-                  "Copies the version, build channel, provider auth and refresh state, and recent log. "
-                  + "Credentials and tokens are excluded."
-              ))
-          NativeActionButton("Source", action: openRepository)
-            .richHelp(
-              TooltipContent(
-                title: "Source",
-                body: "Opens the Token Menu Bar source repository in your default browser."))
-        }
+      PanelRow("Preview") {
         Toggle("Demo data", isOn: demoModeBinding)
           .toggleStyle(.checkbox)
           .richHelp(
@@ -546,7 +527,7 @@ public struct SettingsTab: View {
           } narrow: {
             VStack(alignment: .leading, spacing: 7) {
               orderPicker
-              HStack(alignment: .firstTextBaseline, spacing: 8) {
+              VStack(alignment: .leading, spacing: 5) {
                 Text("Format").semanticForeground(.secondary)
                 formatPicker
               }
@@ -1067,8 +1048,9 @@ public struct SettingsTab: View {
               TooltipContent(
                 title: "Usage file for scripts",
                 body:
-                  "Keeps the last snapshot set as usage.json in the support folder after every refresh, in the same "
-                  + "shape as the --usage-json command. It can include account details; protect access to this file. Off by default."
+                  "Writes usage.json for shell prompts and local dashboards to read quota percentages and reset times "
+                  + "without extra provider requests. Includes plan names, but no credential or email fields. "
+                  + "Leave off unless a script needs the file; the app and widgets do not use it."
               ))
         }
       }
@@ -1079,7 +1061,7 @@ public struct SettingsTab: View {
             body:
               "Exports stored history without changing the database. Privacy settings also apply to project names in the export."
           ))
-      SupportingDetails("Storage details", id: "settings.storage", state: environment.disclosures) {
+      PanelRow("History") {
         ResponsivePanelLayout {
           HStack(spacing: 8) {
             historyPath

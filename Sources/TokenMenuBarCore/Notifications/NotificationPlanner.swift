@@ -144,7 +144,9 @@ public enum NotificationPlanner {
   ) -> NotificationEvent {
     let resets =
       window.resetsAt.map {
-        " Resets \(Format.resetClock($0, precision: window.resetPrecision, now: current.fetchedAt))."
+        threshold >= 100 && window.resetPrecision == .instant
+          ? " \(UsageDeadline.reset($0).text(at: current.fetchedAt))."
+          : " Resets \(Format.resetClock($0, precision: window.resetPrecision, now: current.fetchedAt))."
       } ?? ""
     return NotificationEvent(
       id: "\(current.provider.rawValue):\(window.id):\(threshold):\(Int(window.resetsAt?.timeIntervalSince1970 ?? 0))",

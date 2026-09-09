@@ -12,7 +12,11 @@ public enum UsageDeadline: Sendable, Hashable {
     switch self {
     case .age(let date): [Format.relativeAge(date, now: now)]
     case .reset(let date):
-      date.map { ["Resets in \(Format.countdown(to: $0, now: now))", Format.resetClock($0, now: now)] }
+      date.map {
+        $0 > now
+          ? ["Resets in \(Format.countdown(to: $0, now: now))", Format.resetClock($0, now: now)]
+          : ["Reset due", "Awaiting provider refresh"]
+      }
         ?? ["No reset scheduled"]
     }
   }
@@ -171,7 +175,8 @@ public struct UsagePresentation: Sendable, Equatable {
 
   public func nextDeadline(after now: Date) -> Date? {
     var deadlines = cards.flatMap { card in
-      card.rows.map(\.resetDeadline) + (card.rows.isEmpty ? [] : [.age(card.fetchedAt)])
+      card.rows.map(\.resetDeadline) + card.notices.compactMap(\.resetDeadline)
+        + (card.rows.isEmpty ? [] : [.age(card.fetchedAt)])
     }
     deadlines.append(.age(lastRefresh))
     return deadlines.compactMap { $0.nextUpdate(after: now) }.min()

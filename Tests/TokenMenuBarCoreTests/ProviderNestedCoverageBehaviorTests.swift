@@ -38,7 +38,7 @@ import TokenMenuBarTestSupport
   let response = try decodeClaudeUsage(
     #"{"limits":[{"kind":"session","percent":100,"severity":"critical"}]}"#)
 
-  #expect(ClaudeMapper.notices(response, now: fixedNow).map(\.text) == ["Current session limit reached; resets later."])
+  #expect(ClaudeMapper.notices(response, now: fixedNow).map(\.text) == ["Current session limit reached."])
 }
 
 @Test func nestedCoverageClaudeProfileFallsBackToItsExpiredCache() async throws {

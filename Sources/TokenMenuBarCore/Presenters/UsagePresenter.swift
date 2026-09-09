@@ -265,6 +265,12 @@ public enum UsagePresenter {
       resetCredits: snapshot?.resetCredits,
       notices: (snapshot?.notices ?? []).filter {
         $0.kind != .limitReached || !($0.windowID.map(visibleLimits.contains) ?? false)
+      }.map { notice in
+        guard notice.kind == .limitReached, let id = notice.windowID,
+          let window = snapshot?.window(id), window.resetPrecision == .instant, let reset = window.resetsAt
+        else { return notice }
+        return Notice(
+          kind: notice.kind, text: "\(window.label) limit reached.", windowID: id, resetsAt: reset)
       },
       warnings: state.warnings,
       lastError: state.lastError,

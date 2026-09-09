@@ -37,9 +37,11 @@ public struct CreditsView: View {
   }
 
   private func metrics(_ values: [UsageMetricPresentation]) -> some View {
-    LazyVGrid(columns: [GridItem(.adaptive(minimum: 118, maximum: 180), alignment: .leading)], spacing: 6) {
+    WrappingHStack(horizontalSpacing: 16, verticalSpacing: 6) {
       ForEach(values) { metric in
         MetricCell(title: metric.title, value: metric.value, help: metric.help)
+          .fixedSize(horizontal: true, vertical: true)
+          .frame(minWidth: 118, alignment: .leading)
       }
     }
   }

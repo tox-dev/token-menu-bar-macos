@@ -55,7 +55,6 @@ func scrollingTabDoesNotInterceptNativeControls(scrollOffset: Double) throws {
   let environment = UIEnvironment(
     state: AppState(), settings: makeSettings(), history: try UsageHistoryStore(url: path), log: makeLog(),
     appInfo: testAppInfo)
-  environment.disclosures.setExpanded(true, for: "settings.storage")
   let fixture = NativeHosting(
     SettingsTab(environment: environment, mountsIncrementally: false), width: 880, height: 3000)
   defer { fixture.close() }
@@ -68,7 +67,7 @@ func scrollingTabDoesNotInterceptNativeControls(scrollOffset: Double) throws {
         && (scroll.documentView?.frame.width ?? 0) > scroll.contentView.bounds.width
     }
   }
-  #expect(environment.disclosures.expanded.contains("settings.storage"))
+  #expect(environment.disclosures.expanded.isEmpty)
   #expect(
     scrollViews(hosting).contains { scroll in
       scroll.contentView.bounds.height <= 30

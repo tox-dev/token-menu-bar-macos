@@ -1,11 +1,20 @@
 import AppKit
 import Foundation
 import SwiftUI
+import Testing
 import TokenMenuBarNativeGuard
 import TokenMenuBarTestSupport
 
 @testable import TokenMenuBarCore
 @testable import TokenMenuBarUI
+
+@MainActor let nativeAccessibilityApplication: NSApplication = {
+  requireNativeTestDesktop()
+  let application = NSApplication.shared
+  #expect(application.setActivationPolicy(.accessory))
+  application.finishLaunching()
+  return application
+}()
 
 @MainActor
 func detachedStatusWindow(holding button: NSStatusBarButton) -> NSWindow {

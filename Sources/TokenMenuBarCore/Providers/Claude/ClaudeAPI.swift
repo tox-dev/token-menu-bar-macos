@@ -390,11 +390,11 @@ enum ClaudeMapper {
       notices.append(Notice(kind: .spendControl, text: "Monthly usage-credit spend limit reached."))
     }
     for limit in response.limits.filter({ Severity(raw: $0.severity) == .critical }) {
-      let reset = ISODate.parse(limit.resetsAt).map { Format.resetClock($0, now: now) } ?? "later"
+      let window = window(limit)
       notices.append(
         Notice(
-          kind: .limitReached, text: "\(window(limit).label) limit reached; resets \(reset).",
-          windowID: window(limit).id))
+          kind: .limitReached, text: "\(window.label) limit reached.",
+          windowID: window.id, resetsAt: window.resetsAt))
     }
     return notices
   }

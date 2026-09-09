@@ -69,7 +69,7 @@ public struct ProviderCardView: View {
           Banner(warning)
         }
         ForEach(card.notices) { notice in
-          Banner(notice.text, tone: notice.kind == .promotion ? .info : .warning)
+          Banner(notice.text(at: environment.usageDeadlineNow), tone: notice.kind == .promotion ? .info : .warning)
         }
         if card.rows.isEmpty {
           EmptyStateView(

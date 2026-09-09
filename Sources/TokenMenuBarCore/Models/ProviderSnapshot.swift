@@ -211,11 +211,22 @@ public struct Notice: Codable, Sendable, Hashable, Identifiable {
   public let kind: Kind
   public let text: String
   public let windowID: String?
+  public let resetsAt: Date?
 
-  public init(kind: Kind, text: String, windowID: String? = nil) {
+  public init(kind: Kind, text: String, windowID: String? = nil, resetsAt: Date? = nil) {
     self.kind = kind
     self.text = text
     self.windowID = windowID
+    self.resetsAt = resetsAt
+  }
+
+  public var resetDeadline: UsageDeadline? {
+    resetsAt.map { .reset($0) }
+  }
+
+  public func text(at now: Date) -> String {
+    guard let resetDeadline else { return text }
+    return "\(text) \(resetDeadline.text(at: now))."
   }
 
   public var id: String {
