@@ -8,6 +8,7 @@ import TokenMenuBarTestSupport
 
 @Test(arguments: [3, 30], [700.0, 880.0]) @MainActor
 func historyChartUsesTheHeightBesideItsLegend(modelCount: Int, width: Double) async throws {
+  _ = chartAccessibilityApplication
   let environment = try makeEnvironment()
   let snapshot = ProviderSnapshot(
     provider: .claude,
@@ -65,3 +66,11 @@ func historyChartUsesTheHeightBesideItsLegend(modelCount: Int, width: Double) as
     (view as? TooltipTrackingView).map { [$0] } ?? tooltipAnchors(in: view)
   }
 }
+
+@MainActor private let chartAccessibilityApplication: NSApplication = {
+  requireNativeTestDesktop()
+  let application = NSApplication.shared
+  #expect(application.setActivationPolicy(.accessory))
+  application.finishLaunching()
+  return application
+}()
