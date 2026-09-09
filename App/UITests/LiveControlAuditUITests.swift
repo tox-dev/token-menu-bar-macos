@@ -32,6 +32,53 @@ final class LiveControlAuditUITests: XCTestCase {
   }
 
   @MainActor
+  func testControlBaseline() throws {
+    continueAfterFailure = true
+    for host in ["window", "popover"] {
+      let verification = VerificationApplication(testName: "\(name)-\(host)")
+      defer { verification.terminate() }
+      verification.application.launchEnvironment["TMB_CONTROL_BASELINE"] = host
+      verification.launch()
+      let application = verification.application
+      let date = application.datePickers["baseline-date"]
+      XCTAssertTrue(date.waitForExistence(timeout: 5))
+      let value = application.staticTexts["baseline-value"]
+      let tree = XCTAttachment(string: application.debugDescription)
+      tree.name = "Baseline \(host) controls"
+      tree.lifetime = .keepAlways
+      add(tree)
+      print("CONTROL_BASELINE host=\(host) date_enabled=\(date.isEnabled) date_hittable=\(date.isHittable)")
+      XCTAssertTrue(date.isHittable)
+      if date.isHittable {
+        let before = value.value as? String ?? value.label
+        date.click()
+        application.typeKey(.upArrow, modifierFlags: [])
+        XCTAssertTrue(waitUntil(timeout: 1) { (value.value as? String ?? value.label) != before })
+      }
+      let arrow = application.steppers["baseline-stepper"].descendants(matching: .incrementArrow).firstMatch
+      print("CONTROL_BASELINE host=\(host) arrow_enabled=\(arrow.isEnabled) arrow_hittable=\(arrow.isHittable)")
+      XCTAssertTrue(arrow.isEnabled && arrow.isHittable)
+      if arrow.isHittable {
+        let before = value.value as? String ?? value.label
+        arrow.click()
+        XCTAssertTrue(waitUntil(timeout: 1) { (value.value as? String ?? value.label) != before })
+      }
+      let level = application.descendants(matching: .any)["Baseline level"]
+      XCTAssertEqual(segments(in: level).count, 3)
+      for segment in segments(in: level) {
+        print(
+          "CONTROL_BASELINE host=\(host) segment=\(segment.label) enabled=\(segment.isEnabled) hittable=\(segment.isHittable)"
+        )
+        XCTAssertTrue(segment.isEnabled && segment.isHittable)
+        if segment.isHittable {
+          segment.click()
+          XCTAssertTrue(isSelected(segment))
+        }
+      }
+    }
+  }
+
+  @MainActor
   func testHistoryDatesAndControlsRespond() throws {
     try auditControls(tab: "History")
   }

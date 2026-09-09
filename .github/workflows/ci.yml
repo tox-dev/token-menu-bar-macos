@@ -138,12 +138,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: history
-            selector: LiveControlAuditUITests/testHistoryDatesAndControlsRespond
-          - name: data
-            selector: LiveControlAuditUITests/testSettingsDataControlsRespond
-          - name: log
-            selector: LiveControlAuditUITests/testSettingsLogControlsRespond
+          - name: baseline
+            selector: LiveControlAuditUITests/testControlBaseline
           - name: performance
             selector: TabSwitchBenchmarkUITests
           - name: file-choosers

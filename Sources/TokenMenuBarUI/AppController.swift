@@ -12,6 +12,29 @@ public protocol UpdaterHook: AnyObject {
 }
 
 @MainActor
+private struct ControlBaseline: View {
+  @State private var date = Date(timeIntervalSince1970: 1_750_000_000)
+  @State private var days = 60
+  @State private var level = 0
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 20) {
+      DatePicker("Baseline date", selection: $date, displayedComponents: [.date])
+        .accessibilityIdentifier("baseline-date")
+      Stepper("Baseline days: \(days)", value: $days, in: 7...365)
+        .accessibilityIdentifier("baseline-stepper")
+      NativeSegmentedControl(
+        [(value: 0, label: "All"), (value: 1, label: "Info"), (value: 2, label: "Debug")],
+        selection: $level, accessibilityLabel: "Baseline level")
+      Text("\(date.timeIntervalSince1970) / \(days) / \(level)")
+        .accessibilityIdentifier("baseline-value")
+    }
+    .padding(30)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+  }
+}
+
+@MainActor
 public struct AppDependencies {
   public var appInfo: AppInfo
   public var settings: TokenMenuBarCore.Settings
@@ -293,6 +316,24 @@ public final class AppController {
     self.popover = popover
     installObservers()
     if dependencies.verificationSession != nil { writeVerificationSnapshot() }
+    if dependencies.verificationSession != nil,
+      let host = ProcessInfo.processInfo.environment["TMB_CONTROL_BASELINE"]
+    {
+      if host == "window" {
+        let window = NSWindow(
+          contentRect: CGRect(x: 100, y: 100, width: 640, height: 420),
+          styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.title = "Control baseline"
+        window.contentView = NSHostingView(rootView: ControlBaseline())
+        controlBaselineWindow = window
+        NSApp.activate()
+        window.makeKeyAndOrderFront(nil)
+        return
+      }
+      popover.setContent(AnyView(ControlBaseline()))
+      popover.measure(PopoverMeasurement(tab: .usage, size: CGSize(width: 640, height: 420)))
+    }
     if let updater = dependencies.updater {
       updater.automaticallyChecks = dependencies.settings.automaticUpdates
       updater.onCanCheckChange = { [weak self] in self?.environment.canCheckForUpdates = $0 }
@@ -315,6 +356,7 @@ public final class AppController {
   }
 
   static let launchPopoverDelay: TimeInterval = 0.2
+  private var controlBaselineWindow: NSWindow?
   static let attachmentPollInterval: TimeInterval = 0.05
   static let retentionDebounce: TimeInterval = 0.15
 
