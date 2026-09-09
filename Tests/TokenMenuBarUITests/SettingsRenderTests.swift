@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import Testing
 import TokenMenuBarCore
-import Vision
+import TokenMenuBarTestSupport
 
 @testable import TokenMenuBarUI
 
@@ -10,36 +10,62 @@ import Vision
 func settingsTemplateControlsAppearOnlyForCustomFormat(format: StatusFormat) async throws {
   let environment = try makeEnvironment()
   environment.settings.statusFormat = format
-  let text = try await renderedText(environment, named: "template-\(format.rawValue)")
-
-  #expect(text.contains("Format") && text.contains("Template") == (format == .custom), "Rendered text: \(text)")
+  try await captureSettings(
+    environment, named: "template-\(format.rawValue)",
+    expectation: RenderedText(
+      contains: ["Format"] + (format == .custom ? ["Template"] : []),
+      excludes: format == .custom ? [] : ["Template"]))
 }
 
 @Test(arguments: [false, true]) @MainActor
 func settingsDemoNoticeMatchesTheActiveDataMode(isDemo: Bool) async throws {
   let environment = try makeEnvironment()
   environment.isDemo = isDemo
-  let text = try await renderedText(environment, named: "demo-\(isDemo)")
-
-  #expect(text.contains("Version") && text.contains("Demo data is on") == isDemo, "Rendered text: \(text)")
+  try await captureSettings(
+    environment, named: "demo-\(isDemo)",
+    expectation: RenderedText(
+      contains: ["Version"] + (isDemo ? ["Demo data is on"] : []),
+      excludes: isDemo ? [] : ["Demo data is on"]))
 }
 
 @Test(arguments: [false, true]) @MainActor
 func settingsSetupGuidanceMatchesProviderDiscovery(hasProviders: Bool) async throws {
-  let text = try await renderedText(makeEnvironment(populate: hasProviders), named: "providers-\(hasProviders)")
-  #expect(
-    text.contains("Show all providers")
-      && text.contains("Select Show all providers to set up a provider on this Mac.") == !hasProviders,
-    "Rendered text: \(text)")
+  let guidance = "Select Show all providers to set up a provider on this Mac."
+  try await captureSettings(
+    makeEnvironment(populate: hasProviders), named: "providers-\(hasProviders)",
+    expectation: RenderedText(
+      contains: ["Show all providers"] + (hasProviders ? [] : [guidance]),
+      excludes: hasProviders ? [guidance] : []))
 }
 
 @MainActor
-private func renderedText(_ environment: UIEnvironment, named name: String) async throws -> String {
+private func captureSettings(_ environment: UIEnvironment, named name: String, expectation: RenderedText) async throws {
   let hosting = host(
     SettingsTab(environment: environment, mountsIncrementally: false)
       .environment(\.colorScheme, .light)
       .environment(\.displayScale, 2)
       .background(Color.white), width: 880, height: 1200)
+  try await capture(hosting, named: name, expectation: expectation)
+}
+
+@Test(arguments: [
+  ("present", RenderedText(contains: ["ALPHA BRAVO"])),
+  ("missing", RenderedText(contains: ["ALPHA BRAVO CHARLIE"], matches: false)),
+  ("excluded", RenderedText(excludes: ["CHARLIE"])),
+  ("unexpected", RenderedText(excludes: ["BRAVO"], matches: false)),
+  ("suffix", RenderedText(suffix: "BRAVO")),
+  ("wrong-suffix", RenderedText(suffix: "ALPHA", matches: false)),
+]) @MainActor
+func renderedTextVerifierDistinguishesMissingAndClippedWords(name: String, expectation: RenderedText) async throws {
+  try await capture(
+    host(
+      Text("ALPHA BRAVO").font(.system(size: 30)).foregroundStyle(.black)
+        .frame(width: 400, height: 80).background(.white), width: 400, height: 80),
+    named: "verifier-\(name)", expectation: expectation)
+}
+
+@MainActor
+private func capture(_ hosting: NSView, named name: String, expectation: RenderedText) async throws {
   hosting.appearance = NSAppearance(named: .aqua)
   await mainActorTurn()
   hosting.layoutSubtreeIfNeeded()
@@ -51,40 +77,8 @@ private func renderedText(_ environment: UIEnvironment, named name: String) asyn
   bitmap.size = hosting.bounds.size
   hosting.cacheDisplay(in: hosting.bounds, to: bitmap)
   let png = try #require(bitmap.representation(using: .png, properties: [:]))
-  if let path = ProcessInfo.processInfo.environment["TOKEN_MENU_BAR_RENDER_ARTIFACTS"] {
-    let directory = URL(fileURLWithPath: path, isDirectory: true)
-    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-    try png.write(to: directory.appendingPathComponent("\(name).png"), options: .atomic)
-  }
-  return try await Task.detached { try recognizedText(png) }.value
-}
-
-private func recognizedText(_ png: Data) throws -> String {
-  try autoreleasepool {
-    let request = VNRecognizeTextRequest()
-    request.revision = VNRecognizeTextRequestRevision3
-    request.recognitionLevel = .accurate
-    request.recognitionLanguages = ["en-US"]
-    request.usesLanguageCorrection = false
-    // Hosted VMs must not require GPU or Neural Engine support for text assertions.
-    do {
-      for (stage, devices) in try request.supportedComputeStageDevices {
-        let cpu = try #require(devices.first { if case .cpu = $0 { true } else { false } })
-        request.setComputeDevice(cpu, for: stage)
-      }
-    } catch {
-      throw OCRFailure.computeDevices(error)
-    }
-    do {
-      try VNImageRequestHandler(data: png, options: [:]).perform([request])
-    } catch {
-      throw OCRFailure.recognition(error)
-    }
-    return (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: " ")
-  }
-}
-
-private enum OCRFailure: Error {
-  case computeDevices(any Error)
-  case recognition(any Error)
+  let directory = URL(
+    fileURLWithPath: try #require(ProcessInfo.processInfo.environment["TOKEN_MENU_BAR_RENDER_ARTIFACTS"]),
+    isDirectory: true)
+  try expectation.capture(png, at: directory.appendingPathComponent("\(name).png"))
 }

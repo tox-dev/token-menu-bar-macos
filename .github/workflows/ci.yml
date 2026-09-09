@@ -67,6 +67,61 @@ jobs:
           path: .build/ui-build.log
           retention-days: 1
 
+  ocr:
+    runs-on: xcode-27
+    timeout-minutes: 5
+    steps:
+      - name: Verify runtime
+        run: |
+          [[ "$(sw_vers -productVersion)" == 27.* ]]
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c
+        with:
+          version: 2026.9.3
+      - name: Select Xcode 27
+        env:
+          MIN_XCODE_MAJOR: 27
+          EXACT_XCODE_MAJOR: 27
+        run: Scripts/select-xcode.sh
+      - name: Install the pinned OCR engine
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+          HOMEBREW_NO_INSTALL_FROM_API: 1
+          HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: 1
+          HOMEBREW_NO_INSTALL_CLEANUP: 1
+        run: |
+          core="$(brew --repository)/Library/Taps/homebrew/homebrew-core"
+          git init "$core"
+          git -C "$core" fetch --depth 1 https://github.com/Homebrew/homebrew-core.git 77f4bb7e8aa136e72360b5ad90c2b51968689d4e
+          git -C "$core" checkout --detach FETCH_HEAD
+          brew install --force-bottle tesseract
+          version="$(tesseract --version)"
+          [[ "${version%%$'\n'*}" == 'tesseract 5.5.3' ]]
+          data="$(brew --prefix tesseract)/share/tessdata/eng.traineddata"
+          [[ "$(shasum -a 256 "$data" | cut -d ' ' -f 1)" == 7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2 ]]
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .build
+          key: ocr-tesseract-27-${{ hashFiles('Package.swift', 'Sources/**', 'Tests/**') }}
+          restore-keys: ocr-tesseract-27-
+      - name: Check captured Settings text
+        env:
+          TOKEN_MENU_BAR_RENDER_ARTIFACTS: ${{ runner.temp }}/rendered
+        run: |
+          just test 'settingsTemplateControls|settingsDemoNotice|settingsSetupGuidance|renderedTextVerifier'
+          Scripts/check-rendered-text.sh "$TOKEN_MENU_BAR_RENDER_ARTIFACTS" 12
+          fixtures=("$TOKEN_MENU_BAR_RENDER_ARTIFACTS"/run.*/verifier-present.png)
+          [[ "${#fixtures[@]}" == 1 ]]
+          Scripts/test-rendered-text.sh "${fixtures[0]}"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: focused-ocr-macos-27
+          path: ${{ runner.temp }}/rendered
+          retention-days: 1
+
   ui:
     needs: build
     runs-on: macos-14
@@ -77,6 +132,8 @@ jobs:
         include:
           - name: history
             selector: LiveControlAuditUITests/testHistoryDatesAndControlsRespond
+          - name: menu-bar
+            selector: LiveControlAuditUITests/testSettingsMenuBarControlsRespond
           - name: performance
             selector: TabSwitchBenchmarkUITests
     steps:

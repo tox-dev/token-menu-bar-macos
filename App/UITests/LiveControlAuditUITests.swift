@@ -938,9 +938,12 @@ final class LiveControlAuditUITests: XCTestCase {
 
   @MainActor
   private func adjustDate(_ picker: XCUIElement, increasing: Bool) {
+    picker.click()
     let before = String(describing: picker.value)
     let arrow = picker.descendants(matching: increasing ? .incrementArrow : .decrementArrow).firstMatch
-    XCTAssertTrue(arrow.exists && arrow.isHittable)
+    XCTAssertTrue(
+      arrow.exists && arrow.isHittable,
+      "Date arrow is unreachable: \(picker.debugDescription)\n\(accessibilityHitTest(arrow))")
     arrow.click()
     XCTAssertTrue(waitUntil(timeout: responsivenessBudget) { String(describing: picker.value) != before })
   }
