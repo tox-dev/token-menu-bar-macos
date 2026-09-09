@@ -21,8 +21,11 @@ while IFS= read -r identifier; do
     > "$output/test-$index-details.json"
   xcrun xcresulttool get test-results activities --path "$bundle" --compact --test-id "$identifier" \
     > "$output/test-$index-activities.json"
-  xcrun xcresulttool export metrics --path "$bundle" --test-id "$identifier" \
-    --output-path "$output/test-$index-metrics" > "$output/test-$index-metrics.log"
+  jq -e '.hasPerformanceMetrics | type == "boolean"' "$output/test-$index-details.json" > /dev/null
+  if jq -e '.hasPerformanceMetrics' "$output/test-$index-details.json" > /dev/null; then
+    xcrun xcresulttool export metrics --path "$bundle" --test-id "$identifier" \
+      --output-path "$output/test-$index-metrics" > "$output/test-$index-metrics.log"
+  fi
 done <<< "$identifiers"
 echo "Exported $index test records with all attachments, activities and metrics."
 du -sk "$bundle" "$output"

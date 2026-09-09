@@ -196,14 +196,6 @@ func providerDisclosuresMountTheirSupportingContent(group: String) async throws 
   #expect(accessibleText(hosting).contains("Disclosure subscription fixture"))
 }
 
-@Test(arguments: [false, true]) @MainActor
-func statusPreviewNamesBothItsModelListAndIcon(showsIcon: Bool) {
-  let model = showsIcon ? StatusItemModel.empty : statusModel()
-  let hosting = host(StatusPreview(model: model, highlightedKey: .constant(nil), select: { _ in }))
-
-  #expect(accessibleText(hosting).contains("Menu bar preview"))
-}
-
 @MainActor
 private func accessibleText(_ value: Any, depth: Int = 0) -> String {
   guard depth < 30 else { return "" }

@@ -423,8 +423,6 @@ public final class PopoverController: NSObject, NSPopoverDelegate {
     let window = hosting.view.window!
     makeKeyWindow(window)
     if recoversOffscreenAnchor {
-      window.setAccessibilityElement(true)
-      window.setAccessibilityRole(.window)
       window.setAccessibilityLabel("Token Menu Bar")
     }
     pinnedTopY = window.frame.maxY

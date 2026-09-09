@@ -191,12 +191,11 @@ public struct HistoryTab: View {
   }
 
   private var startPicker: some View {
-    HStack(spacing: 5) {
-      Text("From")
-      NativeDatePicker(
-        selection: startBinding, includesTime: presenter.effectiveRollup != .day,
-        timeZone: presenter.chartTimeZone, label: "From", identifier: "history-from")
-    }
+    DatePicker(
+      "From", selection: startBinding, displayedComponents: dateComponents
+    )
+    .accessibilityIdentifier("history-from")
+    .environment(\.timeZone, presenter.chartTimeZone)
     .richHelp(
       TooltipContent(
         title: "Start date",
@@ -205,12 +204,11 @@ public struct HistoryTab: View {
   }
 
   private var endPicker: some View {
-    HStack(spacing: 5) {
-      Text("To")
-      NativeDatePicker(
-        selection: endBinding, includesTime: presenter.effectiveRollup != .day,
-        timeZone: presenter.chartTimeZone, label: "To", identifier: "history-to")
-    }
+    DatePicker(
+      "To", selection: endBinding, displayedComponents: dateComponents
+    )
+    .accessibilityIdentifier("history-to")
+    .environment(\.timeZone, presenter.chartTimeZone)
     .richHelp(
       TooltipContent(
         title: "End date",
@@ -386,6 +384,10 @@ public struct HistoryTab: View {
     Binding(
       get: { presenter.currentViewport.upperBound },
       set: { presenter.setCustomEnd($0) })
+  }
+
+  private var dateComponents: DatePickerComponents {
+    presenter.effectiveRollup == .day ? [.date] : [.date, .hourAndMinute]
   }
 
   private var earliest: Date? { presenter.earliest }
