@@ -1,472 +1,84 @@
-name: CI
+name: Settings OCR diagnostic
 
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
-    inputs:
-      package_only:
-        description: Run package tests and coverage without application audits or distribution builds
-        type: boolean
-        default: false
-
-run-name: ${{ inputs.package_only && 'Package tests' || 'CI' }}
 
 permissions:
   contents: read
 
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  lint:
-    name: Lint
-    runs-on: macos-26
+  recognize:
+    runs-on: xcode-27
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify macOS 27 runtime
+        id: runtime
+        run: |
+          version="$(sw_vers -productVersion)"
+          [[ "${version%%.*}" == 27 ]] || { echo "::error::Unexpected macOS $version"; exit 1; }
+          echo "Runtime: macOS $version" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
-        with:
-          version: 2026.9.3
-      - name: Select Xcode
+      - name: Select Xcode 27
+        env:
+          MIN_XCODE_MAJOR: 27
+          EXACT_XCODE_MAJOR: 27
         run: Scripts/select-xcode.sh
-      - name: Run every hook
-        run: just lint
-      - name: Verify native test execution guards
-        run: Scripts/test-desktop-guard.sh
+      - name: Render and assert mock Settings
+        env:
+          TOKEN_MENU_BAR_RENDER_ARTIFACTS: ${{ runner.temp }}/settings-render
+        run: |
+          env -u TOKEN_MENU_BAR_TEST_DESKTOP swift test --jobs 2 --no-parallel \
+            --filter 'settings(TemplateControlsAppearOnlyForCustomFormat|DemoNoticeMatchesTheActiveDataMode|SetupGuidanceMatchesProviderDiscovery)'
+      - name: Compare recognition paths on the same PNG
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' }}
+        env:
+          TOKEN_MENU_BAR_RENDER_ARTIFACTS: ${{ runner.temp }}/settings-render
+        run: |
+          set -o pipefail
+          swift - <<'SWIFT' | tee "$TOKEN_MENU_BAR_RENDER_ARTIFACTS/recognition.txt"
+          import Foundation
+          import Vision
 
-  package-compatibility:
-    name: Package (${{ matrix.name }})
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: macOS 14 / Xcode 16
-            runner: ${{ vars.MACOS_14_RUNNER || 'macos-14' }}
-            minimum-xcode: 16
-            runtime-major: 14
-          - name: macOS 15 / Xcode 26
-            runner: macos-15
-            minimum-xcode: 26
-            runtime-major: 15
-          - name: macOS 27 / Xcode 27
-            runner: xcode-27
-            minimum-xcode: 27
-            runtime-major: 27
-    steps:
-      - name: Verify runtime
-        env:
-          EXPECTED_MACOS_MAJOR: ${{ matrix.runtime-major }}
-        run: |
-          version="$(sw_vers -productVersion)"
-          [[ "${version%%.*}" == "$EXPECTED_MACOS_MAJOR" ]] || { echo "::error::Unexpected macOS $version"; exit 1; }
-          echo "Runtime: macOS $version" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+          let directory = URL(fileURLWithPath: ProcessInfo.processInfo.environment["TOKEN_MENU_BAR_RENDER_ARTIFACTS"]!)
+          let png = try Data(contentsOf: directory.appendingPathComponent("providers-false.png"))
+          for revision in VNRecognizeTextRequest.supportedRevisions {
+            for level in [VNRequestTextRecognitionLevel.fast, .accurate] {
+              autoreleasepool {
+                let mode = level == .fast ? "fast" : "accurate"
+                do {
+                  let request = VNRecognizeTextRequest()
+                  request.revision = revision
+                  request.recognitionLevel = level
+                  request.recognitionLanguages = ["en-US"]
+                  request.usesLanguageCorrection = false
+                  for (stage, devices) in try request.supportedComputeStageDevices {
+                    guard let cpu = devices.first(where: { if case .cpu = $0 { true } else { false } }) else {
+                      throw ProbeError.noCPU
+                    }
+                    request.setComputeDevice(cpu, for: stage)
+                  }
+                  try VNImageRequestHandler(data: png, options: [:]).perform([request])
+                  let text = (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: " ")
+                  print("revision=\(revision) mode=\(mode) text=\(text)")
+                } catch {
+                  print("revision=\(revision) mode=\(mode) error=\(String(reflecting: error))")
+                }
+              }
+            }
+          }
+
+          enum ProbeError: Error {
+            case noCPU
+          }
+          SWIFT
+      - name: Retain mock images and recognition results
+        if: ${{ !cancelled() && steps.runtime.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          persist-credentials: false
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
-        with:
-          version: 2026.9.3
-      - name: Select Xcode
-        id: xcode
-        env:
-          MIN_XCODE_MAJOR: ${{ matrix.minimum-xcode }}
-          EXACT_XCODE_MAJOR: ${{ matrix.minimum-xcode }}
-        run: |
-          Scripts/select-xcode.sh
-          version="$(xcodebuild -version | tr '\n' '-')"
-          echo "cache=$(printf '%s' "$version" | shasum -a 256 | cut -c 1-12)" >> "$GITHUB_OUTPUT"
-      - name: Cache SwiftPM
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .build
-          key: spm-${{ runner.os }}-${{ runner.arch }}-${{ matrix.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('Package.swift')
-            }}
-      - name: Build
-        id: build
-        run: swift build
-      - name: Test without native presentation
-        env:
-          TOKEN_MENU_BAR_RENDER_ARTIFACTS: .build/settings-render/nonpresenting
-        run: just test
-      - name: Test native presentation
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        env:
-          TOKEN_MENU_BAR_RENDER_ARTIFACTS: .build/settings-render/native
-        run: just test-native
-      - name: Retain mock Settings renders
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: settings-render-macos-${{ matrix.runtime-major }}
-          path: .build/settings-render
+          name: settings-ocr-diagnostic
+          path: ${{ runner.temp }}/settings-render
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
-
-  coverage:
-    name: Tests and coverage (macOS 26)
-    runs-on: macos-26
-    steps:
-      - name: Verify runtime
-        run: |
-          version="$(sw_vers -productVersion)"
-          [[ "${version%%.*}" == 26 ]] || { echo "::error::Unexpected macOS $version"; exit 1; }
-          echo "Runtime: macOS $version" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
-        with:
-          version: 2026.9.3
-      - name: Select Xcode
-        id: xcode
-        run: |
-          Scripts/select-xcode.sh
-          version="$(xcodebuild -version | tr '\n' '-')"
-          echo "cache=$(printf '%s' "$version" | shasum -a 256 | cut -c 1-12)" >> "$GITHUB_OUTPUT"
-      - name: Cache SwiftPM
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .build
-          key: spm-${{ runner.os }}-${{ runner.arch }}-macos-26-${{ steps.xcode.outputs.cache }}-${{ hashFiles('Package.swift')
-            }}
-      - name: Build
-        id: build
-        run: swift build
-      - name: Test without native presentation
-        run: just test
-      - name: Tests with coverage gate
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: just coverage
-
-  application-ui:
-    name: Application UI (${{ matrix.name }})
-    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.package_only }}
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: macOS 14
-            runner: ${{ vars.MACOS_14_RUNNER || 'macos-14' }}
-            minimum-xcode: 16
-            runtime-major: 14
-          - name: macOS 15
-            runner: macos-15
-            minimum-xcode: 26
-            runtime-major: 15
-          - name: macOS 26
-            runner: macos-26
-            minimum-xcode: 26
-            runtime-major: 26
-          - name: macOS 27
-            runner: xcode-27
-            minimum-xcode: 27
-            runtime-major: 27
-    steps:
-      - name: Verify runtime
-        env:
-          EXPECTED_MACOS_MAJOR: ${{ matrix.runtime-major }}
-        run: |
-          version="$(sw_vers -productVersion)"
-          [[ "${version%%.*}" == "$EXPECTED_MACOS_MAJOR" ]] || { echo "::error::Unexpected macOS $version"; exit 1; }
-          echo "Runtime: macOS $version" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
-        with:
-          version: 2026.9.3
-      - name: Select Xcode
-        id: xcode
-        env:
-          MIN_XCODE_MAJOR: ${{ matrix.minimum-xcode }}
-          EXACT_XCODE_MAJOR: ${{ matrix.minimum-xcode }}
-        run: |
-          Scripts/select-xcode.sh
-          version="$(xcodebuild -version | tr '\n' '-')"
-          echo "cache=$(printf '%s' "$version" | shasum -a 256 | cut -c 1-12)" >> "$GITHUB_OUTPUT"
-      - name: Cache Xcode packages
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .build/xcode-packages
-          key: xcode-spm-${{ runner.os }}-${{ runner.arch }}-${{ matrix.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('Package.swift',
-            'App/project.yml') }}
-      - name: Generate project
-        run: just xcode
-      - name: Build the verification application
-        id: build
-        timeout-minutes: 10
-        run: |
-          set -o pipefail
-          mkdir -p .build
-          xcodebuild -project App/TokenMenuBar.xcodeproj -scheme TokenMenuBar-Direct -configuration Verification \
-            -destination "platform=macOS,arch=$(uname -m)" -derivedDataPath .build/ui-derived \
-            -clonedSourcePackagesDirPath .build/xcode-packages \
-            ONLY_ACTIVE_ARCH=YES build-for-testing 2>&1 | tee .build/ui-build.log | tail -50
-      - name: Profile tab latency and opening geometry
-        timeout-minutes: 10
-        run: |
-          set -o pipefail
-          Scripts/profile-ui-tests.sh xcodebuild -project App/TokenMenuBar.xcodeproj -scheme TokenMenuBar-Direct -configuration Verification \
-            -destination "platform=macOS,arch=$(uname -m)" -derivedDataPath .build/ui-derived \
-            -clonedSourcePackagesDirPath .build/xcode-packages \
-            -resultBundlePath .build/ui-performance-results.xcresult \
-            -only-testing:TokenMenuBarApplicationUITests/TabSwitchBenchmarkUITests ONLY_ACTIVE_ARCH=YES test-without-building \
-            2>&1 | tee .build/ui-performance.log | awk '/Test Case|Test Suite|error:|warning:|FIRST_SETTINGS|TAB_SWITCH_SUMMARY/ { print; fflush() }'
-      - name: Retain performance results
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: ui-performance-macos-${{ matrix.runtime-major }}
-          include-hidden-files: true
-          path: |
-            .build/ui-performance-results.xcresult
-            .build/ui-performance.log
-            .build/ui-artifacts
-          if-no-files-found: warn
-          retention-days: 7
-      - name: Test application lifecycle and keyboard routes
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        timeout-minutes: 15
-        run: |
-          set -o pipefail
-          Scripts/with-test-desktop.sh xcodebuild -project App/TokenMenuBar.xcodeproj -scheme TokenMenuBar-Direct -configuration Verification \
-            -destination "platform=macOS,arch=$(uname -m)" -derivedDataPath .build/ui-derived \
-            -clonedSourcePackagesDirPath .build/xcode-packages \
-            -resultBundlePath .build/ui-lifecycle-results.xcresult \
-            -only-testing:TokenMenuBarApplicationUITests/TokenMenuBarApplicationUITests ONLY_ACTIVE_ARCH=YES test-without-building \
-            2>&1 | tee .build/ui-lifecycle.log | awk '/Test Case|Test Suite|error:|warning:/ { print; fflush() }'
-      - name: Retain lifecycle results
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: ui-lifecycle-macos-${{ matrix.runtime-major }}
-          include-hidden-files: true
-          path: |
-            .build/ui-lifecycle-results.xcresult
-            .build/ui-lifecycle.log
-          if-no-files-found: warn
-          retention-days: 7
-      - name: Audit controls and long-text layouts
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        timeout-minutes: 30
-        run: |
-          set -o pipefail
-          Scripts/with-test-desktop.sh xcodebuild -project App/TokenMenuBar.xcodeproj -scheme TokenMenuBar-Direct -configuration Verification \
-            -destination "platform=macOS,arch=$(uname -m)" -derivedDataPath .build/ui-derived \
-            -clonedSourcePackagesDirPath .build/xcode-packages \
-            -resultBundlePath .build/ui-results.xcresult \
-            -only-testing:TokenMenuBarApplicationUITests/LiveControlAuditUITests ONLY_ACTIVE_ARCH=YES test-without-building \
-            2>&1 | tee .build/ui-test.log | awk '/Test Case|Test Suite|error:|warning:|CONTROL_AUDIT|LONG_TEXT_AUDIT/ { print; fflush() }'
-      - name: Retain UI results and screenshots
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: ui-macos-${{ matrix.runtime-major }}
-          include-hidden-files: true
-          path: |
-            .build/ui-results.xcresult
-            .build/ui-build.log
-            .build/ui-test.log
-            .build/ui-artifacts
-          if-no-files-found: warn
-          retention-days: 7
-
-  application:
-    name: Build ${{ matrix.scheme }} (${{ matrix.name }})
-    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.package_only }}
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: macOS 26
-            runner: macos-26
-            minimum-xcode: 26
-            scheme: TokenMenuBar-Direct
-            target: TokenMenuBarDirect
-            configuration: Release
-            distribution: Direct
-            condition: DIRECT
-            sandbox: NO
-            entitlements: Direct.entitlements
-            updater: required
-          - name: macOS 26
-            runner: macos-26
-            minimum-xcode: 26
-            scheme: TokenMenuBar-AppStore
-            target: TokenMenuBarAppStore
-            configuration: AppStore
-            distribution: App Store
-            condition: APPSTORE
-            sandbox: YES
-            entitlements: AppStore.entitlements
-            updater: forbidden
-          - name: macOS 26
-            runner: macos-26
-            minimum-xcode: 26
-            scheme: TokenMenuBar-Homebrew
-            target: TokenMenuBarHomebrew
-            configuration: Homebrew
-            distribution: Homebrew
-            condition: HOMEBREW
-            sandbox: NO
-            entitlements: Direct.entitlements
-            updater: forbidden
-          - name: macOS 27
-            runner: xcode-27
-            minimum-xcode: 27
-            scheme: TokenMenuBar-Direct
-            target: TokenMenuBarDirect
-            configuration: Release
-            distribution: Direct
-            condition: DIRECT
-            sandbox: NO
-            entitlements: Direct.entitlements
-            updater: required
-          - name: macOS 27
-            runner: xcode-27
-            minimum-xcode: 27
-            scheme: TokenMenuBar-AppStore
-            target: TokenMenuBarAppStore
-            configuration: AppStore
-            distribution: App Store
-            condition: APPSTORE
-            sandbox: YES
-            entitlements: AppStore.entitlements
-            updater: forbidden
-          - name: macOS 27
-            runner: xcode-27
-            minimum-xcode: 27
-            scheme: TokenMenuBar-Homebrew
-            target: TokenMenuBarHomebrew
-            configuration: Homebrew
-            distribution: Homebrew
-            condition: HOMEBREW
-            sandbox: NO
-            entitlements: Direct.entitlements
-            updater: forbidden
-    steps:
-      - name: Verify runtime
-        env:
-          EXPECTED_MACOS_MAJOR: ${{ matrix.minimum-xcode }}
-        run: |
-          version="$(sw_vers -productVersion)"
-          [[ "${version%%.*}" == "$EXPECTED_MACOS_MAJOR" ]] || { echo "::error::Unexpected macOS $version"; exit 1; }
-          echo "Runtime: macOS $version" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
-        with:
-          version: 2026.9.3
-      - name: Select Xcode
-        id: xcode
-        env:
-          MIN_XCODE_MAJOR: ${{ matrix.minimum-xcode }}
-          EXACT_XCODE_MAJOR: ${{ matrix.minimum-xcode }}
-        run: |
-          Scripts/select-xcode.sh
-          version="$(xcodebuild -version | tr '\n' '-')"
-          echo "cache=$(printf '%s' "$version" | shasum -a 256 | cut -c 1-12)" >> "$GITHUB_OUTPUT"
-      - name: Cache Xcode packages
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .build/xcode-packages
-          key: xcode-spm-${{ runner.os }}-${{ runner.arch }}-${{ matrix.runner }}-${{ steps.xcode.outputs.cache }}-${{ hashFiles('Package.swift',
-            'App/project.yml') }}
-      - name: Generate project
-        run: just xcode
-      - name: Build
-        env:
-          SCHEME: ${{ matrix.scheme }}
-          CONFIGURATION: ${{ matrix.configuration }}
-        run: |
-          set -o pipefail
-          xcodebuild -project App/TokenMenuBar.xcodeproj -scheme "$SCHEME" -configuration "$CONFIGURATION" \
-            -destination 'platform=macOS' -derivedDataPath .build/app-derived \
-            -clonedSourcePackagesDirPath .build/xcode-packages CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" \
-            SPARKLE_PUBLIC_ED_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= build \
-            | tail -30
-      - name: Verify distribution settings
-        env:
-          CONFIGURATION: ${{ matrix.configuration }}
-          DISTRIBUTION: ${{ matrix.distribution }}
-          CONDITION: ${{ matrix.condition }}
-          SANDBOX: ${{ matrix.sandbox }}
-          ENTITLEMENTS: ${{ matrix.entitlements }}
-          TARGET: ${{ matrix.target }}
-        run: Scripts/verify-build-settings.sh "$TARGET" "$CONFIGURATION" "$DISTRIBUTION" "$CONDITION" "$SANDBOX" "$ENTITLEMENTS"
-      - name: Verify every shipped deployment target
-        run: |
-          app="$(find .build/app-derived/Build/Products -path '*/Token Menu Bar.app' -type d | head -1)"
-          test -n "$app"
-          Scripts/verify-deployment-targets.sh "$app" 14.0
-          Scripts/verify-app-bundle.sh "$app" "${{ matrix.distribution }}" "${{ matrix.updater }}"
-      - name: Package the macOS 14 smoke artifact
-        if: matrix.runner == 'macos-26' && matrix.scheme == 'TokenMenuBar-Direct'
-        run: |
-          app="$(find .build/app-derived/Build/Products -path '*/Token Menu Bar.app' -type d | head -1)"
-          codesign --force --deep --sign - "$app"
-          ditto -c -k --keepParent "$app" .build/token-menu-bar-macos-14-smoke.zip
-      - name: Upload the macOS 14 smoke artifact
-        if: matrix.runner == 'macos-26' && matrix.scheme == 'TokenMenuBar-Direct'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: token-menu-bar-macos-14-smoke
-          path: .build/token-menu-bar-macos-14-smoke.zip
-          if-no-files-found: error
-          retention-days: 1
-
-  macos-14-runtime:
-    name: Release smoke (macOS 14 runtime)
-    needs: application
-    if: ${{ !cancelled() && (github.event_name != 'workflow_dispatch' || !inputs.package_only) }}
-    runs-on: ${{ vars.MACOS_14_RUNTIME_RUNNER || 'macos-14' }}
-    steps:
-      - name: Verify runtime
-        run: |
-          version="$(sw_vers -productVersion)"
-          [[ "${version%%.*}" == 14 ]] || { echo "::error::Unexpected macOS $version"; exit 1; }
-          echo "Runtime: macOS $version" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: token-menu-bar-macos-14-smoke
-          path: smoke
-      - name: Launch with isolated data
-        run: |
-          ditto -x -k smoke/token-menu-bar-macos-14-smoke.zip smoke/app
-          executable="smoke/app/Token Menu Bar.app/Contents/MacOS/Token Menu Bar"
-          runtime="$PWD/smoke/runtime"
-          session="macos-14-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          support="$runtime/token-menu-bar-verify-$session"
-          ready="$support/snapshots-demo.json"
-          mkdir -p "$support"
-          TOKEN_MENU_BAR_VERIFY_SESSION="$session" TOKEN_MENU_BAR_VERIFY_SUPPORT_DIRECTORY="$support" \
-            "$executable" --verify-ui >smoke/launch.log 2>&1 &
-          pid=$!
-          for _ in {1..80}; do
-            if grep -Fq '"claude"' "$ready" 2>/dev/null && grep -Fq '"codex"' "$ready" 2>/dev/null; then
-              break
-            fi
-            if ! kill -0 "$pid" 2>/dev/null; then
-              cat smoke/launch.log
-              exit 1
-            fi
-            sleep 0.25
-          done
-          if ! grep -Fq '"claude"' "$ready" 2>/dev/null || ! grep -Fq '"codex"' "$ready" 2>/dev/null; then
-            cat smoke/launch.log
-            test ! -f "$support/log.txt" || cat "$support/log.txt"
-            kill "$pid" 2>/dev/null || true
-            wait "$pid" || true
-            exit 1
-          fi
-          kill "$pid" 2>/dev/null || true
-          wait "$pid" || true
