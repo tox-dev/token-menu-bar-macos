@@ -479,6 +479,15 @@ public enum LiveDependencies {
   public static func presentFilePanel(
     _ panel: NSSavePanel, parent: NSWindow? = NSApp.keyWindow
   ) async -> NSApplication.ModalResponse {
+    let diagnostic = Task { @MainActor in
+      try? await Task.sleep(for: .seconds(1))
+      guard !Task.isCancelled else { return }
+      let directory = panel.directoryURL
+      (NSApp.delegate as? DeferredAppDelegate)?.controller?.dependencies.log.log(
+        "CHOOSER_STATE active=\(NSApp.isActive) key=\(panel.isKeyWindow) parentKey=\(parent?.isKeyWindow == true) visible=\(panel.isVisible) name=\(panel.nameFieldStringValue) directory=\(directory?.path ?? "nil") writable=\(directory.map { FileManager.default.isWritableFile(atPath: $0.path) } ?? false)"
+      )
+    }
+    defer { diagnostic.cancel() }
     if let parent { return await panel.beginSheetModal(for: parent) }
     return await panel.begin()
   }

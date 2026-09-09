@@ -167,6 +167,14 @@ final class LiveControlAuditUITests: XCTestCase {
     application.buttons["history-export"].click()
     let save = application.buttons["Save"]
     XCTAssertTrue(save.waitForExistence(timeout: 2))
+    let tree = XCTAttachment(string: application.debugDescription)
+    tree.name = "Native Save panel"
+    tree.lifetime = .keepAlways
+    add(tree)
+    let screenshot = XCTAttachment(screenshot: application.screenshot())
+    screenshot.name = "Native Save panel"
+    screenshot.lifetime = .keepAlways
+    add(screenshot)
     XCTAssertTrue(save.isHittable)
     save.click()
 
