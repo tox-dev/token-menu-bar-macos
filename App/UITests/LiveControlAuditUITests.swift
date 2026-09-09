@@ -920,7 +920,14 @@ final class LiveControlAuditUITests: XCTestCase {
     XCTAssertTrue(level.exists)
     XCTAssertEqual(segments(in: level).count, 5, "Log level must expose All plus four severities")
     for segment in segments(in: level) {
-      XCTAssertTrue(reveal(segment, in: surface))
+      let revealed = reveal(segment, in: surface)
+      if !revealed {
+        let attachment = XCTAttachment(string: application.debugDescription)
+        attachment.name = "Log control accessibility snapshot"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+      }
+      XCTAssertTrue(revealed)
       XCTAssertTrue(segment.isEnabled)
       segment.click()
       XCTAssertTrue(waitUntil(timeout: responsivenessBudget) { self.isSelected(segment) })

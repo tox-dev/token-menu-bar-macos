@@ -490,7 +490,9 @@ public final class AppController {
       var pending = [root]
       while let view = pending.popLast() {
         pending.append(contentsOf: view.subviews)
-        guard view is NSDatePicker || view is NSPopUpButton || view is NSStepper else { continue }
+        guard view is NSDatePicker || view is NSPopUpButton || view is NSStepper || view is NSSegmentedControl else {
+          continue
+        }
         let point = view.convert(CGPoint(x: view.bounds.midX, y: view.bounds.midY), to: root.superview)
         let hit = root.hitTest(point)
         let frame = window.convertToScreen(view.convert(view.bounds, to: nil))
@@ -501,6 +503,11 @@ public final class AppController {
         dependencies.log.logInfo(
           "hit.control class=\(type(of: view)) id=\(view.accessibilityIdentifier()) frame=\(frame) enabled=\((view as? NSControl)?.isEnabled ?? false) axEnabled=\(view.isAccessibilityEnabled()) hidden=\(view.isHiddenOrHasHiddenAncestor) point=\(point) hit=\(hit.map { String(describing: type(of: $0)) } ?? "nil") axWindow=\(windowHit.map { String(describing: type(of: $0)) } ?? "nil") axApplication=\(applicationHit.map { String(describing: type(of: $0)) } ?? "nil") responder=\(String(describing: window.firstResponder))"
         )
+        if !view.isHiddenOrHasHiddenAncestor {
+          for element in [windowHit, applicationHit].compactMap({ $0 }) + (view.accessibilityChildren() ?? []) {
+            recordAccessibilityState(element)
+          }
+        }
         if let picker = view as? NSDatePicker, !picker.isHiddenOrHasHiddenAncestor,
           let cell = picker.cell
         {
@@ -518,6 +525,17 @@ public final class AppController {
       try JSONEncoder().encode(snapshot).write(to: url, options: .atomic)
     } catch {
       dependencies.log.logWarning("Could not write verification process snapshot: \(error.localizedDescription)")
+    }
+  }
+
+  private func recordAccessibilityState(_ value: Any) {
+    var element = value as? any NSAccessibilityProtocol
+    for depth in 0..<6 {
+      guard let current = element else { break }
+      dependencies.log.logInfo(
+        "hit.ax depth=\(depth) class=\(type(of: current)) role=\(String(describing: current.accessibilityRole())) label=\(String(describing: current.accessibilityLabel())) enabled=\(current.isAccessibilityEnabled()) frame=\(current.accessibilityFrame()) point=\(current.accessibilityActivationPoint()) value=\(String(describing: current.accessibilityValue()))"
+      )
+      element = current.accessibilityParent() as? any NSAccessibilityProtocol
     }
   }
 
