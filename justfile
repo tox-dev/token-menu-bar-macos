@@ -8,7 +8,7 @@ default:
 
 # Build the package
 build: toolchain
-    swift build
+    swift build --jobs "${TOKEN_MENU_BAR_BUILD_JOBS:-2}"
 
 # Check the toolchain can build this app, and say what to fix when it cannot
 toolchain:
@@ -17,7 +17,7 @@ toolchain:
 # Run nonpresenting tests without user data or desktop access
 test *filter:
     Scripts/check-test-isolation.sh
-    env -u TOKEN_MENU_BAR_TEST_DESKTOP swift test --no-parallel {{ if filter == "" { "" } else { "--filter " + filter } }}
+    env -u TOKEN_MENU_BAR_TEST_DESKTOP swift test --jobs "${TOKEN_MENU_BAR_BUILD_JOBS:-2}" --no-parallel {{ if filter == "" { "" } else { "--filter " + filter } }}
 
 # Run all package tests on an isolated GitHub-hosted desktop
 test-native:
@@ -26,7 +26,7 @@ test-native:
     source Scripts/check-test-desktop.sh
     Scripts/check-test-isolation.sh
     test_status=0
-    swift test --no-parallel || test_status=$?
+    swift test --jobs "${TOKEN_MENU_BAR_BUILD_JOBS:-2}" --no-parallel || test_status=$?
     Scripts/check-cached-test-guard.sh
     exit "$test_status"
 

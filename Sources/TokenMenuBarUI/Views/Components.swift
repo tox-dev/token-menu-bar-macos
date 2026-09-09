@@ -89,7 +89,7 @@ public struct Banner: View {
     )
     .accessibilityElement(children: .combine)
     // The tint is the only thing that separates a warning from a note, so the label says which one this is.
-    .accessibilityLabel("\(tone == .warning ? "Warning" : "Note"): \(text)")
+    .accessibilityLabel(Text(verbatim: "\(tone == .warning ? "Warning" : "Note"): \(text)"))
   }
 }
 

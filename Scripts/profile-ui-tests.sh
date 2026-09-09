@@ -17,7 +17,7 @@ sample_verification() {
     echo "Refusing to sample a process outside the verification app" >&2
     return 1
   }
-  /usr/bin/sample "$profile_pid" 5 1 -file "$profile_directory/sample.pending" \
+  /usr/bin/sample "$profile_pid" 15 1 -file "$profile_directory/sample.pending" \
     > "$profile_directory/sampler.log" 2>&1
   mv "$profile_directory/sample.pending" "$profile_directory/sample.txt"
 }

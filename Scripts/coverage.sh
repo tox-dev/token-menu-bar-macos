@@ -15,7 +15,7 @@ bin_dir="$(swift build "${build_args[@]}" --show-bin-path)"
 # A profile left by an earlier filtered run merges into this one and hides lines the full suite covers.
 rm -rf "$bin_dir/codecov"
 # Provider actors still run concurrently inside serialized tests; their coverage increments must not race.
-swift test "${build_args[@]}" --enable-code-coverage --no-parallel \
+swift test "${build_args[@]}" --jobs "${TOKEN_MENU_BAR_BUILD_JOBS:-2}" --enable-code-coverage --no-parallel \
   -Xswiftc -Xllvm -Xswiftc -instrprof-atomic-counter-update-all "$@"
 
 # swift-testing and XCTest each write their own raw profile, and taking whatever SwiftPM happened to merge has

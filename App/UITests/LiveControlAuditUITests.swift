@@ -1,3 +1,5 @@
+import AppKit
+import ApplicationServices
 import CoreGraphics
 import Foundation
 import TokenMenuBarCore
@@ -457,9 +459,9 @@ final class LiveControlAuditUITests: XCTestCase {
 
       let card = application.descendants(matching: .any)["usage-provider-\(provider.rawValue)"]
       XCTAssertTrue(card.exists)
-      let copyButtons = card.buttons.allElementsBoundByIndex.filter {
-        $0.isHittable && $0.label.hasPrefix("Copy ") && $0.label != "Copy Diagnostics"
-      }
+      let copyButtons = card.buttons.matching(
+        NSPredicate(format: "label BEGINSWITH 'Copy ' AND label != 'Copy Diagnostics'")
+      ).allElementsBoundByIndex.filter(\.isHittable)
       for copy in copyButtons {
         let value = String(copy.label.dropFirst("Copy ".count))
         let primary = surface.buttons[value].firstMatch
@@ -505,7 +507,7 @@ final class LiveControlAuditUITests: XCTestCase {
     }
     scrollToTop(surface)
 
-    let order = try segmentedControl(containing: "Stable", application: application)
+    let order = segmentedControl(named: "Order", application: application)
     let stable = segment("Stable", in: order)
     stable.click()
     XCTAssertTrue(waitUntil(timeout: responsivenessBudget) { self.isSelected(stable) })
@@ -522,7 +524,7 @@ final class LiveControlAuditUITests: XCTestCase {
     records.append(scenarioRecord(tab: "Settings", label: "Stable order move later and earlier", element: order))
 
     scrollToTop(surface)
-    let format = try segmentedControl(containing: "Custom", application: application)
+    let format = segmentedControl(named: "Format", application: application)
     let frameBeforeStatusEdits = statusItem.frame
     let panelBeforeStatusEdits = surface.frame
     let formatSignature = contentSignature(statusItem)
@@ -562,7 +564,8 @@ final class LiveControlAuditUITests: XCTestCase {
     application.typeKey("a", modifierFlags: .command)
     label.typeText("TOOLONG")
     XCTAssertTrue(
-      waitUntil(timeout: responsivenessBudget) { ((label.value as? String) ?? "").count == ShortLabelPolicy.limit })
+      waitUntil(timeout: responsivenessBudget) { (label.value as? String) == "TOOLON" },
+      "Expected bounded short label TOOLON; editable value: \(String(describing: label.value))")
     let labelSignature = contentSignature(statusItem)
     replaceText(in: label, with: "VX", application: application)
     application.typeKey(.enter, modifierFlags: [])
@@ -749,8 +752,9 @@ final class LiveControlAuditUITests: XCTestCase {
         scenarioRecord(
           tab: "Settings", label: "\(provider.displayName) refresh interval", element: stepper,
           action: "increment"))
-      for action in row.buttons.allElementsBoundByIndex
-      where ["Copy command", "Check again", "Grant access", "Contact administrator"].contains(action.label) {
+      for action in row.buttons.matching(
+        NSPredicate(format: "label IN %@", ["Copy command", "Check again", "Grant access", "Contact administrator"])
+      ).allElementsBoundByIndex {
         XCTAssertTrue(reveal(action, in: surface))
         action.click()
         if action.label == "Grant access" {
@@ -762,7 +766,9 @@ final class LiveControlAuditUITests: XCTestCase {
             tab: "Settings", label: "\(provider.displayName) recovery \(action.label)", element: action,
             action: action.label == "Grant access" ? "open panel and Cancel" : "click"))
       }
-      for action in row.buttons.allElementsBoundByIndex where ["Grant", "Grant Again"].contains(action.label) {
+      for action in row.buttons.matching(NSPredicate(format: "label IN %@", ["Grant", "Grant Again"]))
+        .allElementsBoundByIndex
+      {
         XCTAssertTrue(action.isHittable)
         action.click()
         assertAndCancelNativePanel(application, rootedAt: supportDirectory)
@@ -809,17 +815,17 @@ final class LiveControlAuditUITests: XCTestCase {
     records.append(scenarioRecord(tab: "Settings", label: "Full history path", element: historyPath, action: "observe"))
 
     let open = application.buttons["Open"]
-    XCTAssertTrue(open.exists && open.isHittable)
+    XCTAssertTrue(reveal(open, in: surface))
     open.click()
     records.append(scenarioRecord(tab: "Settings", label: "History Open", element: open, action: "click"))
     let export = application.buttons["Export History…"]
-    XCTAssertTrue(export.exists && export.isHittable)
+    XCTAssertTrue(reveal(export, in: surface))
     export.click()
     assertAndCancelNativePanel(application, rootedAt: supportDirectory)
     records.append(
       scenarioRecord(tab: "Settings", label: "History Export", element: export, action: "open panel and Cancel"))
     let clear = application.buttons["Clear…"]
-    XCTAssertTrue(clear.exists && clear.isHittable)
+    XCTAssertTrue(reveal(clear, in: surface))
     clear.click()
     let destructive = application.buttons["Clear History"]
     XCTAssertTrue(destructive.waitForExistence(timeout: 2), "Clear History must require confirmation")
@@ -886,8 +892,10 @@ final class LiveControlAuditUITests: XCTestCase {
     XCTAssertTrue(level.exists)
     XCTAssertEqual(segments(in: level).count, 5, "Log level must expose All plus four severities")
     for segment in segments(in: level) {
-      XCTAssertTrue(segment.isEnabled && segment.isHittable)
+      XCTAssertTrue(segment.isEnabled)
+      XCTAssertTrue(reveal(segment, in: surface))
       segment.click()
+      XCTAssertTrue(waitUntil(timeout: responsivenessBudget) { self.isSelected(segment) })
     }
     records.append(scenarioRecord(tab: "Settings", label: "Log level", element: level, action: "select every level"))
     let search = application.textFields["Search log"]
@@ -940,14 +948,15 @@ final class LiveControlAuditUITests: XCTestCase {
 
   @MainActor
   private func segmentedControl(
-    containing label: String, application: XCUIApplication
-  ) throws -> XCUIElement {
-    let control = application.descendants(matching: .any).allElementsBoundByIndex.first {
-      ($0.elementType == .segmentedControl || $0.elementType == .radioGroup)
-        && ($0.buttons[label].exists || $0.radioButtons[label].exists)
-    }
-    let match = try XCTUnwrap(control, "No segmented control contains \(label)")
-    return application.descendants(matching: match.elementType).matching(identifier: match.label).firstMatch
+    named label: String, application: XCUIApplication
+  ) -> XCUIElement {
+    let control = application.descendants(matching: .any).matching(
+      NSPredicate(
+        format: "label == %@ AND (elementType == %d OR elementType == %d)", label,
+        XCUIElement.ElementType.segmentedControl.rawValue, XCUIElement.ElementType.radioGroup.rawValue)
+    ).firstMatch
+    XCTAssertTrue(control.exists, "Missing segmented control \(label)")
+    return control
   }
 
   @MainActor
@@ -972,7 +981,8 @@ final class LiveControlAuditUITests: XCTestCase {
   ) throws {
     let revealed = reveal(picker, in: application.descendants(matching: .any)["popover-surface"])
     if !revealed {
-      let attachment = XCTAttachment(string: application.debugDescription)
+      let attachment = XCTAttachment(
+        string: application.debugDescription + "\n" + accessibilityHitTest(picker))
       attachment.name = "Unreachable picker \(label), frame \(picker.frame)"
       attachment.lifetime = .keepAlways
       add(attachment)
@@ -983,6 +993,25 @@ final class LiveControlAuditUITests: XCTestCase {
     XCTAssertTrue(item.waitForExistence(timeout: 2), "The picker did not expose \(label)")
     item.click()
     XCTAssertTrue(waitUntil(timeout: responsivenessBudget) { String(describing: picker.value).contains(label) })
+  }
+
+  @MainActor
+  private func accessibilityHitTest(_ control: XCUIElement) -> String {
+    guard
+      let application = NSRunningApplication.runningApplications(
+        withBundleIdentifier: "dev.tox.token-menu-bar.verification"
+      ).first
+    else { return "Verification application is not running" }
+    var hit: AXUIElement?
+    let result = AXUIElementCopyElementAtPosition(
+      AXUIElementCreateApplication(application.processIdentifier), Float(control.frame.midX), Float(control.frame.midY),
+      &hit)
+    guard result == .success, let hit else { return "Accessibility hit test failed: \(result.rawValue)" }
+    return [kAXRoleAttribute, kAXTitleAttribute, kAXDescriptionAttribute, kAXIdentifierAttribute].map { attribute in
+      var value: CFTypeRef?
+      let result = AXUIElementCopyAttributeValue(hit, attribute as CFString, &value)
+      return "\(attribute)=\(String(describing: value)) result=\(result.rawValue)"
+    }.joined(separator: "\n")
   }
 
   @MainActor
@@ -1049,21 +1078,19 @@ final class LiveControlAuditUITests: XCTestCase {
     }
     let scrollView = surface.scrollViews.firstMatch
     guard scrollView.exists else { return element.isHittable }
-    let viewport = scrollView.frame.intersection(surface.frame).insetBy(dx: 2, dy: 2)
-    let visible = {
-      guard element.exists else { return false }
-      let frame = element.frame
-      return viewport.contains(CGPoint(x: frame.midX, y: frame.midY)) && element.isHittable
-    }
-    if visible() { return true }
     for _ in 0..<20 {
+      guard element.exists else { return false }
+      let viewport = scrollView.frame.intersection(surface.frame).insetBy(dx: 2, dy: 2)
       let before = element.frame
-      let above = before.minY < viewport.minY
-      scrollView.scroll(byDeltaX: 0, deltaY: above ? 420 : -420)
-      if waitUntil(timeout: 0.08, condition: visible) { return true }
-      if element.frame == before { break }
+      let center = CGPoint(x: before.midX, y: before.midY)
+      if viewport.contains(center) { return element.isHittable }
+      guard center.x >= viewport.minX && center.x <= viewport.maxX else { return false }
+      scrollView.scroll(
+        byDeltaX: 0,
+        deltaY: center.y < viewport.minY ? viewport.minY - center.y + 20 : viewport.maxY - center.y - 20)
+      guard waitUntil(timeout: responsivenessBudget, condition: { element.frame != before }) else { return false }
     }
-    return visible()
+    return false
   }
 
   @MainActor
@@ -1428,7 +1455,15 @@ final class LiveControlAuditUITests: XCTestCase {
       previousPage = fingerprint
       scrollView.scroll(byDeltaX: 0, deltaY: -520)
     }
-    if tab == "Usage" { XCTAssertGreaterThan(checkedBanners, 0, "No complete warning banner reached the OCR audit") }
+    if tab == "Usage" {
+      if checkedBanners == 0 {
+        let attachment = XCTAttachment(string: application.debugDescription)
+        attachment.name = "Missing warning banner accessibility tree"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+      }
+      XCTAssertGreaterThan(checkedBanners, 0, "No complete warning banner reached the OCR audit")
+    }
     return exposedText
   }
 

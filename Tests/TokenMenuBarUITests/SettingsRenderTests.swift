@@ -12,7 +12,7 @@ func settingsTemplateControlsAppearOnlyForCustomFormat(format: StatusFormat) asy
   environment.settings.statusFormat = format
   let text = try await renderedText(environment, named: "template-\(format.rawValue)")
 
-  #expect(text.contains("Template") == (format == .custom), "Rendered text: \(text)")
+  #expect(text.contains("Format") && text.contains("Template") == (format == .custom), "Rendered text: \(text)")
 }
 
 @Test(arguments: [false, true]) @MainActor
@@ -21,14 +21,15 @@ func settingsDemoNoticeMatchesTheActiveDataMode(isDemo: Bool) async throws {
   environment.isDemo = isDemo
   let text = try await renderedText(environment, named: "demo-\(isDemo)")
 
-  #expect(text.contains("Demo data is on") == isDemo, "Rendered text: \(text)")
+  #expect(text.contains("Version") && text.contains("Demo data is on") == isDemo, "Rendered text: \(text)")
 }
 
 @Test(arguments: [false, true]) @MainActor
 func settingsSetupGuidanceMatchesProviderDiscovery(hasProviders: Bool) async throws {
   let text = try await renderedText(makeEnvironment(populate: hasProviders), named: "providers-\(hasProviders)")
   #expect(
-    text.contains("Select Show all providers to set up a provider on this Mac.") == !hasProviders,
+    text.contains("Show all providers")
+      && text.contains("Select Show all providers to set up a provider on this Mac.") == !hasProviders,
     "Rendered text: \(text)")
 }
 
@@ -62,9 +63,9 @@ private func recognizedText(_ png: Data) throws -> String {
   try autoreleasepool {
     let request = VNRecognizeTextRequest()
     request.revision = VNRecognizeTextRequestRevision3
-    request.recognitionLevel = .fast
+    request.recognitionLevel = .accurate
     request.recognitionLanguages = ["en-US"]
-    request.usesLanguageCorrection = true
+    request.usesLanguageCorrection = false
     // Hosted VMs must not require GPU or Neural Engine support for text assertions.
     do {
       for (stage, devices) in try request.supportedComputeStageDevices {

@@ -1,133 +1,64 @@
-name: Settings OCR diagnostic
+name: Focused UI verification
 
 on:
   workflow_dispatch:
-    inputs:
-      probe:
-        type: choice
-        options: [ocr, scroll]
-        default: ocr
 
 permissions:
   contents: read
-  actions: read
 
 jobs:
-  recognize:
-    if: ${{ inputs.probe == 'ocr' }}
-    runs-on: xcode-27
-    timeout-minutes: 15
-    steps:
-      - name: Verify macOS 27 runtime
-        id: runtime
-        run: |
-          version="$(sw_vers -productVersion)"
-          [[ "${version%%.*}" == 27 ]] || { echo "::error::Unexpected macOS $version"; exit 1; }
-          echo "Runtime: macOS $version" >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - name: Select Xcode 27
-        env:
-          MIN_XCODE_MAJOR: 27
-          EXACT_XCODE_MAJOR: 27
-        run: Scripts/select-xcode.sh
-      - name: Download captured mock Settings
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TOKEN_MENU_BAR_RENDER_ARTIFACTS: ${{ runner.temp }}/settings-render
-        run: |
-          mkdir -p "$TOKEN_MENU_BAR_RENDER_ARTIFACTS"
-          gh api repos/tox-dev/token-menu-bar-macos/actions/artifacts/10087044768/zip > "$RUNNER_TEMP/settings.zip"
-          unzip -q "$RUNNER_TEMP/settings.zip" -d "$TOKEN_MENU_BAR_RENDER_ARTIFACTS"
-      - name: Compare recognition paths on the same PNG
-        if: ${{ !cancelled() && steps.runtime.outcome == 'success' }}
-        env:
-          TOKEN_MENU_BAR_RENDER_ARTIFACTS: ${{ runner.temp }}/settings-render
-        run: |
-          set -o pipefail
-          swift - <<'SWIFT' | tee "$TOKEN_MENU_BAR_RENDER_ARTIFACTS/recognition.txt"
-          import Foundation
-          import Vision
-
-          let directory = URL(fileURLWithPath: ProcessInfo.processInfo.environment["TOKEN_MENU_BAR_RENDER_ARTIFACTS"]!)
-          let png = try Data(contentsOf: directory.appendingPathComponent("providers-false.png"))
-          var successes = 0
-          for cpuOnly in [false, true] {
-            do {
-              let request = VNRecognizeTextRequest()
-              request.revision = VNRecognizeTextRequestRevision3
-              request.recognitionLevel = .accurate
-              request.recognitionLanguages = ["en-US"]
-              request.usesLanguageCorrection = false
-              if cpuOnly {
-                for (stage, devices) in try request.supportedComputeStageDevices {
-                  guard let cpu = devices.first(where: { if case .cpu = $0 { true } else { false } }) else {
-                    throw ProbeError.noCPU
-                  }
-                  request.setComputeDevice(cpu, for: stage)
-                }
-              }
-              try VNImageRequestHandler(data: png, options: [:]).perform([request])
-              let text = (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: " ")
-              print("legacy cpuOnly=\(cpuOnly) text=\(text)")
-              successes += 1
-            } catch {
-              print("legacy cpuOnly=\(cpuOnly) error=\(String(reflecting: error))")
-            }
-          }
-          for cpuOnly in [false, true] {
-            do {
-              var request = RecognizeTextRequest(.revision3)
-              request.recognitionLevel = .accurate
-              request.recognitionLanguages = [Locale.Language(identifier: "en-US")]
-              request.usesLanguageCorrection = false
-              if cpuOnly {
-                for (stage, devices) in request.supportedComputeStageDevices {
-                  guard let cpu = devices.first(where: { if case .cpu = $0 { true } else { false } }) else {
-                    throw ProbeError.noCPU
-                  }
-                  request.setComputeDevice(cpu, for: stage)
-                }
-              }
-              let text = try await request.perform(on: png).compactMap { $0.topCandidates(1).first?.string }.joined(separator: " ")
-              print("modern cpuOnly=\(cpuOnly) text=\(text)")
-              successes += 1
-            } catch {
-              print("modern cpuOnly=\(cpuOnly) error=\(String(reflecting: error))")
-            }
-          }
-          guard successes > 0 else { throw ProbeError.noAccurateResults }
-
-          enum ProbeError: Error {
-            case noCPU
-            case noAccurateResults
-          }
-          SWIFT
-      - name: Retain mock images and recognition results
-        if: ${{ !cancelled() && steps.runtime.outcome == 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: settings-ocr-diagnostic
-          path: ${{ runner.temp }}/settings-render
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 7
-
-  scroll:
-    if: ${{ inputs.probe == 'scroll' }}
+  ui:
     runs-on: macos-14
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c
+        with:
+          version: 2026.9.3
       - name: Select Xcode 16
         env:
           MIN_XCODE_MAJOR: 16
           EXACT_XCODE_MAJOR: 16
-        run: Scripts/select-xcode.sh
-      - name: Test nonpresenting input pass-through
         run: |
-          env -u TOKEN_MENU_BAR_TEST_DESKTOP swift test --jobs 2 --no-parallel \
-            --filter scrollerStylerLeavesUnderlyingControlsInteractive
+          [[ "$(sw_vers -productVersion)" == 14.* ]]
+          Scripts/select-xcode.sh
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            .build/ui-derived
+            .build/xcode-packages
+          key: focused-ui-14-${{ hashFiles('Sources/**', 'App/**', 'Package.swift') }}
+          restore-keys: focused-ui-14-
+      - name: Build mock application and audit driver
+        run: |
+          set -o pipefail
+          just xcode
+          xcodebuild -project App/TokenMenuBar.xcodeproj -scheme TokenMenuBar-Direct -configuration Verification \
+            -destination "platform=macOS,arch=$(uname -m)" -derivedDataPath .build/ui-derived \
+            -clonedSourcePackagesDirPath .build/xcode-packages -jobs 2 ONLY_ACTIVE_ARCH=YES build-for-testing \
+            2>&1 | tee .build/ui-build.log | tail -30
+      - name: Reproduce three failing cases
+        id: audit
+        run: |
+          set -o pipefail
+          Scripts/with-test-desktop.sh xcodebuild -project App/TokenMenuBar.xcodeproj -scheme TokenMenuBar-Direct -configuration Verification \
+            -destination "platform=macOS,arch=$(uname -m)" -derivedDataPath .build/ui-derived \
+            -clonedSourcePackagesDirPath .build/xcode-packages -resultBundlePath .build/focused-ui.xcresult \
+            -only-testing:TokenMenuBarApplicationUITests/TabSwitchBenchmarkUITests/testTabSwitchLatencyAndFrameStability \
+            -only-testing:TokenMenuBarApplicationUITests/LiveControlAuditUITests/testHistoryDatesAndControlsRespond \
+            -only-testing:TokenMenuBarApplicationUITests/LiveControlAuditUITests/testLongTextAtNarrowWidthInLightAppearance \
+            ONLY_ACTIVE_ARCH=YES test-without-building \
+            2>&1 | tee .build/focused-ui.log | awk '/Test Case|Test Suite|error:|warning:|TAB_SWITCH|LONG_TEXT/ { print; fflush() }'
+      - name: Retain test evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: focused-ui-macos-14
+          path: |
+            .build/focused-ui.xcresult
+            .build/focused-ui.log
+            .build/ui-build.log
+          include-hidden-files: true
+          retention-days: 7

@@ -61,17 +61,18 @@ final class PersistentTabContainer: NSView {
 
   func install(_ host: NSHostingView<AnyView>, for tab: PopoverTab) {
     wantsLayer = true
-    let slot = PersistentTabSlot(host: host)
-    addSubview(slot)
-    slots[tab] = slot
+    slots[tab] = PersistentTabSlot(host: host)
   }
 
   func select(_ tab: PopoverTab) {
     guard let slot = slots[tab], selected != tab || !slot.isActive else { return }
+    slots[selected]?.setActive(false)
+    slots[selected]?.removeFromSuperview()
     selected = tab
     selectionGeneration += 1
     prewarmed.insert(tab)
-    for (candidate, slot) in slots { slot.setActive(candidate == tab) }
+    slot.setActive(true)
+    addSubview(slot)
     needsLayout = true
     schedulePrewarm()
   }
@@ -116,7 +117,11 @@ final class PersistentTabContainer: NSView {
     }
     prewarmQueue.removeFirst()
     prewarmed.insert(tab)
-    slot.prewarm(in: bounds)
+    if !slot.isActive {
+      addSubview(slot)
+      slot.prewarm(in: bounds)
+      slot.removeFromSuperview()
+    }
     DispatchQueue.main.async { [weak self] in self?.prewarmNext() }
   }
 }

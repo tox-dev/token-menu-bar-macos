@@ -204,8 +204,29 @@ import TokenMenuBarTestSupport
   let selected = container.accessibilityChildren() as? [PersistentTabSlot]
   #expect(selected?.count == 1)
   #expect(selected?.first?.accessibilityChildren()?.first as? NSView === history)
-  let inactive = container.subviews.compactMap { $0 as? PersistentTabSlot }.first { !$0.isActive }
+  let inactive = usage.superview as? PersistentTabSlot
   #expect(inactive?.accessibilityChildren()?.isEmpty == true)
+}
+
+@Test @MainActor func tabSwitchRetainsInactiveHostsOutsideTheLayoutTree() throws {
+  let container = PersistentTabContainer(frame: CGRect(x: 0, y: 0, width: 880, height: 500))
+  let usage = NSHostingView(rootView: AnyView(Text("Usage")))
+  let history = NSHostingView(rootView: AnyView(Text("History")))
+  container.install(usage, for: .usage)
+  container.install(history, for: .history)
+  container.present(.usage)
+  let usageSlot = try #require(usage.superview)
+
+  container.present(.history)
+
+  #expect(usageSlot.superview == nil)
+  #expect(container.subviews == [history.superview!])
+
+  container.present(.usage)
+
+  #expect(container.subviews == [usageSlot])
+  #expect(usage.superview === usageSlot)
+  #expect(history.superview?.superview == nil)
 }
 
 @Test(arguments: [false, true]) @MainActor

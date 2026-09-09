@@ -461,8 +461,7 @@ public struct WindowSelectionList: View {
         )
         .onSubmit { commitLabel(row.key) }
         .accessibilityLabel("Short label for \(row.key.provider.displayName) \(row.window.label)")
-        .accessibilityValue(shortLabelAccessibilityValue(row))
-        .accessibilityHint(conflict.map { labelConflictDescription(row, conflictingKey: $0) } ?? "")
+        .accessibilityHint(shortLabelAccessibilityHint(row))
         .overlay {
           RoundedRectangle(cornerRadius: 4)
             .stroke(conflict == nil ? Color.clear : Color(.destructive), lineWidth: 1)
@@ -646,11 +645,10 @@ public struct WindowSelectionList: View {
     labelDrafts[row.key] ?? row.label
   }
 
-  func shortLabelAccessibilityValue(_ row: SettingsModelRow) -> String {
-    let value = draft(for: row)
-    let count = "\(value.count) of \(ShortLabelPolicy.limit) characters"
-    guard let conflict = labelConflict(row) else { return "\(value.isEmpty ? "Empty" : value), \(count)" }
-    return "\(value), \(count). \(labelConflictDescription(row, conflictingKey: conflict))"
+  func shortLabelAccessibilityHint(_ row: SettingsModelRow) -> String {
+    let count = "\(draft(for: row).count) of \(ShortLabelPolicy.limit) characters"
+    guard let conflict = labelConflict(row) else { return count }
+    return "\(count). \(labelConflictDescription(row, conflictingKey: conflict))"
   }
 
   func modelAccessibilityLabel(_ row: SettingsModelRow) -> String {

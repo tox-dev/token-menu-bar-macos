@@ -218,7 +218,11 @@ import TokenMenuBarTestSupport
   #expect(environment.settings.shortLabels[first.key] == "PAIR")
   #expect(environment.settings.shortLabels[second.key] == nil)
   #expect(drafts[second.key] == " pair ")
-  #expect(list.shortLabelAccessibilityValue(second).contains("Already used by"))
+  #expect(
+    list.shortLabelAccessibilityHint(second)
+      == "6 of 6 characters. Already used by \(first.key.provider.displayName) \(first.window.label); "
+      + "saved label remains \(second.label)."
+  )
   #expect(changes == 1)
 
   environment.settings.statusFormat = .custom
