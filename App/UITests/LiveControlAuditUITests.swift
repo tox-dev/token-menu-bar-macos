@@ -1286,7 +1286,20 @@ final class LiveControlAuditUITests: XCTestCase {
       let viewport = scrollView.frame.intersection(surface.frame).insetBy(dx: 2, dy: 2)
       let before = element.frame
       let center = CGPoint(x: before.midX, y: before.midY)
-      if viewport.contains(center) { return element.isHittable }
+      if viewport.contains(center) {
+        if !element.isHittable {
+          let tree = XCTAttachment(
+            string: "viewport=\(viewport) control=\(before)\n\(element.debugDescription)\n\(surface.debugDescription)")
+          tree.name = "Blocked visible control"
+          tree.lifetime = .keepAlways
+          add(tree)
+          let screenshot = XCTAttachment(screenshot: surface.screenshot())
+          screenshot.name = "Blocked visible control"
+          screenshot.lifetime = .keepAlways
+          add(screenshot)
+        }
+        return element.isHittable
+      }
       guard center.x >= viewport.minX && center.x <= viewport.maxX else { return false }
       scrollView.scroll(
         byDeltaX: 0,

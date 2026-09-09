@@ -18,7 +18,7 @@ public struct ScrollingTab<Content: View>: View {
     ScrollView(.vertical) {
       content
         .padding(PopoverGeometry.contentPadding)
-        .background(ScrollerStyler())
+        .background(ScrollerStyler().accessibilityHidden(true))
         .modifier(ContentMeasurement(tab: tab, fixedHeight: measurementHeight, measuredSize: $measuredSize))
     }
     .frame(minHeight: 200)

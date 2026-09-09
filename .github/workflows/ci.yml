@@ -6,7 +6,7 @@ on:
       controls:
         description: Control groups to run after the build
         type: choice
-        options: [data-log, none, readers, native, quota]
+        options: [data-log, accessibility, none, readers, native, quota]
         default: data-log
 
 permissions:
@@ -132,16 +132,14 @@ jobs:
           retention-days: 1
 
   ui:
-    if: inputs.controls == 'data-log'
+    if: inputs.controls == 'data-log' || inputs.controls == 'accessibility'
     needs: build
     runs-on: macos-14
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: save
-            selector: LiveControlAuditUITests/testHistoryExportSavesTheSelectedPeriod
+        include: ${{ fromJSON(inputs.controls == 'accessibility' && '[{"name":"history","selector":"LiveControlAuditUITests/testHistoryDatesAndControlsRespond"},{"name":"log","selector":"LiveControlAuditUITests/testSettingsLogControlsRespond"},{"name":"data","selector":"LiveControlAuditUITests/testSettingsDataControlsRespond"}]' || '[{"name":"save","selector":"LiveControlAuditUITests/testHistoryExportSavesTheSelectedPeriod"}]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
