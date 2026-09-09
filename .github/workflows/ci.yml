@@ -2,6 +2,12 @@ name: Focused UI verification
 
 on:
   workflow_dispatch:
+    inputs:
+      controls:
+        description: Control groups to run after the build
+        type: choice
+        options: [data-log, none]
+        default: data-log
 
 permissions:
   contents: read
@@ -78,6 +84,7 @@ jobs:
           retention-days: 1
 
   ui:
+    if: inputs.controls != 'none'
     needs: build
     runs-on: macos-14
     timeout-minutes: 10
