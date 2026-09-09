@@ -28,6 +28,13 @@ func historyChartUsesTheHeightBesideItsLegend(modelCount: Int, width: Double) as
   await mainActorTurn()
   await environment.historyPresenter.waitForLoad()
   hosting.layoutSubtreeIfNeeded()
+  // SwiftUI creates virtual accessibility elements after a client request.
+  let accessibility = await Task.detached {
+    let application = AXUIElementCreateApplication(ProcessInfo.processInfo.processIdentifier)
+    var windows: CFTypeRef?
+    return AXUIElementCopyAttributeValue(application, kAXWindowsAttribute as CFString, &windows)
+  }.value
+  try #require(accessibility == .success)
   let anchors = tooltipAnchors(in: hosting)
   let chartFrame = try #require(accessibilityFrame(identifier: "history-chart", in: hosting))
   let rows = anchors.filter {
@@ -43,19 +50,14 @@ func historyChartUsesTheHeightBesideItsLegend(modelCount: Int, width: Double) as
   }
 }
 
-@MainActor private func accessibilityFrame(identifier: String, in value: Any, depth: Int = 0) -> CGRect? {
-  guard depth < 30 else { return nil }
-  let children: [Any]
-  if let view = value as? NSView {
-    if view.accessibilityIdentifier() == identifier { return view.accessibilityFrame() }
-    children = (view.accessibilityChildren() ?? []) + view.subviews
-  } else if let element = value as? any NSAccessibilityProtocol {
-    if element.accessibilityIdentifier() == identifier { return element.accessibilityFrame() }
-    children = element.accessibilityChildren() ?? []
-  } else {
-    return nil
+@MainActor private func accessibilityFrame(identifier: String, in root: NSView) -> CGRect? {
+  var visited: Set<ObjectIdentifier> = []
+  func frame(in element: AnyObject) -> CGRect? {
+    guard visited.insert(ObjectIdentifier(element)).inserted else { return nil }
+    if element.accessibilityIdentifier?() == identifier { return element.accessibilityFrame?() }
+    return (element.accessibilityChildren?() ?? []).lazy.compactMap { frame(in: $0 as AnyObject) }.first
   }
-  return children.lazy.compactMap { accessibilityFrame(identifier: identifier, in: $0, depth: depth + 1) }.first
+  return frame(in: root)
 }
 
 @MainActor private func tooltipAnchors(in root: NSView) -> [TooltipTrackingView] {
