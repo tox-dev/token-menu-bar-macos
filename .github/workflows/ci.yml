@@ -6,7 +6,7 @@ on:
       controls:
         description: Control groups to run after the build
         type: choice
-        options: [data-log, none]
+        options: [data-log, none, readers]
         default: data-log
 
 permissions:
@@ -18,6 +18,7 @@ concurrency:
 
 jobs:
   build:
+    if: inputs.controls != 'readers'
     runs-on: macos-14
     timeout-minutes: 10
     steps:
@@ -83,8 +84,44 @@ jobs:
           path: .build/ui-build.log
           retention-days: 1
 
+  readers:
+    if: inputs.controls == 'readers'
+    runs-on: macos-26
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c
+        with:
+          version: 2026.9.3
+      - name: Select Xcode 26
+        env:
+          MIN_XCODE_MAJOR: 26
+          EXACT_XCODE_MAJOR: 26
+        run: |
+          [[ "$(sw_vers -productVersion)" == 26.* ]]
+          Scripts/select-xcode.sh
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .build
+          key: ocr-tesseract-26-${{ hashFiles('Package.swift', 'Sources/**', 'Tests/**') }}
+          restore-keys: ocr-tesseract-26-
+      - name: Verify bounded background reader work
+        run: |
+          set -o pipefail
+          mkdir -p .build
+          just test 'transcriptReaderFinishesAColdTreeOutsideTheProviderPoll|rolloutReaderBoundsTreeEnumerationSlices' \
+            2>&1 | tee .build/reader-tests.log | tail -35
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: reader-tests-macos-26
+          path: .build/reader-tests.log
+          retention-days: 1
+
   ui:
-    if: inputs.controls != 'none'
+    if: inputs.controls == 'data-log'
     needs: build
     runs-on: macos-14
     timeout-minutes: 10

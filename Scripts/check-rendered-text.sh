@@ -4,13 +4,15 @@ set -euo pipefail
 artifact_directory="${1:?Pass the isolated render artifact directory}"
 minimum="${2:-1}"
 [[ "$minimum" =~ ^[0-9]+$ && -d "$artifact_directory" ]]
-recognizer="$(command -v tesseract)" || {
-  echo "Rendered-text verification requires Tesseract; no OCR assertions were executed." >&2
-  exit 1
-}
 scratch="$(mktemp -d "${TMPDIR:-/tmp}/token-menu-bar-ocr.XXXXXX")"
 trap 'rm -rf "$scratch"' EXIT
 find "$artifact_directory" -type f -name '*.ocr.json' -print0 > "$scratch/manifest"
+if [[ -s "$scratch/manifest" ]]; then
+  recognizer="$(command -v tesseract)" || {
+    echo "Rendered-text verification requires Tesseract; no OCR assertions were executed." >&2
+    exit 1
+  }
+fi
 count=0
 failed=0
 while IFS= read -r -d '' expectation; do

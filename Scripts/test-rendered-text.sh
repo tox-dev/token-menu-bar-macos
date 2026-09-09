@@ -7,6 +7,11 @@ probe="$(mktemp -d "${TMPDIR:-/tmp}/token-menu-bar-ocr-probe.XXXXXX")"
 trap 'rm -rf "$probe"' EXIT
 cp "$image" "$probe/sample.png"
 jq -n '{contains:["ALPHA BRAVO"], excludes:[], suffix:null, matches:true}' > "$probe/sample.ocr.json"
+if PATH=/usr/bin:/bin Scripts/check-rendered-text.sh "$probe" 1 > "$probe/missing-tool" 2>&1; then
+  echo "Rendered assertions passed without an OCR engine." >&2
+  exit 1
+fi
+rg -q 'Rendered-text verification requires Tesseract' "$probe/missing-tool"
 Scripts/check-rendered-text.sh "$probe" 1 > "$probe/result"
 jq -n '{contains:["ALPHA BRAVO CHARLIE"], excludes:[], suffix:null, matches:true}' > "$probe/sample.ocr.json"
 if Scripts/check-rendered-text.sh "$probe" 1 > "$probe/result" 2>&1; then

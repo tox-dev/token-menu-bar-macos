@@ -138,7 +138,7 @@ func rolloutReaderServesTheExpiredCacheWhilePowerIsConstrained(throttled: PowerS
     try "{}\n".write(
       to: root.appendingPathComponent("rollout-\(index).jsonl"), atomically: true, encoding: .utf8)
   }
-  let reader = CodexRolloutReader(sessionsRoot: root, workEntryBudget: 4)
+  let reader = CodexRolloutReader(sessionsRoot: root, workEntryBudget: 4, backgroundWorkDelay: 0.001)
   _ = await reader.latest(now: fixedNow)
   await waitForRolloutSearch(reader)
   let workload = await reader.workload

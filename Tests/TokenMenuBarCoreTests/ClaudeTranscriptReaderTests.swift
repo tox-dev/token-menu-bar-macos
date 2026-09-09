@@ -234,7 +234,7 @@ func transcriptReaderRewindsWhenAFileIsTruncated(relaunch: Bool) async throws {
       to: root.appendingPathComponent("session-\(index).jsonl"), atomically: true, encoding: .utf8)
   }
   let reader = ClaudeTranscriptReader(
-    root: root.deletingLastPathComponent(), workByteBudget: 1024, workEntryBudget: 4)
+    root: root.deletingLastPathComponent(), workByteBudget: 1024, workEntryBudget: 4, backgroundWorkDelay: 0.001)
   _ = await reader.refresh(now: fixedNow)
   await waitForTranscriptScan(reader)
   #expect(await reader.refresh(now: fixedNow).messageCount == 300)
