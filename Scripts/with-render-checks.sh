@@ -22,7 +22,11 @@ else
   render_directory="$(mktemp -d "${TMPDIR:-/tmp}/token-menu-bar-render.XXXXXX")"
 fi
 status=0
-TOKEN_MENU_BAR_RENDER_ARTIFACTS="$render_directory" "$@" || status=$?
+TOKEN_MENU_BAR_RENDER_ARTIFACTS="$render_directory" "$@" 2>&1 | tee "$render_directory/test.log" || status=$?
+if [[ "$status" == 0 ]] && ! grep -Eq 'Test run with [1-9][0-9]* tests?( in [0-9]+ suites?)? passed after ' "$render_directory/test.log"; then
+  echo "The test process exited without a completed, nonempty passing suite." >&2
+  status=1
+fi
 if [[ "$deferred" == true ]]; then
   count="$(find "$render_directory" -type f -name '*.ocr.json' | wc -l | tr -d ' ')"
   if [[ "$count" -lt "$minimum" ]]; then

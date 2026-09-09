@@ -21,11 +21,14 @@ private struct ControlBaseline: View {
     VStack(alignment: .leading, spacing: 20) {
       DatePicker("Baseline date", selection: $date, displayedComponents: [.date])
         .accessibilityIdentifier("baseline-date")
+        .richHelp(TooltipContent(title: "Date", body: "Sets the comparison date."))
       Stepper("Baseline days: \(days)", value: $days, in: 7...365)
         .accessibilityIdentifier("baseline-stepper")
       NativeSegmentedControl(
         [(value: 0, label: "All"), (value: 1, label: "Info"), (value: 2, label: "Debug")],
-        selection: $level, accessibilityLabel: "Baseline level")
+        selection: $level, accessibilityLabel: "Baseline level"
+      )
+      .richHelp(TooltipContent(title: "Level", body: "Filters the comparison entries."))
       Text("\(date.timeIntervalSince1970) / \(days) / \(level)")
         .accessibilityIdentifier("baseline-value")
     }

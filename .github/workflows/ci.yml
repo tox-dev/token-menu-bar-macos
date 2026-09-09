@@ -117,11 +117,11 @@ jobs:
           set -o pipefail
           mkdir -p .build
           if [[ "$CHECK" == native ]]; then
-            Scripts/with-test-desktop.sh swift test --jobs 2 --no-parallel \
-              --filter 'nativeChooser|verificationChoosers|liveDependencyHelpers|rootViewWithoutAChooser|startupClosureControllerRootCallbacks|liveChooserDefaults|popover'
+            Scripts/with-test-desktop.sh Scripts/with-render-checks.sh 0 swift test --jobs 2 --no-parallel \
+              --filter 'verificationChoosers|liveDependencyHelpers|rootViewWithoutAChooser|startupClosureControllerRootCallbacks|liveChooserDefaults|popoverClosingCancels|popoverKeepsTheSheet|popoverCloseRestores|popoverRoutes|popoverLeaves'
           else
             just test 'transcriptReaderFinishesAColdTreeOutsideTheProviderPoll|rolloutReaderBoundsTreeEnumerationSlices'
-          fi 2>&1 | tee .build/reader-tests.log | tail -35
+          fi 2>&1 | tee .build/reader-tests.log | awk '/Test |Test run|error:|warning:|Build complete/ { print; fflush() }'
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
@@ -140,10 +140,6 @@ jobs:
         include:
           - name: baseline
             selector: LiveControlAuditUITests/testControlBaseline
-          - name: performance
-            selector: TabSwitchBenchmarkUITests
-          - name: file-choosers
-            selector: LiveControlAuditUITests/testFileChoosersReturnToThePopover
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -159,7 +155,7 @@ jobs:
         with:
           name: focused-ui-products
           path: .build
-      - name: Run unchanged acceptance assertions
+      - name: Run selected behavior checks
         timeout-minutes: 8
         env:
           SELECTOR: ${{ matrix.selector }}

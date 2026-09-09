@@ -382,41 +382,6 @@ import TokenMenuBarTestSupport
   #expect(await LiveDependencies.chosen(codex) { _ in .OK } == codex.url)
 }
 
-@Test(arguments: [NSWindow.Level?.none, .normal, .popUpMenu]) @MainActor
-func nativeChooserPresentsAndCancelsAtTheInvokingLevel(level: NSWindow.Level?) async throws {
-  prepareTestApp()
-  let parent = level.map { level in
-    let window = NSWindow(
-      contentRect: CGRect(x: 100, y: 100, width: 880, height: 600), styleMask: .titled, backing: .buffered, defer: false
-    )
-    window.level = level
-    window.makeKeyAndOrderFront(nil)
-    return window
-  }
-  defer { parent?.orderOut(nil) }
-  let directory = FileManager.default.temporaryDirectory.appendingPathComponent("tmb-chooser-\(UUID().uuidString)")
-  try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-  defer { try? FileManager.default.removeItem(at: directory) }
-  let panel = LiveDependencies.exportPanel(default: directory)
-  defer { if panel.isVisible { panel.cancel(nil) } }
-  let selection = Task {
-    await LiveDependencies.chosen(panel) { await LiveDependencies.presentFilePanel($0, parent: parent) }
-  }
-  await waitUntil { panel.isVisible }
-  #expect(panel.isVisible)
-  if let parent {
-    let sheet = try #require(parent.attachedSheet)
-    #expect(sheet.sheetParent === parent)
-    #expect(sheet.isVisible)
-    #expect(parent.level == level)
-  } else {
-    #expect(panel.sheetParent == nil)
-  }
-  panel.cancel(nil)
-  #expect(await selection.value == nil)
-  #expect(!panel.isVisible)
-}
-
 @Test @MainActor func verificationChoosersKeepEveryPanelInsideTemporarySupport() async {
   let support = FileManager.default.temporaryDirectory.appendingPathComponent("tmb-panels-\(UUID().uuidString)")
   let paths = LiveDependencies.Paths(

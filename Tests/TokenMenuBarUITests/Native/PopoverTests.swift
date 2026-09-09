@@ -553,6 +553,47 @@ func popoverCloseRestoresActivationOnlyWhenRequested(restoringActivation: Bool) 
   #expect(!controller.isShown)
 }
 
+@Test @MainActor func popoverClosingCancelsItsAttachedSheet() async throws {
+  let (controller, anchor, anchorWindow) = anchoredPopover()
+  defer { anchorWindow.orderOut(nil) }
+  controller.show(relativeTo: anchor, anchorFrame: nil, visibleFrame: nil)
+  defer { controller.close() }
+  let window = try #require(controller.popover.contentViewController?.view.window)
+  let sheet = NSWindow(
+    contentRect: CGRect(x: 0, y: 0, width: 320, height: 160), styleMask: .titled, backing: .buffered, defer: false)
+  defer { sheet.orderOut(nil) }
+  var response: NSApplication.ModalResponse?
+  window.beginSheet(sheet) { response = $0 }
+  try #require(window.attachedSheet === sheet)
+
+  controller.close()
+
+  await waitUntil { response != nil }
+  #expect(response == .cancel)
+  #expect(!controller.isShown)
+  #expect(window.attachedSheet == nil)
+}
+
+@Test(arguments: [NSApplication.didResignActiveNotification, NSWorkspace.activeSpaceDidChangeNotification])
+@MainActor func popoverKeepsTheSheetOpenAcrossExternalTransitions(name: Notification.Name) throws {
+  let center = NotificationCenter()
+  let (controller, anchor, anchorWindow) = anchoredPopover(applicationCenter: center, workspaceCenter: center)
+  defer { anchorWindow.orderOut(nil) }
+  controller.show(relativeTo: anchor, anchorFrame: nil, visibleFrame: nil)
+  defer { controller.close() }
+  let window = try #require(controller.popover.contentViewController?.view.window)
+  let sheet = NSWindow(
+    contentRect: CGRect(x: 0, y: 0, width: 320, height: 160), styleMask: .titled, backing: .buffered, defer: false)
+  defer { sheet.orderOut(nil) }
+  window.beginSheet(sheet)
+  try #require(window.attachedSheet === sheet)
+
+  center.post(name: name, object: nil)
+
+  #expect(controller.isShown)
+  #expect(window.attachedSheet === sheet)
+}
+
 @Test @MainActor func popoverPublicInitializerRejectsKeysFromANonkeyBackingWindow() throws {
   let (_, anchor, window) = anchoredPopover()
   defer { window.orderOut(nil) }

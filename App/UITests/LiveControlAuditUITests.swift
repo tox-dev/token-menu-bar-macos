@@ -53,6 +53,7 @@ final class LiveControlAuditUITests: XCTestCase {
         let before = value.value as? String ?? value.label
         date.click()
         application.typeKey(.upArrow, modifierFlags: [])
+        application.typeKey(.tab, modifierFlags: [])
         XCTAssertTrue(waitUntil(timeout: 1) { (value.value as? String ?? value.label) != before })
       }
       let arrow = application.steppers["baseline-stepper"].descendants(matching: .incrementArrow).firstMatch
