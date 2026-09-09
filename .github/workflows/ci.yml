@@ -68,22 +68,24 @@ jobs:
           retention-days: 1
 
   ocr:
-    runs-on: xcode-27
+    needs: ui
+    if: ${{ !cancelled() }}
+    runs-on: macos-26
     timeout-minutes: 5
     steps:
       - name: Verify runtime
         run: |
-          [[ "$(sw_vers -productVersion)" == 27.* ]]
+          [[ "$(sw_vers -productVersion)" == 26.* ]]
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c
         with:
           version: 2026.9.3
-      - name: Select Xcode 27
+      - name: Select Xcode 26
         env:
-          MIN_XCODE_MAJOR: 27
-          EXACT_XCODE_MAJOR: 27
+          MIN_XCODE_MAJOR: 26
+          EXACT_XCODE_MAJOR: 26
         run: Scripts/select-xcode.sh
       - name: Install the pinned OCR engine
         env:
@@ -104,8 +106,8 @@ jobs:
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: .build
-          key: ocr-tesseract-27-${{ hashFiles('Package.swift', 'Sources/**', 'Tests/**') }}
-          restore-keys: ocr-tesseract-27-
+          key: ocr-tesseract-26-${{ hashFiles('Package.swift', 'Sources/**', 'Tests/**') }}
+          restore-keys: ocr-tesseract-26-
       - name: Check captured Settings text
         env:
           TOKEN_MENU_BAR_RENDER_ARTIFACTS: ${{ runner.temp }}/rendered
@@ -118,9 +120,41 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
-          name: focused-ocr-macos-27
+          name: focused-ocr-macos-26
           path: ${{ runner.temp }}/rendered
           retention-days: 1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        if: ${{ !cancelled() }}
+        with:
+          name: focused-ui-text-wide-light-macos-14
+          path: .build/live-text
+      - name: Check live warning-banner text
+        if: ${{ !cancelled() }}
+        run: Scripts/check-rendered-text.sh .build/live-text/ui-artifacts 1
+
+  labels:
+    runs-on: macos-14
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Select Xcode 16
+        env:
+          MIN_XCODE_MAJOR: 16
+          EXACT_XCODE_MAJOR: 16
+        run: |
+          [[ "$(sw_vers -productVersion)" == 14.* ]]
+          Scripts/select-xcode.sh
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .build
+          key: native-labels-14-${{ hashFiles('Package.swift', 'Sources/**', 'Tests/**') }}
+          restore-keys: native-labels-14-
+      - name: Verify native field editing and revert
+        run: |
+          Scripts/with-test-desktop.sh swift test --jobs 2 --no-parallel \
+            --filter modelLabelEditsApplyImmediatelyAndSurviveFocusChanges
 
   ui:
     needs: build
@@ -134,8 +168,8 @@ jobs:
             selector: LiveControlAuditUITests/testHistoryDatesAndControlsRespond
           - name: menu-bar
             selector: LiveControlAuditUITests/testSettingsMenuBarControlsRespond
-          - name: performance
-            selector: TabSwitchBenchmarkUITests
+          - name: text-wide-light
+            selector: LiveControlAuditUITests/testLongTextAtWideWidthInLightAppearance
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:

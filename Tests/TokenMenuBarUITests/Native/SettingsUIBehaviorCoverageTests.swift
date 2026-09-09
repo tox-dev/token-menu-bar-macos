@@ -84,7 +84,8 @@ import TokenMenuBarTestSupport
   #expect(refreshed == [.claude])
 }
 
-@Test @MainActor func modelLabelEditsApplyImmediatelyAndSurviveFocusChanges() async throws {
+@Test(arguments: [["DRAFT"], ["TOOLONG"], ["T", "O", "O", "L", "O", "N", "G"]]) @MainActor
+func modelLabelEditsApplyImmediatelyAndSurviveFocusChanges(edits: [String]) async throws {
   let environment = try makeEnvironment()
   let row = try #require(WindowSelectionList(environment: environment).groups.first?.rows.first)
   var drafts: [WindowKey: String] = [:]
@@ -104,15 +105,26 @@ import TokenMenuBarTestSupport
   await mainActorTurn()
   let editor = try #require(label.currentEditor() as? NSTextView)
   editor.selectAll(nil)
-  editor.insertText("DRAFT", replacementRange: editor.selectedRange())
-  await waitUntil { environment.settings.shortLabels[row.key] == "DRAFT" }
-  #expect(environment.settings.shortLabels[row.key] == "DRAFT")
+  for edit in edits {
+    editor.insertText(edit, replacementRange: editor.selectedRange())
+    await mainActorTurn()
+  }
+  let expected = String(edits.joined().prefix(6))
+  await waitUntil { environment.settings.shortLabels[row.key] == expected }
+  #expect(environment.settings.shortLabels[row.key] == expected)
+  #expect(editor.string == expected)
 
   filter.selectText(nil)
   await mainActorTurn()
 
   #expect(filter.currentEditor() != nil)
-  #expect(environment.settings.shortLabels[row.key] == "DRAFT")
+  #expect(environment.settings.shortLabels[row.key] == expected)
+  #expect(label.stringValue == expected)
+
+  #expect(pressElement(label: "Revert label for \(row.key.provider.displayName) \(row.window.label)", in: fixture.view))
+  await mainActorTurn()
+  #expect(label.stringValue == row.defaultLabel)
+  #expect(environment.settings.shortLabels[row.key] == nil)
 }
 
 @Test @MainActor func settingsRemountIsReadyWithoutADeferredFill() async throws {

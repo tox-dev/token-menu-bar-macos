@@ -24,7 +24,7 @@ fi
 status=0
 TOKEN_MENU_BAR_RENDER_ARTIFACTS="$render_directory" "$@" || status=$?
 if [[ "$deferred" == true ]]; then
-  count="$(find "$render_directory" -type f -name '*.ocr.json' | wc -l)"
+  count="$(find "$render_directory" -type f -name '*.ocr.json' | wc -l | tr -d ' ')"
   if [[ "$count" -lt "$minimum" ]]; then
     echo "Expected at least $minimum rendered-text captures; found $count." >&2
     status=1

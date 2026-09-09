@@ -572,7 +572,7 @@ final class LiveControlAuditUITests: XCTestCase {
     assertAnchorsHeld(
       statusItem: statusItem, statusFrame: frameBeforeStatusEdits,
       surface: surface, panelFrame: panelBeforeStatusEdits, action: "Short label")
-    let revert = application.buttons["Revert label"].firstMatch
+    let revert = application.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Revert label for '")).firstMatch
     XCTAssertTrue(revert.waitForExistence(timeout: 2))
     revert.click()
     XCTAssertTrue(waitUntil(timeout: responsivenessBudget) { (label.value as? String) == originalLabel })
@@ -938,6 +938,9 @@ final class LiveControlAuditUITests: XCTestCase {
 
   @MainActor
   private func adjustDate(_ picker: XCUIElement, increasing: Bool) {
+    XCTAssertTrue(
+      picker.isHittable,
+      "Date picker is unreachable: \(picker.debugDescription)\n\(accessibilityHitTest(picker))")
     picker.click()
     let before = String(describing: picker.value)
     let arrow = picker.descendants(matching: increasing ? .incrementArrow : .decrementArrow).firstMatch

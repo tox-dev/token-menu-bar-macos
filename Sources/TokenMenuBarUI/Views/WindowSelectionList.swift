@@ -446,7 +446,7 @@ public struct WindowSelectionList: View {
   private func labelEditor(_ row: SettingsModelRow) -> some View {
     let conflict = labelConflict(row)
     return HStack(spacing: 4) {
-      TextField("Label", text: label(row))
+      ShortLabelField(label: label(row))
         .font(.caption.monospaced())
         .multilineTextAlignment(.center)
         .frame(width: 64)
