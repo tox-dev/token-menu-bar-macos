@@ -178,7 +178,11 @@ final class LiveControlAuditUITests: XCTestCase {
     XCTAssertTrue(save.isHittable)
     save.click()
 
-    XCTAssertTrue(waitUntil(timeout: 2) { FileManager.default.fileExists(atPath: destination.path) })
+    XCTAssertTrue(
+      waitUntil(timeout: 2) {
+        ((try? destination.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+          > "timestamp,key,label,used_percent,resets_at\n".utf8.count
+      }, "The selected-period export did not write its header and synthetic samples")
     let rows = try String(contentsOf: destination, encoding: .utf8).split(separator: "\n")
     XCTAssertEqual(rows.first, "timestamp,key,label,used_percent,resets_at")
     XCTAssertGreaterThan(rows.count, 1, "The selected period exported no synthetic samples")

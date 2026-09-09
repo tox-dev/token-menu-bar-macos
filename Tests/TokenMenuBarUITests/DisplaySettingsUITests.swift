@@ -6,6 +6,15 @@ import TokenMenuBarTestSupport
 @testable import TokenMenuBarCore
 @testable import TokenMenuBarUI
 
+@Test @MainActor func iconOnlyStatusKeepsItsQuotaWarningAccessible() {
+  let model = StatusItemModel(
+    cells: [], iconTone: .attention, showsIcon: true, countdownActive: false,
+    accessibilitySummary: "Claude: Included quota limited by All models (100% used; resets 2d).")
+  #expect(
+    StatusItemRenderer.accessibilityDescription(for: model)
+      == "Token Menu Bar, Claude: Included quota limited by All models (100% used; resets 2d).")
+}
+
 @Test @MainActor func settingsTabBindsTheDisplayPaceAndPrivacyControls() throws {
   let environment = try makeEnvironment()
   let tab = SettingsTab(environment: environment, mountsIncrementally: false)

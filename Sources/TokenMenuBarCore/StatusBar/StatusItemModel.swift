@@ -45,12 +45,17 @@ public struct StatusItemModel: Hashable, Sendable {
   public let iconTone: StatusIconTone
   public let showsIcon: Bool
   public let countdownActive: Bool
+  public let accessibilitySummary: String?
 
-  public init(cells: [StatusCell], iconTone: StatusIconTone, showsIcon: Bool, countdownActive: Bool) {
+  public init(
+    cells: [StatusCell], iconTone: StatusIconTone, showsIcon: Bool, countdownActive: Bool,
+    accessibilitySummary: String? = nil
+  ) {
     self.cells = cells
     self.iconTone = iconTone
     self.showsIcon = showsIcon
     self.countdownActive = countdownActive
+    self.accessibilitySummary = accessibilitySummary
   }
 
   public static let empty = StatusItemModel(cells: [], iconTone: .normal, showsIcon: true, countdownActive: false)
@@ -173,18 +178,28 @@ public enum StatusItemBuilder {
   }
 
   public static func build(_ input: StatusItemInput) -> StatusItemModel {
+    var restrictions: [WindowKey: StatusQuotaRestriction] = [:]
+    let selectedEntries = input.selectedKeys.compactMap { key -> (WindowKey, ProviderSnapshot, QuotaWindow)? in
+      guard let snapshot = input.snapshots[key.provider], let window = snapshot.window(key.windowID) else { return nil }
+      let restriction = StatusQuotaRestriction(window: window, snapshot: snapshot, now: input.now)
+      restrictions[key] = restriction
+      return (key, snapshot, restriction?.projected(window) ?? window)
+    }
     let tone: StatusIconTone =
-      input.availability.values.contains(.authenticationRequired)
-      ? .attention : input.availability.values.contains(.networkUnavailable) ? .offline : .normal
+      !restrictions.isEmpty
+      ? .attention
+      : input.availability.values.contains(.authenticationRequired)
+        ? .attention : input.availability.values.contains(.networkUnavailable) ? .offline : .normal
     if input.tier == .iconOnly {
-      return StatusItemModel(cells: [], iconTone: tone, showsIcon: true, countdownActive: false)
+      let summary = restrictions.keys.sorted().map { key in
+        "\(key.provider.displayName): \(restrictions[key]!.explanation(now: input.now))"
+      }.uniqued().joined(separator: "\n")
+      return StatusItemModel(
+        cells: [], iconTone: tone, showsIcon: true, countdownActive: false,
+        accessibilitySummary: summary.isEmpty ? nil : summary)
     }
     let format = input.effectiveFormat
     let template = StatusTemplate.compile(format.template ?? input.customTemplate)
-    let selectedEntries = input.selectedKeys.compactMap { key -> (WindowKey, ProviderSnapshot, QuotaWindow)? in
-      guard let snapshot = input.snapshots[key.provider], let window = snapshot.window(key.windowID) else { return nil }
-      return (key, snapshot, window)
-    }
     var availableWindows: [WindowKey: QuotaWindow] = [:]
     for (provider, snapshot) in input.snapshots {
       for window in snapshot.windows { availableWindows[WindowKey(provider, window)] = window }
@@ -208,8 +223,12 @@ public enum StatusItemBuilder {
             label: labels[$0.0]!,
             percent: $0.2.usedPercent)
         }
-        let tooltip = own.map { "\($0.2.label): \(percentText($0.2, display: input.display))" }
-          .joined(separator: "\n")
+        let tooltip = own.map { key, snapshot, window in
+          let raw = snapshot.window(key.windowID)!
+          return "\(window.label): \(percentText(raw, display: input.display))"
+            + (restrictions[key].map { "\n" + $0.explanation(now: input.now) } ?? "")
+        }
+        .joined(separator: "\n")
         return StatusCell(
           id: provider.rawValue, provider: provider, lines: [], bars: bars,
           percent: own.map(\.2.usedPercent).max()!, tooltip: tooltip)
@@ -228,12 +247,19 @@ public enum StatusItemBuilder {
           planName: snapshot.identity?.planName,
           credits: snapshot.credits?.formattedBalance,
           now: input.now,
-          display: input.display
+          display: input.display,
+          isLimited: restrictions[key] != nil
         )
-        let lines = StatusTemplate.render(template, context: context)
+        var lines = StatusTemplate.render(template, context: context)
+        if restrictions[key] != nil, !lines.joined().contains(where: { $0.kind == .usage(100) }) {
+          if lines.isEmpty { lines = [[]] }
+          lines[0].append(StatusRun(text: " Limit", kind: .usage(100)))
+        }
+        let raw = snapshot.window(key.windowID)!
         let tooltip =
-          "\(key.provider.displayName) \(window.label): \(percentText(window, display: input.display)), "
-          + "resets \(Format.countdown(to: window.resetsAt, now: input.now))"
+          "\(key.provider.displayName) \(window.label): \(percentText(raw, display: input.display)), "
+          + "resets \(Format.countdown(to: raw.resetsAt, now: input.now))"
+          + (restrictions[key].map { "\n" + $0.explanation(now: input.now) } ?? "")
         return StatusCell(
           id: key.storageKey, provider: key.provider, lines: lines, percent: window.usedPercent, tooltip: tooltip)
       }

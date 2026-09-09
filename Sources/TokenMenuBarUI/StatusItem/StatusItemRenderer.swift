@@ -62,6 +62,7 @@ public enum StatusItemRenderer {
 
   /// The item draws its content into images, so VoiceOver needs both the visible rendering and its full context.
   public static func accessibilityDescription(for model: StatusItemModel) -> String {
+    if let summary = model.accessibilitySummary { return "Token Menu Bar, " + summary }
     let readings = model.cells.flatMap { cell in
       var descriptions: [String] = []
       if cell.isMiniBar {

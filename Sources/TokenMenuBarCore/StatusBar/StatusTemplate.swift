@@ -54,10 +54,11 @@ public struct StatusCellContext: Sendable {
   public let credits: String?
   public let now: Date
   public let display: UsageDisplay
+  public let isLimited: Bool
 
   public init(
     provider: ProviderID, window: QuotaWindow, cellLabel: String, shortLabel: String, decimals: Int, planName: String?,
-    credits: String?, now: Date, display: UsageDisplay = .used
+    credits: String?, now: Date, display: UsageDisplay = .used, isLimited: Bool = false
   ) {
     self.provider = provider
     self.window = window
@@ -68,6 +69,7 @@ public struct StatusCellContext: Sendable {
     self.credits = credits
     self.now = now
     self.display = display
+    self.isLimited = isLimited
   }
 }
 
@@ -199,6 +201,9 @@ public enum StatusTemplate {
   static func run(for name: String, context: StatusCellContext) -> StatusRun? {
     let percent = context.window.usedPercent
     let display = context.display
+    if context.isLimited, ["pct", "pct0", "pct1", "pct2", "remaining"].contains(name) {
+      return StatusRun(text: "Limit", kind: .usage(100))
+    }
     switch name {
     case "cell": return StatusRun(text: context.cellLabel, kind: .label)
     case "provider": return StatusRun(text: context.provider.shortLabel, kind: .label)
