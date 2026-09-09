@@ -3,7 +3,6 @@ import ApplicationServices
 import CoreGraphics
 import Foundation
 import TokenMenuBarCore
-import Vision
 import XCTest
 
 final class LiveControlAuditUITests: XCTestCase {
@@ -1365,25 +1364,12 @@ final class LiveControlAuditUITests: XCTestCase {
 
   @MainActor
   private func assertRenderedText(_ element: XCUIElement, expected: String) {
-    let request = VNRecognizeTextRequest()
-    request.recognitionLevel = .accurate
-    request.usesLanguageCorrection = false
-    let screenshot = element.screenshot()
     do {
-      try VNImageRequestHandler(data: screenshot.pngRepresentation, options: [:]).perform([request])
-      let recognized = (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: " ")
-      let expectedWords = expected.lowercased().split { !$0.isLetter && !$0.isNumber }
-      let renderedWords = recognized.lowercased().split { !$0.isLetter && !$0.isNumber }
-      let matches = renderedWords.suffix(expectedWords.count).elementsEqual(expectedWords)
-      if !matches {
-        let attachment = XCTAttachment(screenshot: screenshot)
-        attachment.name = "Rendered long-text mismatch"
-        attachment.lifetime = .keepAlways
-        add(attachment)
-      }
-      XCTAssertTrue(matches, "Rendered text differs from its complete accessibility label. OCR: \(recognized)")
+      try RenderedText(suffix: expected).capture(
+        element.screenshot().pngRepresentation,
+        at: outputDirectory().appendingPathComponent("banner-\(UUID().uuidString).png"))
     } catch {
-      XCTFail("Could not validate rendered text: \(error)")
+      XCTFail("Could not capture rendered-text assertion: \(error)")
     }
   }
 

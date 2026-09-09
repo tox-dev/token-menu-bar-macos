@@ -215,6 +215,7 @@ targets:
     sources:
       - path: UITests
       - path: ../Tests/TokenMenuBarNativeGuard/NativeDesktop.c
+      - path: ../Tests/TokenMenuBarTestSupport/RenderedText.swift
     dependencies:
       - target: TokenMenuBarDirect
       - package: TokenMenuBarPackage

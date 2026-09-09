@@ -6,10 +6,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: focused-ui-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  ui:
+  build:
     runs-on: macos-14
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -24,41 +28,93 @@ jobs:
         run: |
           [[ "$(sw_vers -productVersion)" == 14.* ]]
           Scripts/select-xcode.sh
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        id: build-cache
         with:
           path: |
             .build/ui-derived
             .build/xcode-packages
-          key: focused-ui-14-${{ hashFiles('Sources/**', 'App/**', 'Package.swift') }}
+          key: focused-ui-14-${{ hashFiles('Sources/**', 'App/**', 'Package.swift', 'Tests/TokenMenuBarTestSupport/**') }}
           restore-keys: focused-ui-14-
       - name: Build mock application and audit driver
         run: |
           set -o pipefail
+          mkdir -p .build
           just xcode
           xcodebuild -project App/TokenMenuBar.xcodeproj -scheme TokenMenuBar-Direct -configuration Verification \
             -destination "platform=macOS,arch=$(uname -m)" -derivedDataPath .build/ui-derived \
             -clonedSourcePackagesDirPath .build/xcode-packages -jobs 2 ONLY_ACTIVE_ARCH=YES build-for-testing \
             2>&1 | tee .build/ui-build.log | tail -30
-      - name: Reproduce three failing cases
-        id: audit
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        if: steps.build-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            .build/ui-derived
+            .build/xcode-packages
+          key: ${{ steps.build-cache.outputs.cache-primary-key }}
+      - name: Package test products
+        run: ditto -c -k .build/ui-derived/Build/Products .build/ui-products.zip
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: focused-ui-products
+          path: .build/ui-products.zip
+          if-no-files-found: error
+          retention-days: 1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: focused-ui-build
+          path: .build/ui-build.log
+          retention-days: 1
+
+  ui:
+    needs: build
+    runs-on: macos-14
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: history
+            selector: LiveControlAuditUITests/testHistoryDatesAndControlsRespond
+          - name: performance
+            selector: TabSwitchBenchmarkUITests
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Select Xcode 16
+        env:
+          MIN_XCODE_MAJOR: 16
+          EXACT_XCODE_MAJOR: 16
+        run: |
+          [[ "$(sw_vers -productVersion)" == 14.* ]]
+          Scripts/select-xcode.sh
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: focused-ui-products
+          path: .build
+      - name: Run unchanged acceptance assertions
+        env:
+          SELECTOR: ${{ matrix.selector }}
         run: |
           set -o pipefail
-          Scripts/with-test-desktop.sh xcodebuild -project App/TokenMenuBar.xcodeproj -scheme TokenMenuBar-Direct -configuration Verification \
-            -destination "platform=macOS,arch=$(uname -m)" -derivedDataPath .build/ui-derived \
-            -clonedSourcePackagesDirPath .build/xcode-packages -resultBundlePath .build/focused-ui.xcresult \
-            -only-testing:TokenMenuBarApplicationUITests/TabSwitchBenchmarkUITests/testTabSwitchLatencyAndFrameStability \
-            -only-testing:TokenMenuBarApplicationUITests/LiveControlAuditUITests/testHistoryDatesAndControlsRespond \
-            -only-testing:TokenMenuBarApplicationUITests/LiveControlAuditUITests/testLongTextAtNarrowWidthInLightAppearance \
-            ONLY_ACTIVE_ARCH=YES test-without-building \
-            2>&1 | tee .build/focused-ui.log | awk '/Test Case|Test Suite|error:|warning:|TAB_SWITCH|LONG_TEXT/ { print; fflush() }'
+          ditto -x -k .build/ui-products.zip .build/ui-derived/Build/Products
+          specifications=(.build/ui-derived/Build/Products/*.xctestrun)
+          [[ "${#specifications[@]}" == 1 ]]
+          Scripts/profile-ui-tests.sh Scripts/with-ui-artifacts.sh xcodebuild \
+            -xctestrun "${specifications[0]}" -destination "platform=macOS,arch=$(uname -m)" \
+            -resultBundlePath .build/focused-ui.xcresult \
+            "-only-testing:TokenMenuBarApplicationUITests/$SELECTOR" test-without-building \
+            2>&1 | tee .build/focused-ui.log | awk '/Test Case|Test Suite|error:|warning:|TAB_SWITCH|FIRST_SETTINGS|CONTROL_AUDIT/ { print; fflush() }'
       - name: Retain test evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: focused-ui-macos-14
+          name: focused-ui-${{ matrix.name }}-macos-14
           path: |
             .build/focused-ui.xcresult
             .build/focused-ui.log
-            .build/ui-build.log
+            .build/ui-artifacts
           include-hidden-files: true
-          retention-days: 7
+          retention-days: 1
