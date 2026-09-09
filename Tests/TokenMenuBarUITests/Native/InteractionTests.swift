@@ -394,7 +394,10 @@ func nativeChooserPresentsAndCancelsAtTheInvokingLevel(level: NSWindow.Level?) a
     return window
   }
   defer { parent?.orderOut(nil) }
-  let panel = LiveDependencies.exportPanel(default: try uiTemporaryDirectory())
+  let directory = FileManager.default.temporaryDirectory.appendingPathComponent("tmb-chooser-\(UUID().uuidString)")
+  try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+  defer { try? FileManager.default.removeItem(at: directory) }
+  let panel = LiveDependencies.exportPanel(default: directory)
   defer { if panel.isVisible { panel.cancel(nil) } }
   let selection = Task {
     await LiveDependencies.chosen(panel) { await LiveDependencies.presentFilePanel($0, parent: parent) }

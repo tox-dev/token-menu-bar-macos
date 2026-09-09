@@ -79,12 +79,7 @@ public final class PopoverController: NSObject, NSPopoverDelegate {
     super.init()
     popover.behavior = .applicationDefined
     popover.animates = animates
-    let contentController = NSViewController()
-    contentController.view = NSView()
-    contentController.addChild(hosting)
-    hosting.view.autoresizingMask = [.width, .height]
-    contentController.view.addSubview(hosting.view)
-    popover.contentViewController = contentController
+    popover.contentViewController = hosting
     popover.delegate = self
   }
 
