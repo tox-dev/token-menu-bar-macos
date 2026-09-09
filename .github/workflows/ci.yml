@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   recognize:
@@ -25,12 +26,14 @@ jobs:
           MIN_XCODE_MAJOR: 27
           EXACT_XCODE_MAJOR: 27
         run: Scripts/select-xcode.sh
-      - name: Render and assert mock Settings
+      - name: Download captured mock Settings
         env:
+          GH_TOKEN: ${{ github.token }}
           TOKEN_MENU_BAR_RENDER_ARTIFACTS: ${{ runner.temp }}/settings-render
         run: |
-          env -u TOKEN_MENU_BAR_TEST_DESKTOP swift test --jobs 2 --no-parallel \
-            --filter 'settings(TemplateControlsAppearOnlyForCustomFormat|DemoNoticeMatchesTheActiveDataMode|SetupGuidanceMatchesProviderDiscovery)'
+          mkdir -p "$TOKEN_MENU_BAR_RENDER_ARTIFACTS"
+          gh api repos/tox-dev/token-menu-bar-macos/actions/artifacts/10087044768/zip > "$RUNNER_TEMP/settings.zip"
+          unzip -q "$RUNNER_TEMP/settings.zip" -d "$TOKEN_MENU_BAR_RENDER_ARTIFACTS"
       - name: Compare recognition paths on the same PNG
         if: ${{ !cancelled() && steps.runtime.outcome == 'success' }}
         env:
@@ -39,51 +42,60 @@ jobs:
           set -o pipefail
           swift - <<'SWIFT' | tee "$TOKEN_MENU_BAR_RENDER_ARTIFACTS/recognition.txt"
           import Foundation
-          import ImageIO
           import Vision
 
           let directory = URL(fileURLWithPath: ProcessInfo.processInfo.environment["TOKEN_MENU_BAR_RENDER_ARTIFACTS"]!)
           let png = try Data(contentsOf: directory.appendingPathComponent("providers-false.png"))
-          let image = CGImageSourceCreateImageAtIndex(CGImageSourceCreateWithData(png as CFData, nil)!, 0, nil)!
-          recognize(image, name: "whole")
-          for height in [512, 1024] {
-            for offset in stride(from: 0, to: image.height, by: height - 128) {
-              let rect = CGRect(
-                x: 0, y: CGFloat(offset), width: CGFloat(image.width),
-                height: CGFloat(min(height, image.height - offset)))
-              recognize(image.cropping(to: rect)!, name: "\(height)-\(offset)")
-            }
-          }
-
-          func recognize(_ image: CGImage, name: String) {
-            autoreleasepool {
-              do {
-                let request = VNRecognizeTextRequest()
-                request.revision = VNRecognizeTextRequestRevision3
-                request.recognitionLevel = .fast
-                request.recognitionLanguages = ["en-US"]
-                request.usesLanguageCorrection = true
+          var successes = 0
+          for cpuOnly in [false, true] {
+            do {
+              let request = VNRecognizeTextRequest()
+              request.revision = VNRecognizeTextRequestRevision3
+              request.recognitionLevel = .accurate
+              request.recognitionLanguages = ["en-US"]
+              request.usesLanguageCorrection = false
+              if cpuOnly {
                 for (stage, devices) in try request.supportedComputeStageDevices {
                   guard let cpu = devices.first(where: { if case .cpu = $0 { true } else { false } }) else {
                     throw ProbeError.noCPU
                   }
                   request.setComputeDevice(cpu, for: stage)
                 }
-                try VNImageRequestHandler(cgImage: image, options: [:]).perform([request])
-                for observation in request.results ?? [] {
-                  let candidates = observation.topCandidates(3)
-                  if candidates.contains(where: { $0.string.contains("provider") }) {
-                    print("region=\(name) candidates=\(candidates.map(\.string))")
-                  }
-                }
-              } catch {
-                print("region=\(name) error=\(String(reflecting: error))")
               }
+              try VNImageRequestHandler(data: png, options: [:]).perform([request])
+              let text = (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: " ")
+              print("legacy cpuOnly=\(cpuOnly) text=\(text)")
+              successes += 1
+            } catch {
+              print("legacy cpuOnly=\(cpuOnly) error=\(String(reflecting: error))")
             }
           }
+          for cpuOnly in [false, true] {
+            do {
+              var request = RecognizeTextRequest(.revision3)
+              request.recognitionLevel = .accurate
+              request.recognitionLanguages = [Locale.Language(identifier: "en-US")]
+              request.usesLanguageCorrection = false
+              if cpuOnly {
+                for (stage, devices) in request.supportedComputeStageDevices {
+                  guard let cpu = devices.first(where: { if case .cpu = $0 { true } else { false } }) else {
+                    throw ProbeError.noCPU
+                  }
+                  request.setComputeDevice(cpu, for: stage)
+                }
+              }
+              let text = try await request.perform(on: png).compactMap { $0.topCandidates(1).first?.string }.joined(separator: " ")
+              print("modern cpuOnly=\(cpuOnly) text=\(text)")
+              successes += 1
+            } catch {
+              print("modern cpuOnly=\(cpuOnly) error=\(String(reflecting: error))")
+            }
+          }
+          guard successes > 0 else { throw ProbeError.noAccurateResults }
 
           enum ProbeError: Error {
             case noCPU
+            case noAccurateResults
           }
           SWIFT
       - name: Retain mock images and recognition results
