@@ -542,7 +542,7 @@ final class LiveControlAuditUITests: XCTestCase {
     assertAnchorsHeld(
       statusItem: statusItem, statusFrame: frameBeforeStatusEdits,
       surface: surface, panelFrame: panelBeforeStatusEdits, action: "Format")
-    let template = application.textViews["status-template"]
+    let template = application.scrollViews["status-template"].textViews.firstMatch
     XCTAssertTrue(template.waitForExistence(timeout: 2))
     XCTAssertTrue(application.staticTexts["{cell}  {pct}  {label}  {provider}  {window}  {reset}  {pctOrReset}"].exists)
 
@@ -956,8 +956,17 @@ final class LiveControlAuditUITests: XCTestCase {
 
   @MainActor
   private func adjustDate(_ picker: XCUIElement, increasing: Bool) {
+    let hittableBeforeFocus = picker.isHittable
+    if !hittableBeforeFocus {
+      let before = picker.debugDescription
+      picker.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: 0.5)).click()
+      let attachment = XCTAttachment(string: "Before focus:\n\(before)\nAfter focus:\n\(picker.debugDescription)")
+      attachment.name = "Date component focus diagnostic"
+      attachment.lifetime = .keepAlways
+      add(attachment)
+    }
     XCTAssertTrue(
-      picker.isHittable,
+      hittableBeforeFocus,
       "Date picker is unreachable: \(picker.debugDescription)")
     picker.click()
     let before = String(describing: picker.value)
@@ -1144,7 +1153,16 @@ final class LiveControlAuditUITests: XCTestCase {
   private func scrollToTop(_ surface: XCUIElement) {
     let scrollView = surface.scrollViews.firstMatch
     guard scrollView.exists else { return }
-    scrollView.scroll(byDeltaX: 0, deltaY: 100_000)
+    let firstText = scrollView.staticTexts.firstMatch
+    XCTAssertTrue(firstText.exists, "The tab has no accessible first content row")
+    guard firstText.exists else { return }
+    let viewportTop = scrollView.frame.minY
+    let distance = viewportTop - firstText.frame.minY
+    guard distance > 0 else { return }
+    scrollView.scroll(byDeltaX: 0, deltaY: distance + PopoverGeometry.contentPadding)
+    XCTAssertTrue(
+      waitUntil(timeout: responsivenessBudget) { firstText.frame.minY >= viewportTop },
+      "Scrolling did not expose the first content row")
   }
 
   @MainActor

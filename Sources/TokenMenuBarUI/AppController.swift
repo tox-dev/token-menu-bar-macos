@@ -501,6 +501,13 @@ public final class AppController {
         dependencies.log.logInfo(
           "hit.control class=\(type(of: view)) id=\(view.accessibilityIdentifier()) frame=\(frame) enabled=\((view as? NSControl)?.isEnabled ?? false) axEnabled=\(view.isAccessibilityEnabled()) hidden=\(view.isHiddenOrHasHiddenAncestor) point=\(point) hit=\(hit.map { String(describing: type(of: $0)) } ?? "nil") axWindow=\(windowHit.map { String(describing: type(of: $0)) } ?? "nil") axApplication=\(applicationHit.map { String(describing: type(of: $0)) } ?? "nil") responder=\(String(describing: window.firstResponder))"
         )
+        if let picker = view as? NSDatePicker, !picker.isHiddenOrHasHiddenAncestor,
+          let cell = picker.cell
+        {
+          dependencies.log.logInfo(
+            "hit.date value=\(picker.dateValue) cellEnabled=\(cell.isEnabled) editable=\(cell.isEditable) selectable=\(cell.isSelectable) axEnabled=\(cell.isAccessibilityEnabled()) axFrame=\(cell.accessibilityFrame()) axPoint=\(cell.accessibilityActivationPoint()) axValue=\(String(describing: cell.accessibilityValue())) parent=\(String(describing: cell.accessibilityParent()))"
+          )
+        }
       }
     }
     dependencies.log.flush()

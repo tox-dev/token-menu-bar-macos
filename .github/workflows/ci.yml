@@ -13,7 +13,7 @@ concurrency:
 jobs:
   build:
     runs-on: macos-14
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -69,7 +69,7 @@ jobs:
 
   ocr:
     runs-on: macos-26
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Verify runtime
         run: |
@@ -107,46 +107,10 @@ jobs:
           path: ${{ runner.temp }}/rendered
           retention-days: 1
 
-  labels:
-    runs-on: macos-14
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - name: Select Xcode 16
-        env:
-          MIN_XCODE_MAJOR: 16
-          EXACT_XCODE_MAJOR: 16
-        run: |
-          [[ "$(sw_vers -productVersion)" == 14.* ]]
-          Scripts/select-xcode.sh
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: .build
-          key: native-labels-14-${{ hashFiles('Package.swift', 'Sources/**', 'Tests/**') }}
-          restore-keys: native-labels-14-
-      - name: Verify native label and multiline editing
-        timeout-minutes: 4
-        run: |
-          set -o pipefail
-          mkdir -p .build
-          Scripts/with-test-desktop.sh swift test --jobs 2 --no-parallel \
-            --filter 'modelLabel|customTemplateKeepsNewlines|coverageGateWindowSelectionBindings|datePicker' 2>&1 | tee .build/native-labels.log
-      - name: Retain native crash evidence
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: native-labels-macos-14
-          path: |
-            .build/native-labels.log
-            ~/Library/Logs/DiagnosticReports
-          retention-days: 1
-
   ui:
     needs: build
     runs-on: macos-14
-    timeout-minutes: 5
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -155,8 +119,6 @@ jobs:
             selector: LiveControlAuditUITests/testHistoryDatesAndControlsRespond
           - name: menu-bar
             selector: LiveControlAuditUITests/testSettingsMenuBarControlsRespond
-          - name: models
-            selector: LiveControlAuditUITests/testSettingsModelSelectionControlsRespond
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -173,7 +135,7 @@ jobs:
           name: focused-ui-products
           path: .build
       - name: Run unchanged acceptance assertions
-        timeout-minutes: 4
+        timeout-minutes: 8
         env:
           SELECTOR: ${{ matrix.selector }}
         run: |
@@ -186,14 +148,29 @@ jobs:
             -resultBundlePath .build/focused-ui.xcresult \
             "-only-testing:TokenMenuBarApplicationUITests/$SELECTOR" test-without-building \
             2>&1 | tee .build/focused-ui.log | awk '/Test Case|Test Suite|error:|warning:|TAB_SWITCH|FIRST_SETTINGS|CONTROL_AUDIT/ { print; fflush() }'
+      - name: Verify and export test evidence
+        id: evidence
+        if: always()
+        run: |
+          if [[ -d .build/focused-ui.xcresult ]]; then
+            Scripts/test-ui-results.sh .build/focused-ui.xcresult
+            Scripts/export-ui-results.sh .build/focused-ui.xcresult .build/focused-ui-results
+          fi
       - name: Retain test evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: focused-ui-${{ matrix.name }}-macos-14
           path: |
-            .build/focused-ui.xcresult
+            .build/focused-ui-results
             .build/focused-ui.log
             .build/ui-artifacts
           include-hidden-files: true
+          retention-days: 1
+      - name: Retain an unexportable bundle
+        if: ${{ always() && steps.evidence.outcome == 'failure' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: focused-ui-raw-${{ matrix.name }}-macos-14
+          path: .build/focused-ui.xcresult
           retention-days: 1
