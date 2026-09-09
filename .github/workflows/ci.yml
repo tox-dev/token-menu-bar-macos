@@ -68,8 +68,6 @@ jobs:
           retention-days: 1
 
   ocr:
-    needs: ui
-    if: ${{ !cancelled() }}
     runs-on: macos-26
     timeout-minutes: 5
     steps:
@@ -88,21 +86,7 @@ jobs:
           EXACT_XCODE_MAJOR: 26
         run: Scripts/select-xcode.sh
       - name: Install the pinned OCR engine
-        env:
-          HOMEBREW_NO_AUTO_UPDATE: 1
-          HOMEBREW_NO_INSTALL_FROM_API: 1
-          HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: 1
-          HOMEBREW_NO_INSTALL_CLEANUP: 1
-        run: |
-          core="$(brew --repository)/Library/Taps/homebrew/homebrew-core"
-          git init "$core"
-          git -C "$core" fetch --depth 1 https://github.com/Homebrew/homebrew-core.git 77f4bb7e8aa136e72360b5ad90c2b51968689d4e
-          git -C "$core" checkout --detach FETCH_HEAD
-          brew install --force-bottle tesseract
-          version="$(tesseract --version)"
-          [[ "${version%%$'\n'*}" == 'tesseract 5.5.3' ]]
-          data="$(brew --prefix tesseract)/share/tessdata/eng.traineddata"
-          [[ "$(shasum -a 256 "$data" | cut -d ' ' -f 1)" == 7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2 ]]
+        run: Scripts/install-ocr.sh
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: .build
@@ -123,14 +107,6 @@ jobs:
           name: focused-ocr-macos-26
           path: ${{ runner.temp }}/rendered
           retention-days: 1
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
-        if: ${{ !cancelled() }}
-        with:
-          name: focused-ui-text-wide-light-macos-14
-          path: .build/live-text
-      - name: Check live warning-banner text
-        if: ${{ !cancelled() }}
-        run: Scripts/check-rendered-text.sh .build/live-text/ui-artifacts 1
 
   labels:
     runs-on: macos-14
@@ -152,9 +128,21 @@ jobs:
           key: native-labels-14-${{ hashFiles('Package.swift', 'Sources/**', 'Tests/**') }}
           restore-keys: native-labels-14-
       - name: Verify native field editing and revert
+        timeout-minutes: 4
         run: |
+          set -o pipefail
+          mkdir -p .build
           Scripts/with-test-desktop.sh swift test --jobs 2 --no-parallel \
-            --filter modelLabelEditsApplyImmediatelyAndSurviveFocusChanges
+            --filter modelLabelEditsApplyImmediatelyAndSurviveFocusChanges 2>&1 | tee .build/native-labels.log
+      - name: Retain native crash evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: native-labels-macos-14
+          path: |
+            .build/native-labels.log
+            ~/Library/Logs/DiagnosticReports
+          retention-days: 1
 
   ui:
     needs: build
@@ -186,6 +174,7 @@ jobs:
           name: focused-ui-products
           path: .build
       - name: Run unchanged acceptance assertions
+        timeout-minutes: 4
         env:
           SELECTOR: ${{ matrix.selector }}
         run: |
@@ -209,3 +198,21 @@ jobs:
             .build/ui-artifacts
           include-hidden-files: true
           retention-days: 1
+
+  live-ocr:
+    needs: [ui, ocr]
+    if: ${{ !cancelled() }}
+    runs-on: macos-26
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install the pinned OCR engine
+        run: Scripts/install-ocr.sh
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: focused-ui-text-wide-light-macos-14
+          path: .build/live-text
+      - name: Check live warning-banner text
+        run: Scripts/check-rendered-text.sh .build/live-text/ui-artifacts 1

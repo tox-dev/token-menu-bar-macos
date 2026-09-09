@@ -1,5 +1,4 @@
 import AppKit
-import ApplicationServices
 import CoreGraphics
 import Foundation
 import TokenMenuBarCore
@@ -67,7 +66,7 @@ final class LiveControlAuditUITests: XCTestCase {
     executionTimeAllowance = 300
     let verification = VerificationApplication(
       testName: name, profile: VerificationProfile(fixture: .controlAudit, nativePanels: true),
-      detailedLogging: section == .menuBar)
+      detailedLogging: tab == "History" || section == .menuBar)
     addTeardownBlock { @MainActor in verification.terminate() }
     verification.launch()
     XCTAssertTrue(verification.tabs.waitForExistence(timeout: 5))
@@ -574,11 +573,12 @@ final class LiveControlAuditUITests: XCTestCase {
       surface: surface, panelFrame: panelBeforeStatusEdits, action: "Short label")
     let revert = application.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Revert label for '")).firstMatch
     XCTAssertTrue(revert.waitForExistence(timeout: 2))
+    let revertRecord = scenarioRecord(tab: "Settings", label: "Revert short label", element: revert, action: "click")
     revert.click()
     XCTAssertTrue(waitUntil(timeout: responsivenessBudget) { (label.value as? String) == originalLabel })
     records.append(
       scenarioRecord(tab: "Settings", label: "Prefilled six-character short label", element: label, action: "edit"))
-    records.append(scenarioRecord(tab: "Settings", label: "Revert short label", element: revert, action: "click"))
+    records.append(revertRecord)
 
     let modelSelection = application.checkBoxes.matching(
       NSPredicate(format: "identifier BEGINSWITH 'model-selection-'")
@@ -940,13 +940,13 @@ final class LiveControlAuditUITests: XCTestCase {
   private func adjustDate(_ picker: XCUIElement, increasing: Bool) {
     XCTAssertTrue(
       picker.isHittable,
-      "Date picker is unreachable: \(picker.debugDescription)\n\(accessibilityHitTest(picker))")
+      "Date picker is unreachable: \(picker.debugDescription)")
     picker.click()
     let before = String(describing: picker.value)
     let arrow = picker.descendants(matching: increasing ? .incrementArrow : .decrementArrow).firstMatch
     XCTAssertTrue(
       arrow.exists && arrow.isHittable,
-      "Date arrow is unreachable: \(picker.debugDescription)\n\(accessibilityHitTest(arrow))")
+      "Date arrow is unreachable: \(picker.debugDescription)")
     arrow.click()
     XCTAssertTrue(waitUntil(timeout: responsivenessBudget) { String(describing: picker.value) != before })
   }
@@ -986,8 +986,7 @@ final class LiveControlAuditUITests: XCTestCase {
   ) throws {
     let revealed = reveal(picker, in: application.descendants(matching: .any)["popover-surface"])
     if !revealed {
-      let attachment = XCTAttachment(
-        string: application.debugDescription + "\n" + accessibilityHitTest(picker))
+      let attachment = XCTAttachment(string: application.debugDescription)
       attachment.name = "Unreachable picker \(label), frame \(picker.frame)"
       attachment.lifetime = .keepAlways
       add(attachment)
@@ -998,25 +997,6 @@ final class LiveControlAuditUITests: XCTestCase {
     XCTAssertTrue(item.waitForExistence(timeout: 2), "The picker did not expose \(label)")
     item.click()
     XCTAssertTrue(waitUntil(timeout: responsivenessBudget) { String(describing: picker.value).contains(label) })
-  }
-
-  @MainActor
-  private func accessibilityHitTest(_ control: XCUIElement) -> String {
-    guard
-      let application = NSRunningApplication.runningApplications(
-        withBundleIdentifier: "dev.tox.token-menu-bar.verification"
-      ).first
-    else { return "Verification application is not running" }
-    var hit: AXUIElement?
-    let result = AXUIElementCopyElementAtPosition(
-      AXUIElementCreateApplication(application.processIdentifier), Float(control.frame.midX), Float(control.frame.midY),
-      &hit)
-    guard result == .success, let hit else { return "Accessibility hit test failed: \(result.rawValue)" }
-    return [kAXRoleAttribute, kAXTitleAttribute, kAXDescriptionAttribute, kAXIdentifierAttribute].map { attribute in
-      var value: CFTypeRef?
-      let result = AXUIElementCopyAttributeValue(hit, attribute as CFString, &value)
-      return "\(attribute)=\(String(describing: value)) result=\(result.rawValue)"
-    }.joined(separator: "\n")
   }
 
   @MainActor
@@ -1353,14 +1333,15 @@ final class LiveControlAuditUITests: XCTestCase {
     }
     for control in visible where Self.auditedTypes.contains(control.elementType) && control.isEnabled {
       let element = element(for: control, in: surface, tree: snapshot)
-      if !element.isHittable {
+      let hittable = element.isHittable
+      if !hittable {
         let attachment = XCTAttachment(string: application.debugDescription)
         attachment.name = "Inaccessible visible control"
         attachment.lifetime = .keepAlways
         add(attachment)
       }
       XCTAssertTrue(
-        element.isHittable,
+        hittable,
         "Visible enabled control is not hittable: \(control.elementType) \(control.identifier) "
           + "\(control.label) \(control.frame)")
     }

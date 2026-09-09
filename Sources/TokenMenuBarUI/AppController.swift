@@ -482,6 +482,22 @@ public final class AppController {
   }
 
   private func writeVerificationSnapshot() {
+    for window in NSApplication.shared.windows where window.isVisible {
+      guard let root = window.contentView else { continue }
+      dependencies.log.logInfo(
+        "hit.window class=\(type(of: window)) frame=\(window.frame) key=\(window.isKeyWindow) main=\(window.isMainWindow) active=\(NSApplication.shared.isActive)"
+      )
+      var pending = [root]
+      while let view = pending.popLast() {
+        pending.append(contentsOf: view.subviews)
+        guard view is NSDatePicker || view is NSPopUpButton || view is NSStepper else { continue }
+        let point = view.convert(CGPoint(x: view.bounds.midX, y: view.bounds.midY), to: root.superview)
+        let hit = root.hitTest(point)
+        dependencies.log.logInfo(
+          "hit.control class=\(type(of: view)) id=\(view.accessibilityIdentifier() ?? "") frame=\(window.convertToScreen(view.convert(view.bounds, to: nil))) enabled=\((view as? NSControl)?.isEnabled ?? false) hidden=\(view.isHiddenOrHasHiddenAncestor) point=\(point) hit=\(hit.map { String(describing: type(of: $0)) } ?? "nil") responder=\(String(describing: window.firstResponder))"
+        )
+      }
+    }
     dependencies.log.flush()
     guard let url = dependencies.verificationSnapshotURL, let snapshot = dependencies.captureProcessSnapshot()
     else { return }
