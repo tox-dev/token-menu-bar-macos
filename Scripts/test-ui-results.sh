@@ -11,7 +11,7 @@ xcrun xcresulttool get test-results summary --path "$bundle" --compact > "$probe
 cmp "$probe/summary.json" "$probe/export/summary.json"
 xcrun xcresulttool export attachments --path "$bundle" --output-path "$probe/reference" > "$probe/attachments.log"
 for directory in "$probe/reference" "$probe/export/attachments"; do
-  rg --files --hidden --null "$directory" --glob '!manifest.json' |
+  find "$directory" -type f ! -name manifest.json -print0 |
     xargs -0 shasum -a 256 | cut -d ' ' -f 1 | sort > "$directory.sha256"
   jq -S 'map(.attachments |= map(del(.exportedFileName)))' "$directory/manifest.json" > "$directory.manifest.json"
 done

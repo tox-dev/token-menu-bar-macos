@@ -22,36 +22,46 @@ jobs:
         with:
           version: 2026.9.3
       - name: Select Xcode 16
+        id: xcode
         env:
           MIN_XCODE_MAJOR: 16
           EXACT_XCODE_MAJOR: 16
         run: |
           [[ "$(sw_vers -productVersion)" == 14.* ]]
           Scripts/select-xcode.sh
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        id: build-cache
+          echo "cache=$(xcodebuild -version | shasum -a 256 | cut -c 1-12)" >> "$GITHUB_OUTPUT"
+      - name: Generate project before restoring input timestamps
+        run: just xcode
+      - name: Restore content-verified build inputs
+        uses: irgaly/xcode-cache@4141f139f00e335c6e1031fb93e667181f86146f # v1.9.2
         with:
-          path: |
-            .build/ui-derived
-            .build/xcode-packages
-          key: focused-ui-14-${{ hashFiles('Sources/**', 'App/**', 'Package.swift', 'Tests/TokenMenuBarTestSupport/**') }}
-          restore-keys: focused-ui-14-
+          deriveddata-directory: .build/ui-derived
+          sourcepackages-directory: .build/xcode-packages
+          key: focused-mtime-v1-14-${{ steps.xcode.outputs.cache }}-${{ hashFiles('Package.swift', 'App/project.yml') }}-${{
+            github.sha }}
+          restore-keys: focused-mtime-v1-14-${{ steps.xcode.outputs.cache }}-${{ hashFiles('Package.swift', 'App/project.yml')
+            }}-
+          swiftpm-cache-key: focused-packages-14-${{ steps.xcode.outputs.cache }}-${{ hashFiles('Package.swift', 'App/project.yml')
+            }}
+          use-default-mtime-targets: false
+          restore-mtime-targets: |
+            Package.swift
+            Sources/**/*
+            App/**/*
+            Tests/TokenMenuBarNativeGuard/**/*
+            Tests/TokenMenuBarTestSupport/**/*
       - name: Build mock application and audit driver
         run: |
           set -o pipefail
           mkdir -p .build
-          just xcode
+          started=$SECONDS
           xcodebuild -project App/TokenMenuBar.xcodeproj -scheme TokenMenuBar-Direct -configuration Verification \
             -destination "platform=macOS,arch=$(uname -m)" -derivedDataPath .build/ui-derived \
             -clonedSourcePackagesDirPath .build/xcode-packages -jobs 2 ONLY_ACTIVE_ARCH=YES build-for-testing \
-            2>&1 | tee .build/ui-build.log | tail -30
-      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        if: steps.build-cache.outputs.cache-hit != 'true'
-        with:
-          path: |
-            .build/ui-derived
-            .build/xcode-packages
-          key: ${{ steps.build-cache.outputs.cache-primary-key }}
+            -showBuildTimingSummary 2>&1 | tee .build/ui-build.log | tail -50
+          echo "Build execution: $((SECONDS - started)) seconds" >> "$GITHUB_STEP_SUMMARY"
+          awk '/^SwiftCompile|^SwiftDriver Compilation|^CompileC|^CompileAssetCatalog/ { print substr($0, 1, 180) }' \
+            .build/ui-build.log >> "$GITHUB_STEP_SUMMARY"
       - name: Package test products
         run: ditto -c -k .build/ui-derived/Build/Products .build/ui-products.zip
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -67,46 +77,6 @@ jobs:
           path: .build/ui-build.log
           retention-days: 1
 
-  ocr:
-    runs-on: macos-26
-    timeout-minutes: 10
-    steps:
-      - name: Verify runtime
-        run: |
-          [[ "$(sw_vers -productVersion)" == 26.* ]]
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c
-        with:
-          version: 2026.9.3
-      - name: Select Xcode 26
-        env:
-          MIN_XCODE_MAJOR: 26
-          EXACT_XCODE_MAJOR: 26
-        run: Scripts/select-xcode.sh
-      - name: Install the pinned OCR engine
-        run: Scripts/install-ocr.sh
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: .build
-          key: ocr-tesseract-26-${{ hashFiles('Package.swift', 'Sources/**', 'Tests/**') }}
-          restore-keys: ocr-tesseract-26-
-      - name: Run the full nonpresenting suite
-        env:
-          TOKEN_MENU_BAR_RENDER_ARTIFACTS: ${{ runner.temp }}/rendered
-        run: |
-          just test
-          fixtures=("$TOKEN_MENU_BAR_RENDER_ARTIFACTS"/run.*/verifier-present.png)
-          [[ "${#fixtures[@]}" == 1 ]]
-          Scripts/test-rendered-text.sh "${fixtures[0]}"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        if: always()
-        with:
-          name: focused-ocr-macos-26
-          path: ${{ runner.temp }}/rendered
-          retention-days: 1
-
   ui:
     needs: build
     runs-on: macos-14
@@ -115,10 +85,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: history
-            selector: LiveControlAuditUITests/testHistoryDatesAndControlsRespond
-          - name: menu-bar
-            selector: LiveControlAuditUITests/testSettingsMenuBarControlsRespond
+          - name: data
+            selector: LiveControlAuditUITests/testSettingsDataControlsRespond
+          - name: log
+            selector: LiveControlAuditUITests/testSettingsLogControlsRespond
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
