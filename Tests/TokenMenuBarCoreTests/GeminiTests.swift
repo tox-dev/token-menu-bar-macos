@@ -20,7 +20,7 @@ import TokenMenuBarTestSupport
     await geminiSnapshot(
       assist: .text(#"{"cloudaicompanionProject":"fixture"}"#),
       quota: .text(#"{"buckets":[{"modelId":"unknown"}]}"#)))
-  #expect(snapshot.details == nil)
+  #expect(snapshot.details == [])
 }
 
 @Test func geminiIgnoresUnusableCreditEntriesWithoutLosingTheValidBalance() async throws {

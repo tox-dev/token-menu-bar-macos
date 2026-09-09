@@ -137,7 +137,20 @@ jobs:
             Sources/TokenMenuBarCore/StatusBar/StatusQuotaRestriction.swift \
             Sources/TokenMenuBarCore/StatusBar/StatusItemModel.swift \
             Sources/TokenMenuBarCore/StatusBar/StatusTemplate.swift \
-            Tests/TokenMenuBarCoreTests/StatusQuotaRestrictionTests.swift > .build/quota-coverage.txt
+            Sources/TokenMenuBarCore/Models/ProviderSnapshot.swift \
+            Sources/TokenMenuBarCore/Presenters/UsagePresenter.swift \
+            Sources/TokenMenuBarCore/Providers/Claude/ClaudeAPI.swift \
+            Sources/TokenMenuBarCore/Providers/Claude/ClaudeProvider.swift \
+            Sources/TokenMenuBarCore/Providers/Gemini/GeminiAPI.swift \
+            Sources/TokenMenuBarCore/TooltipPolicy.swift \
+            Sources/TokenMenuBarUI/Tooltip/TooltipPresenter.swift \
+            Sources/TokenMenuBarUI/Tooltip/TooltipTrackingView.swift \
+            Sources/TokenMenuBarUI/Views/HistoryTab.swift \
+            Sources/TokenMenuBarUI/Views/UsageChart.swift \
+            Tests/TokenMenuBarCoreTests/StatusQuotaRestrictionTests.swift \
+            Tests/TokenMenuBarCoreTests/ProviderPresentationRegressionTests.swift \
+            Tests/TokenMenuBarUITests/Native/TooltipTests.swift \
+            Tests/TokenMenuBarUITests/SupportingDetailsRegressionTests.swift > .build/quota-coverage.txt
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:

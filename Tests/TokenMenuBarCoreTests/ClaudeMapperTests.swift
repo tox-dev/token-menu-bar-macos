@@ -200,8 +200,8 @@ func claudeNamesThePlanFromTheAccountFlags(profile: String, expected: String) as
 }
 
 @Test func claudeDoesNotInventUnreportedProviderDetails() async throws {
-  let snapshot = try #require(await claudeSnapshot(usage: .text(#"{}"#), profile: .text(#"{}"#)))
-  #expect(snapshot.details == nil)
+  let snapshot = try #require(await claudeSnapshot(usage: .text(#"{"limits":[]}"#), profile: .text(#"{}"#)))
+  #expect(snapshot.details == [])
 }
 
 @Test func claudeInactiveSessionInheritsTheMappedWeeklyRestriction() async throws {
