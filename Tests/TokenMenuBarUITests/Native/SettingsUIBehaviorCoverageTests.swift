@@ -6,9 +6,9 @@ import TokenMenuBarTestSupport
 @testable import TokenMenuBarCore
 @testable import TokenMenuBarUI
 
-@Test @MainActor func rootViewWithoutAChooserOffersNoHistoryExportDestination() throws {
+@Test @MainActor func rootViewWithoutAChooserOffersNoHistoryExportDestination() async throws {
   let root = RootView(environment: try makeEnvironment(), onMeasure: { _ in }, onTabChange: { _ in })
-  #expect(root.chooseHistoryExportURL() == nil)
+  #expect(await root.chooseHistoryExportURL() == nil)
 }
 
 @Test @MainActor func settingsReportsUndiscoveredProvidersAsNotConfigured() throws {

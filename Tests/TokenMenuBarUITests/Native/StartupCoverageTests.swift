@@ -347,25 +347,17 @@ struct StartupCoverageTests {
     #expect(visibleFrame.height == screen.visibleFrame.height)
   }
 
-  @Test @MainActor func liveChooserDefaultsReturnNilWhenTheirNativePanelsAreAborted() {
+  @Test @MainActor func liveChooserDefaultsReturnNilWhenTheirNativePanelsAreAborted() async {
     prepareTestApp()
     let root = FileManager.default.temporaryDirectory.appendingPathComponent("tmb-native-panels-\(UUID().uuidString)")
     let paths = LiveDependencies.Paths(home: root, supportDirectory: root, environment: [:], userName: "tester")
-    let chooseExport = LiveDependencies.exportChooser(profile: nil, supportDirectory: root)
-    let saveOriginal = class_getInstanceMethod(NSSavePanel.self, #selector(NSSavePanel.runModal))!
-    let saveReplacement = class_getInstanceMethod(NSSavePanel.self, #selector(NSSavePanel.startupCoverageRunModal))!
-    method_exchangeImplementations(saveOriginal, saveReplacement)
-    defer { method_exchangeImplementations(saveReplacement, saveOriginal) }
-    let export = chooseExport()
+    let chooseExport = LiveDependencies.exportChooser(profile: nil, supportDirectory: root, run: { _ in .cancel })
+    let export = await chooseExport()
     #expect(export == nil)
 
-    let chooseDirectory = LiveDependencies.directoryChooser(profile: nil, paths: paths, supportDirectory: root)
-    let openOriginal = class_getInstanceMethod(NSOpenPanel.self, #selector(NSOpenPanel.runModal))!
-    let openReplacement = class_getInstanceMethod(
-      NSOpenPanel.self, #selector(NSOpenPanel.startupCoverageOpenPanelRunModal))!
-    method_exchangeImplementations(openOriginal, openReplacement)
-    defer { method_exchangeImplementations(openReplacement, openOriginal) }
-    let directory = chooseDirectory(ProviderID.codex.sandboxResources[0])
+    let chooseDirectory = LiveDependencies.directoryChooser(
+      profile: nil, paths: paths, supportDirectory: root, run: { _ in .cancel })
+    let directory = await chooseDirectory(ProviderID.codex.sandboxResources[0])
     #expect(directory == nil)
   }
 }
@@ -397,18 +389,6 @@ private final class TerminationCancellingDelegate: NSObject, NSApplicationDelega
 
 extension NSAlert {
   @objc fileprivate func startupCoverageRunModal() -> NSApplication.ModalResponse {
-    .cancel
-  }
-}
-
-extension NSSavePanel {
-  @objc fileprivate func startupCoverageRunModal() -> NSApplication.ModalResponse {
-    .cancel
-  }
-}
-
-extension NSOpenPanel {
-  @objc fileprivate func startupCoverageOpenPanelRunModal() -> NSApplication.ModalResponse {
     .cancel
   }
 }

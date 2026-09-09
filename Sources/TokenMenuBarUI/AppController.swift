@@ -31,8 +31,8 @@ public struct AppDependencies {
   public var openURL: @MainActor (URL) -> Void
   public var copyToPasteboard: @MainActor (String) -> Void
   public var revealInFinder: @MainActor (URL) -> Void
-  public var chooseExportURL: () -> URL?
-  public var chooseDirectory: (SandboxResource) -> URL?
+  public var chooseExportURL: () async -> URL?
+  public var chooseDirectory: (SandboxResource) async -> URL?
   public var terminate: @MainActor () -> Void
   public var relaunch: @MainActor @Sendable () -> Void
   public var widgetStore: WidgetSnapshotStore?
@@ -71,8 +71,8 @@ public struct AppDependencies {
     openURL: @escaping @MainActor (URL) -> Void,
     copyToPasteboard: @escaping @MainActor (String) -> Void,
     revealInFinder: @escaping @MainActor (URL) -> Void,
-    chooseExportURL: @escaping () -> URL?,
-    chooseDirectory: @escaping (SandboxResource) -> URL?,
+    chooseExportURL: @escaping () async -> URL?,
+    chooseDirectory: @escaping (SandboxResource) async -> URL?,
     terminate: @escaping @MainActor () -> Void,
     relaunch: @escaping @MainActor @Sendable () -> Void = {},
     widgetStore: WidgetSnapshotStore? = nil,
@@ -368,7 +368,7 @@ public final class AppController {
       RootView(
         environment: environment, onMeasure: { [weak popover] in popover?.measure($0) },
         onTabChange: { [weak popover] tab in popover?.select(tab: tab) },
-        chooseHistoryExportURL: { [weak self] in self?.dependencies.chooseExportURL() }))
+        chooseHistoryExportURL: { [weak self] in await self?.dependencies.chooseExportURL() }))
   }
 
   func observeStatusModel() {
@@ -482,46 +482,6 @@ public final class AppController {
   }
 
   private func writeVerificationSnapshot() {
-    for window in NSApplication.shared.windows where window.isVisible {
-      guard let root = window.contentView else { continue }
-      dependencies.log.logInfo(
-        "hit.window class=\(type(of: window)) frame=\(window.frame) key=\(window.isKeyWindow) main=\(window.isMainWindow) active=\(NSApplication.shared.isActive)"
-      )
-      var pending = [root]
-      while let view = pending.popLast() {
-        pending.append(contentsOf: view.subviews)
-        guard view is NSDatePicker || view is NSPopUpButton || view is NSStepper || view is NSSegmentedControl else {
-          continue
-        }
-        let point = view.convert(CGPoint(x: view.bounds.midX, y: view.bounds.midY), to: root.superview)
-        let hit = root.hitTest(point)
-        let frame = window.convertToScreen(view.convert(view.bounds, to: nil))
-        let screenPoint = CGPoint(x: frame.midX, y: frame.midY)
-        let windowHit = view.isHiddenOrHasHiddenAncestor ? nil : window.accessibilityHitTest(screenPoint)
-        let applicationHit =
-          view.isHiddenOrHasHiddenAncestor ? nil : NSApplication.shared.accessibilityHitTest(screenPoint)
-        dependencies.log.logInfo(
-          "hit.control class=\(type(of: view)) id=\(view.accessibilityIdentifier()) frame=\(frame) enabled=\((view as? NSControl)?.isEnabled ?? false) axEnabled=\(view.isAccessibilityEnabled()) hidden=\(view.isHiddenOrHasHiddenAncestor) point=\(point) hit=\(hit.map { String(describing: type(of: $0)) } ?? "nil") axWindow=\(windowHit.map { String(describing: type(of: $0)) } ?? "nil") axApplication=\(applicationHit.map { String(describing: type(of: $0)) } ?? "nil") responder=\(String(describing: window.firstResponder))"
-        )
-        if !view.isHiddenOrHasHiddenAncestor {
-          if let stepper = view as? NSStepper {
-            dependencies.log.logInfo(
-              "hit.stepper value=\(stepper.doubleValue) min=\(stepper.minValue) max=\(stepper.maxValue) increment=\(stepper.increment) wraps=\(stepper.valueWraps)"
-            )
-          }
-          for element in [windowHit, applicationHit].compactMap({ $0 }) + (view.accessibilityChildren() ?? []) {
-            recordAccessibilityState(element)
-          }
-        }
-        if let picker = view as? NSDatePicker, !picker.isHiddenOrHasHiddenAncestor,
-          let cell = picker.cell
-        {
-          dependencies.log.logInfo(
-            "hit.date value=\(picker.dateValue) cellEnabled=\(cell.isEnabled) editable=\(cell.isEditable) selectable=\(cell.isSelectable) axEnabled=\(cell.isAccessibilityEnabled()) axFrame=\(cell.accessibilityFrame()) axPoint=\(cell.accessibilityActivationPoint()) axValue=\(String(describing: cell.accessibilityValue())) parent=\(String(describing: cell.accessibilityParent()))"
-          )
-        }
-      }
-    }
     dependencies.log.flush()
     guard let url = dependencies.verificationSnapshotURL, let snapshot = dependencies.captureProcessSnapshot()
     else { return }
@@ -530,17 +490,6 @@ public final class AppController {
       try JSONEncoder().encode(snapshot).write(to: url, options: .atomic)
     } catch {
       dependencies.log.logWarning("Could not write verification process snapshot: \(error.localizedDescription)")
-    }
-  }
-
-  private func recordAccessibilityState(_ value: Any) {
-    var element = value as? any NSAccessibilityProtocol
-    for depth in 0..<6 {
-      guard let current = element else { break }
-      dependencies.log.logInfo(
-        "hit.ax depth=\(depth) class=\(type(of: current)) role=\(String(describing: current.accessibilityRole())) label=\(String(describing: current.accessibilityLabel())) enabled=\(current.isAccessibilityEnabled()) frame=\(current.accessibilityFrame()) point=\(current.accessibilityActivationPoint()) value=\(String(describing: current.accessibilityValue()))"
-      )
-      element = current.accessibilityParent() as? any NSAccessibilityProtocol
     }
   }
 
@@ -751,8 +700,8 @@ public final class AppController {
 
   @discardableResult
   public func exportHistory() -> Task<Void, Never> {
-    guard let url = dependencies.chooseExportURL() else { return Task {} }
-    return Task {
+    Task {
+      guard let url = await dependencies.chooseExportURL() else { return }
       do {
         try await dependencies.history.exportCSV(
           to: url, hidePersonalInformation: dependencies.settings.hidePersonalInformation)
@@ -817,7 +766,7 @@ public final class AppController {
   }
 
   public func grantAccess(to resource: SandboxResource) async {
-    guard let url = dependencies.chooseDirectory(resource) else { return }
+    guard let url = await dependencies.chooseDirectory(resource) else { return }
     do {
       let bookmark = try await Task.detached(priority: .userInitiated) {
         try SecurityScopedBookmarkClient.live.create(url)

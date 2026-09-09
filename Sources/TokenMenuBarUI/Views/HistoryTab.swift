@@ -5,12 +5,12 @@ import TokenMenuBarCore
 
 public struct HistoryTab: View {
   @Bindable var environment: UIEnvironment
-  private let chooseExportURL: @MainActor () -> URL?
+  private let chooseExportURL: @MainActor () async -> URL?
 
   public init(
     environment: UIEnvironment,
-    chooseExportURL: @escaping @MainActor () -> URL? = {
-      LiveDependencies.chosen(LiveDependencies.exportPanel(), run: { $0.runModal() })
+    chooseExportURL: @escaping @MainActor () async -> URL? = {
+      await LiveDependencies.chosen(LiveDependencies.exportPanel()) { await LiveDependencies.presentFilePanel($0) }
     }
   ) {
     self.environment = environment
@@ -195,8 +195,6 @@ public struct HistoryTab: View {
       "From", selection: startBinding, displayedComponents: dateComponents
     )
     .accessibilityIdentifier("history-from")
-    .accessibilityLabel("From")
-    .accessibilityValue(startBinding.wrappedValue.formatted(date: .abbreviated, time: .shortened))
     .environment(\.timeZone, presenter.chartTimeZone)
     .richHelp(
       TooltipContent(
@@ -210,8 +208,6 @@ public struct HistoryTab: View {
       "To", selection: endBinding, displayedComponents: dateComponents
     )
     .accessibilityIdentifier("history-to")
-    .accessibilityLabel("To")
-    .accessibilityValue(endBinding.wrappedValue.formatted(date: .abbreviated, time: .shortened))
     .environment(\.timeZone, presenter.chartTimeZone)
     .richHelp(
       TooltipContent(
@@ -405,8 +401,10 @@ public struct HistoryTab: View {
   }
 
   private func exportCurrentPeriod() {
-    guard let url = chooseExportURL() else { return }
-    presenter.exportCSV(to: url)
+    Task {
+      guard let url = await chooseExportURL() else { return }
+      presenter.exportCSV(to: url)
+    }
   }
 }
 

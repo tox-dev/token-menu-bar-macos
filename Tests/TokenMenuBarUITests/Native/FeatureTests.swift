@@ -216,8 +216,8 @@ import WidgetKit
   #expect(dependencies.launchAtLogin.status() == .notRegistered)
   #expect(dependencies.launchAtLogin.setEnabled(true) == .enabled)
   #expect(dependencies.launchAtLogin.setEnabled(false) == .notRegistered)
-  #expect(dependencies.chooseDirectory(ProviderID.codex.sandboxResources[0]) == nil)
-  #expect(dependencies.chooseExportURL() == support.appendingPathComponent("verification-history.csv"))
+  #expect(await dependencies.chooseDirectory(ProviderID.codex.sandboxResources[0]) == nil)
+  #expect(await dependencies.chooseExportURL() == support.appendingPathComponent("verification-history.csv"))
 }
 
 @Test @MainActor func widgetStoreAndRelaunchHelpers() async {

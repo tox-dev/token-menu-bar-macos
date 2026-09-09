@@ -79,7 +79,12 @@ public final class PopoverController: NSObject, NSPopoverDelegate {
     super.init()
     popover.behavior = .applicationDefined
     popover.animates = animates
-    popover.contentViewController = hosting
+    let contentController = NSViewController()
+    contentController.view = NSView()
+    contentController.addChild(hosting)
+    hosting.view.autoresizingMask = [.width, .height]
+    contentController.view.addSubview(hosting.view)
+    popover.contentViewController = contentController
     popover.delegate = self
   }
 
@@ -167,6 +172,9 @@ public final class PopoverController: NSObject, NSPopoverDelegate {
   public func close(restoringActivation: Bool = true) {
     guard popover.isShown else { return }
     if !restoringActivation { restoreActivation = nil }
+    if let window = popover.contentViewController?.view.window, let sheet = window.attachedSheet {
+      window.endSheet(sheet, returnCode: .cancel)
+    }
     popover.close()
   }
 
@@ -358,7 +366,9 @@ public final class PopoverController: NSObject, NSPopoverDelegate {
 
   @discardableResult
   public func handle(_ event: NSEvent) -> Bool {
-    guard NSApp.modalWindow == nil else { return false }
+    guard NSApp.modalWindow == nil, popover.contentViewController?.view.window?.attachedSheet == nil else {
+      return false
+    }
     if ownsRefresh(event) {
       onRefresh?()
       return true
@@ -400,7 +410,7 @@ public final class PopoverController: NSObject, NSPopoverDelegate {
   private func acceptsKeyRouting(in window: NSWindow) -> Bool {
     // AppKit does not send events from nested control and menu tracking loops through a local monitor. Keep the
     // explicit state for tracking-area exits and for any key event already queued when a menu starts tracking.
-    guard menuTrackingDepth == 0 else { return false }
+    guard menuTrackingDepth == 0, window.attachedSheet == nil else { return false }
     let responder = window.firstResponder
     if let input = responder as? any NSTextInputClient, input.hasMarkedText() { return false }
     if let textView = responder as? NSTextView, textView.isFieldEditor { return false }
@@ -548,6 +558,7 @@ public final class PopoverController: NSObject, NSPopoverDelegate {
   }
 
   private func dismissForExternalTransition() {
+    guard popover.contentViewController?.view.window?.attachedSheet == nil else { return }
     restoreActivation = nil
     close()
   }

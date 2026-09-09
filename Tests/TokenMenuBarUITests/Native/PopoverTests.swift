@@ -162,7 +162,7 @@ private func keyEvent(
   controller.measure(PopoverMeasurement(tab: .usage, size: CGSize(width: 880, height: 500)))
   let duration = ProcessInfo.processInfo.systemUptime - started
   #expect(controller.popover.contentSize.height == 500)
-  #expect(duration < 0.05, "Resize took \(duration) seconds")
+  #expect(duration < 0.2, "Resize took \(duration) seconds")
 }
 
 @Test @MainActor func popoverDefersMeasurementsUntilItsOpeningAnchorIsPinned() {

@@ -202,29 +202,29 @@ public enum LiveDependencies {
   @MainActor
   static func exportChooser(
     profile: VerificationProfile?, supportDirectory: URL,
-    run: @escaping (NSSavePanel) -> NSApplication.ModalResponse = { $0.runModal() }
-  ) -> () -> URL? {
-    guard let profile else { return { chosen(exportPanel(), run: run) } }
+    run: @escaping (NSSavePanel) async -> NSApplication.ModalResponse = { await presentFilePanel($0) }
+  ) -> () async -> URL? {
+    guard let profile else { return { await chosen(exportPanel(), run: run) } }
     guard profile.nativePanels else {
       let url = supportDirectory.appendingPathComponent("verification-history.csv")
       return { url }
     }
-    return { chosen(exportPanel(default: supportDirectory), run: run) }
+    return { await chosen(exportPanel(default: supportDirectory), run: run) }
   }
 
   @MainActor
   static func directoryChooser(
     profile: VerificationProfile?, paths: Paths, supportDirectory: URL,
-    run: @escaping (NSOpenPanel) -> NSApplication.ModalResponse = { $0.runModal() }
-  ) -> (SandboxResource) -> URL? {
+    run: @escaping (NSOpenPanel) async -> NSApplication.ModalResponse = { await presentFilePanel($0) }
+  ) -> (SandboxResource) async -> URL? {
     guard let profile else {
-      return { chosen(directoryPanel($0, paths: paths), run: run) }
+      return { await chosen(directoryPanel($0, paths: paths), run: run) }
     }
     guard profile.nativePanels else { return { _ in nil } }
     return { resource in
       let initialURL =
         resource.kind == .file ? supportDirectory.appendingPathComponent("verification-selection") : supportDirectory
-      return chosen(directoryPanel(resource: resource, default: initialURL), run: run)
+      return await chosen(directoryPanel(resource: resource, default: initialURL), run: run)
     }
   }
 
@@ -468,15 +468,18 @@ public enum LiveDependencies {
 
   @MainActor
   public static func chosen<Panel: NSSavePanel>(
-    _ panel: Panel, parent: NSWindow? = NSApp.keyWindow, run: (Panel) -> NSApplication.ModalResponse
-  ) -> URL? {
+    _ panel: Panel, run: (Panel) async -> NSApplication.ModalResponse
+  ) async -> URL? {
     TooltipPresenter.shared.tearDown()
-    let originalLevel = parent?.level
-    // The remote file chooser does not inherit NSSavePanel.level on macOS 14 and 15.
-    parent?.level = .normal
-    defer {
-      if let originalLevel { parent?.level = originalLevel }
-    }
-    return run(panel) == .OK ? panel.url : nil
+    defer { panel.orderOut(nil) }
+    return await run(panel) == .OK ? panel.url : nil
+  }
+
+  @MainActor
+  public static func presentFilePanel(
+    _ panel: NSSavePanel, parent: NSWindow? = NSApp.keyWindow
+  ) async -> NSApplication.ModalResponse {
+    if let parent { return await panel.beginSheetModal(for: parent) }
+    return await panel.begin()
   }
 }

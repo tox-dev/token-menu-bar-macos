@@ -351,7 +351,7 @@ import TokenMenuBarTestSupport
   await presenter.waitForLoad()
 }
 
-@Test @MainActor func liveDependencyHelpers() throws {
+@Test @MainActor func liveDependencyHelpers() async throws {
   let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
   defer { try? FileManager.default.removeItem(at: root) }
   let configuredDirectory = root.appendingPathComponent("configured-codex")
@@ -378,41 +378,56 @@ import TokenMenuBarTestSupport
   #expect(!codex.canChooseFiles)
   #expect(codex.showsHiddenFiles)
   #expect(codex.directoryURL?.resolvingSymlinksInPath() == root.resolvingSymlinksInPath())
-  #expect(LiveDependencies.chosen(export) { _ in .cancel } == nil)
-  #expect(LiveDependencies.chosen(codex) { _ in .OK } == codex.url)
+  #expect(await LiveDependencies.chosen(export) { _ in .cancel } == nil)
+  #expect(await LiveDependencies.chosen(codex) { _ in .OK } == codex.url)
 }
 
-@Test(arguments: [NSWindow.Level.normal, .popUpMenu]) @MainActor
-func nativeChooserRestoresItsInvokingWindowLevel(level: NSWindow.Level) {
+@Test(arguments: [NSWindow.Level?.none, .normal, .popUpMenu]) @MainActor
+func nativeChooserPresentsAndCancelsAtTheInvokingLevel(level: NSWindow.Level?) async throws {
   prepareTestApp()
-  let parent = NSWindow(contentRect: .zero, styleMask: .borderless, backing: .buffered, defer: false)
-  parent.level = level
-  let panel = LiveDependencies.exportPanel()
-  var parentLevelDuringPresentation = level
-  let selection = LiveDependencies.chosen(panel, parent: parent) {
-    _ in
-    parentLevelDuringPresentation = parent.level
-    return .cancel
+  let parent = level.map { level in
+    let window = NSWindow(
+      contentRect: CGRect(x: 100, y: 100, width: 880, height: 600), styleMask: .titled, backing: .buffered, defer: false
+    )
+    window.level = level
+    window.makeKeyAndOrderFront(nil)
+    return window
   }
-  #expect(parentLevelDuringPresentation == .normal)
-  #expect(parent.level == level)
-  #expect(selection == nil)
+  defer { parent?.orderOut(nil) }
+  let panel = LiveDependencies.exportPanel(default: try uiTemporaryDirectory())
+  defer { if panel.isVisible { panel.cancel(nil) } }
+  let selection = Task {
+    await LiveDependencies.chosen(panel) { await LiveDependencies.presentFilePanel($0, parent: parent) }
+  }
+  await waitUntil { panel.isVisible }
+  #expect(panel.isVisible)
+  if let parent {
+    let sheet = try #require(parent.attachedSheet)
+    #expect(sheet.sheetParent === parent)
+    #expect(sheet.isVisible)
+    #expect(parent.level == level)
+  } else {
+    #expect(panel.sheetParent == nil)
+  }
+  panel.cancel(nil)
+  #expect(await selection.value == nil)
+  #expect(!panel.isVisible)
 }
 
-@Test @MainActor func verificationChoosersKeepEveryPanelInsideTemporarySupport() {
+@Test @MainActor func verificationChoosersKeepEveryPanelInsideTemporarySupport() async {
   let support = FileManager.default.temporaryDirectory.appendingPathComponent("tmb-panels-\(UUID().uuidString)")
   let paths = LiveDependencies.Paths(
     home: support.appendingPathComponent("home"), supportDirectory: support, environment: [:], userName: "verify")
 
   let deterministic = LiveDependencies.exportChooser(
     profile: VerificationProfile(), supportDirectory: support, run: { _ in .cancel })
-  #expect(deterministic() == support.appendingPathComponent("verification-history.csv"))
+  #expect(await deterministic() == support.appendingPathComponent("verification-history.csv"))
   let directExport = LiveDependencies.exportChooser(
     profile: nil, supportDirectory: support, run: { _ in .cancel })
-  #expect(directExport() == nil)
+  #expect(await directExport() == nil)
   let noDirectory = LiveDependencies.directoryChooser(
     profile: VerificationProfile(), paths: paths, supportDirectory: support, run: { _ in .cancel })
-  #expect(noDirectory(ProviderID.codex.sandboxResources[0]) == nil)
+  #expect(await noDirectory(ProviderID.codex.sandboxResources[0]) == nil)
 
   let nativeProfile = VerificationProfile(nativePanels: true)
   var saveDirectory: URL?
@@ -422,7 +437,7 @@ func nativeChooserRestoresItsInvokingWindowLevel(level: NSWindow.Level) {
       saveDirectory = $0.directoryURL
       return .cancel
     })
-  #expect(nativeExport() == nil)
+  #expect(await nativeExport() == nil)
   #expect(saveDirectory == support)
 
   var openDirectories: [URL?] = []
@@ -432,8 +447,8 @@ func nativeChooserRestoresItsInvokingWindowLevel(level: NSWindow.Level) {
       openDirectories.append($0.directoryURL)
       return .cancel
     })
-  #expect(nativeDirectory(ProviderID.codex.sandboxResources[0]) == nil)
-  #expect(nativeDirectory(ProviderID.claude.sandboxResources[1]) == nil)
+  #expect(await nativeDirectory(ProviderID.codex.sandboxResources[0]) == nil)
+  #expect(await nativeDirectory(ProviderID.claude.sandboxResources[1]) == nil)
   #expect(openDirectories.compactMap { $0?.standardizedFileURL.path } == [support.path, support.path])
 
   var directDirectory: URL?
@@ -443,7 +458,7 @@ func nativeChooserRestoresItsInvokingWindowLevel(level: NSWindow.Level) {
       directDirectory = $0.directoryURL
       return .cancel
     })
-  #expect(direct(ProviderID.codex.sandboxResources[0]) == nil)
+  #expect(await direct(ProviderID.codex.sandboxResources[0]) == nil)
   #expect(directDirectory == paths.home.appendingPathComponent(".codex"))
 }
 

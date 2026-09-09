@@ -5,7 +5,7 @@ import TokenMenuBarCore
 struct PersistentTabContent: NSViewRepresentable {
   @Bindable var environment: UIEnvironment
   let selection: PopoverTab
-  let chooseHistoryExportURL: @MainActor () -> URL?
+  let chooseHistoryExportURL: @MainActor () async -> URL?
   let onMeasure: @MainActor (PopoverMeasurement) -> Void
   let onPresent: @MainActor (PopoverTab) -> Void
 
@@ -174,7 +174,7 @@ private struct PersistentTabRoot: View {
   @Bindable var environment: UIEnvironment
   let tab: PopoverTab
   let mountsSettingsIncrementally: Bool
-  let chooseHistoryExportURL: @MainActor () -> URL?
+  let chooseHistoryExportURL: @MainActor () async -> URL?
   let onMeasure: @MainActor (PopoverMeasurement) -> Void
 
   var body: some View {

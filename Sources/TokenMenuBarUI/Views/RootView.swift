@@ -6,12 +6,12 @@ public struct RootView: View {
   @Bindable var environment: UIEnvironment
   public let onMeasure: (PopoverMeasurement) -> Void
   public let onTabChange: ((PopoverTab) -> Void)?
-  public let chooseHistoryExportURL: @MainActor () -> URL?
+  public let chooseHistoryExportURL: @MainActor () async -> URL?
 
   public init(
     environment: UIEnvironment, onMeasure: @escaping (PopoverMeasurement) -> Void,
     onTabChange: ((PopoverTab) -> Void)? = nil,
-    chooseHistoryExportURL: @escaping @MainActor () -> URL? = { nil }
+    chooseHistoryExportURL: @escaping @MainActor () async -> URL? = { nil }
   ) {
     self.environment = environment
     self.onMeasure = onMeasure

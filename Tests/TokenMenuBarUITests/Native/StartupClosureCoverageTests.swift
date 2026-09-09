@@ -79,7 +79,7 @@ struct StartupClosureCoverageTests {
 
     root.select(.history)
     #expect(popover.activeTab == .history)
-    #expect(root.chooseHistoryExportURL() == recorder.exportURL)
+    #expect(await root.chooseHistoryExportURL() == recorder.exportURL)
   }
 
   @Test @MainActor func startupClosureReleasedControllerActionsRemainSafe() async throws {

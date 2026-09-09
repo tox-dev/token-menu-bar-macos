@@ -37,6 +37,46 @@ final class LiveControlAuditUITests: XCTestCase {
   }
 
   @MainActor
+  func testFileChoosersReturnToThePopover() throws {
+    let verification = VerificationApplication(
+      testName: name, profile: VerificationProfile(fixture: .controlAudit, nativePanels: true))
+    addTeardownBlock { @MainActor in verification.terminate() }
+    verification.launch()
+    XCTAssertTrue(verification.tabs.waitForExistence(timeout: 5))
+    verification.tab("History").click()
+    let application = verification.application
+    let export = application.buttons["history-export"]
+    XCTAssertTrue(export.waitForExistence(timeout: 2))
+    export.click()
+    retainChooserScreenshot(application, named: "History export sheet")
+    assertAndCancelNativePanel(application, rootedAt: verification.supportDirectory)
+    XCTAssertTrue(verification.tabs.isEnabled)
+
+    verification.tab("Settings").click()
+    let surface = application.descendants(matching: .any)["popover-surface"]
+    let row = application.descendants(matching: .any)["Claude setup"]
+    let grant = row.buttons.matching(NSPredicate(format: "label IN %@", ["Grant", "Grant Again"])).firstMatch
+    XCTAssertTrue(reveal(grant, in: surface))
+    grant.click()
+    retainChooserScreenshot(application, named: "Provider resource sheet")
+    assertAndCancelNativePanel(application, rootedAt: verification.supportDirectory)
+    XCTAssertTrue(verification.tabs.isEnabled)
+    verification.tab("Usage").click()
+    XCTAssertTrue(application.descendants(matching: .any)["tab-content-Usage"].waitForExistence(timeout: 2))
+  }
+
+  @MainActor
+  private func retainChooserScreenshot(_ application: XCUIApplication, named name: String) {
+    let cancel = application.buttons["CancelButton"]
+    XCTAssertTrue(cancel.waitForExistence(timeout: 2))
+    XCTAssertTrue(cancel.isHittable)
+    let attachment = XCTAttachment(screenshot: application.screenshot())
+    attachment.name = name
+    attachment.lifetime = .keepAlways
+    add(attachment)
+  }
+
+  @MainActor
   func testSettingsMenuBarControlsRespond() throws {
     try auditControls(tab: "Settings", section: .menuBar)
   }
@@ -815,17 +855,7 @@ final class LiveControlAuditUITests: XCTestCase {
   ) -> [ControlAuditRecord] {
     var records: [ControlAuditRecord] = []
     let retention = application.steppers["history-retention"]
-    let retentionReached = reveal(retention, in: surface)
-    if !retentionReached {
-      let before = retention.debugDescription
-      let arrow = retention.descendants(matching: .incrementArrow).firstMatch
-      arrow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
-      let attachment = XCTAttachment(string: "Before click:\n\(before)\nAfter click:\n\(retention.debugDescription)")
-      attachment.name = "Retention native input diagnostic"
-      attachment.lifetime = .keepAlways
-      add(attachment)
-    }
-    XCTAssertTrue(retentionReached, "Missing history retention")
+    XCTAssertTrue(reveal(retention, in: surface), "Missing history retention")
     adjustStepperAndRestore(retention)
     records.append(
       scenarioRecord(tab: "Settings", label: "History retention", element: retention, action: "increment/decrement"))
@@ -920,14 +950,7 @@ final class LiveControlAuditUITests: XCTestCase {
     XCTAssertTrue(level.exists)
     XCTAssertEqual(segments(in: level).count, 5, "Log level must expose All plus four severities")
     for segment in segments(in: level) {
-      let revealed = reveal(segment, in: surface)
-      if !revealed {
-        let attachment = XCTAttachment(string: application.debugDescription)
-        attachment.name = "Log control accessibility snapshot"
-        attachment.lifetime = .keepAlways
-        add(attachment)
-      }
-      XCTAssertTrue(revealed)
+      XCTAssertTrue(reveal(segment, in: surface))
       XCTAssertTrue(segment.isEnabled)
       segment.click()
       XCTAssertTrue(waitUntil(timeout: responsivenessBudget) { self.isSelected(segment) })

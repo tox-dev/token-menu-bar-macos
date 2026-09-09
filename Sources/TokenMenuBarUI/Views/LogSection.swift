@@ -216,7 +216,6 @@ private struct LogViewer: View {
     .overlay {
       RoundedRectangle(cornerRadius: 7, style: .continuous)
         .stroke(.separator, lineWidth: 1)
-        .allowsHitTesting(false)
     }
   }
 
