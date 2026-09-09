@@ -5,13 +5,16 @@ public struct ProviderCardView: View {
   public let card: ProviderCard
   @Bindable var environment: UIEnvironment
   public let onRefreshProvider: (ProviderID) -> Void
+  private let spend: SpendSummaryModel
 
   public init(
-    card: ProviderCard, environment: UIEnvironment, onRefreshProvider: @escaping (ProviderID) -> Void
+    card: ProviderCard, environment: UIEnvironment, onRefreshProvider: @escaping (ProviderID) -> Void,
+    spend: SpendSummaryModel? = nil
   ) {
     self.card = card
     self.environment = environment
     self.onRefreshProvider = onRefreshProvider
+    self.spend = spend ?? environment.spendSummary
   }
 
   public var body: some View {
@@ -81,6 +84,21 @@ public struct ProviderCardView: View {
               GroupResetText(group: group, environment: environment)
             }
           }
+        }
+        if let summary = spend.byProvider[card.provider] {
+          ProviderCostSummary(summary: summary, provider: card.provider, disclosures: environment.disclosures)
+        } else if HistoryMetric.analytics(.costUSD).suppliers.contains(card.provider) {
+          Text(
+            spend.isLoading
+              ? "Loading cost history…"
+              : spend.error == nil ? "No cost history in the last 30 days" : "Cost history unavailable"
+          )
+          .font(.callout).semanticForeground(.secondary)
+        }
+        if let error = spend.error,
+          spend.byProvider[card.provider] != nil || HistoryMetric.analytics(.costUSD).suppliers.contains(card.provider)
+        {
+          Text(error).font(.caption).fixedSize(horizontal: false, vertical: true)
         }
         if let spend = card.spendPresentation {
           Divider()

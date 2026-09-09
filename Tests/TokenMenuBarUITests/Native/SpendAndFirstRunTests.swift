@@ -15,7 +15,7 @@ private let costAnalytics = ProviderAnalytics(
 @Test @MainActor func spendTilesRenderTheThreeTotals() {
   let summary = SpendSummary(
     today: 4.5, yesterday: 2, lastWindow: 7,
-    topModels: [SpendModelShare(provider: .claude, model: "claude-opus-5", cost: 7)], providers: [.claude])
+    models: [SpendModelShare(provider: .claude, model: "claude-opus-5", cost: 7)], providers: [.claude])
   #expect(inkFraction(SpendSummaryTiles(summary: summary), width: 520, height: 80) > 0)
 }
 

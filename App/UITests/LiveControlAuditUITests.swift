@@ -41,6 +41,10 @@ final class LiveControlAuditUITests: XCTestCase {
     try auditControls(tab: "Settings", section: .menuBar)
   }
 
+  @MainActor func testSettingsModelSelectionControlsRespond() throws {
+    try auditControls(tab: "Settings", section: .menuBar, modelSelectionOnly: true)
+  }
+
   @MainActor func testSettingsAboutControlsRespond() throws {
     try auditControls(tab: "Settings", section: .about)
   }
@@ -62,7 +66,9 @@ final class LiveControlAuditUITests: XCTestCase {
   }
 
   @MainActor
-  private func auditControls(tab: String, section: SettingsSection? = nil) throws {
+  private func auditControls(
+    tab: String, section: SettingsSection? = nil, modelSelectionOnly: Bool = false
+  ) throws {
     executionTimeAllowance = 300
     let verification = VerificationApplication(
       testName: name, profile: VerificationProfile(fixture: .controlAudit, nativePanels: true),
@@ -99,7 +105,10 @@ final class LiveControlAuditUITests: XCTestCase {
             application, statusItem: verification.statusItem,
             processIdentifier: verification.processIdentifier(), reopen: verification.openPopover)
         case .menuBar:
-          records += try exerciseMenuBarControls(application, statusItem: verification.statusItem)
+          records +=
+            try modelSelectionOnly
+            ? exerciseModelSelectionControls(application)
+            : exerciseMenuBarControls(application, statusItem: verification.statusItem)
         case .providers:
           records += try exerciseProviderControls(
             application, surface: surface, supportDirectory: verification.supportDirectory)
@@ -118,7 +127,7 @@ final class LiveControlAuditUITests: XCTestCase {
     }
 
     let failures = records.filter { $0.result.hasPrefix("failed") }
-    assertRequiredInventory(records, tab: tab, section: section)
+    assertRequiredInventory(records, tab: tab, section: section, modelSelectionOnly: modelSelectionOnly)
     XCTAssertTrue(failures.isEmpty, failures.map { "\($0.tab): \($0.label) \($0.result)" }.joined(separator: "\n"))
     XCTAssertTrue(records.contains { $0.tab == tab && $0.interacted })
     print("CONTROL_AUDIT=\(output.path) controls=\(records.count) failures=\(failures.count)")
@@ -580,10 +589,36 @@ final class LiveControlAuditUITests: XCTestCase {
       scenarioRecord(tab: "Settings", label: "Prefilled six-character short label", element: label, action: "edit"))
     records.append(revertRecord)
 
+    scrollToTop(surface)
+    replaceText(in: template, with: originalTemplate, application: application)
+    for label in ["Hide 0%", "Fit to space"] {
+      let toggle = application.checkBoxes[label]
+      XCTAssertTrue(toggle.exists && toggle.isHittable)
+      toggleAndRestore(toggle)
+      records.append(scenarioRecord(tab: "Settings", label: label, element: toggle, action: "toggle twice"))
+    }
+    let preview = application.descendants(matching: .any)["Menu bar preview"]
+    XCTAssertTrue(preview.exists)
+    records.append(scenarioRecord(tab: "Settings", label: "Live menu bar preview", element: preview, action: "observe"))
+    records.append(scenarioRecord(tab: "Settings", label: "Model order", element: order, action: "select Stable"))
+    records.append(scenarioRecord(tab: "Settings", label: "Status format", element: format, action: "select Custom"))
+    records.append(scenarioRecord(tab: "Settings", label: "Decimals", element: decimals, action: "increment"))
+    records.append(scenarioRecord(tab: "Settings", label: "Template and tokens", element: template, action: "edit"))
+    records.append(
+      scenarioRecord(tab: "Settings", label: "Live status content and fixed anchor", element: template))
+
+    return records
+  }
+
+  @MainActor
+  private func exerciseModelSelectionControls(_ application: XCUIApplication) throws -> [ControlAuditRecord] {
+    let surface = application.descendants(matching: .any)["popover-surface"]
+    var records: [ControlAuditRecord] = []
+    scrollToTop(surface)
     let modelSelection = application.checkBoxes.matching(
       NSPredicate(format: "identifier BEGINSWITH 'model-selection-'")
     ).firstMatch
-    XCTAssertTrue(modelSelection.exists && modelSelection.isHittable)
+    XCTAssertTrue(reveal(modelSelection, in: surface))
     toggleAndRestore(modelSelection)
     records.append(
       scenarioRecord(tab: "Settings", label: "Model selection", element: modelSelection, action: "toggle twice"))
@@ -591,11 +626,11 @@ final class LiveControlAuditUITests: XCTestCase {
     for provider in ProviderID.allCases {
       let providerSelection = application.checkBoxes["Show all \(provider.displayName) models"]
       XCTAssertTrue(reveal(providerSelection, in: surface), "Missing \(provider.displayName) model select-all")
-      toggleAndRestore(providerSelection)
+      try toggleModelGroupAndRestore(provider, toggle: providerSelection, surface: surface, application: application)
       records.append(
         scenarioRecord(
           tab: "Settings", label: "\(provider.displayName) model select-all", element: providerSelection,
-          action: "toggle twice"))
+          action: "select all, clear, and restore models"))
     }
 
     scrollToTop(surface)
@@ -618,24 +653,6 @@ final class LiveControlAuditUITests: XCTestCase {
     toggleAndRestore(hideUnused)
     records.append(
       scenarioRecord(tab: "Settings", label: "Hide unused models", element: hideUnused, action: "toggle twice"))
-    scrollToTop(surface)
-    replaceText(in: template, with: originalTemplate, application: application)
-    for label in ["Hide 0%", "Fit to space"] {
-      let toggle = application.checkBoxes[label]
-      XCTAssertTrue(toggle.exists && toggle.isHittable)
-      toggleAndRestore(toggle)
-      records.append(scenarioRecord(tab: "Settings", label: label, element: toggle, action: "toggle twice"))
-    }
-    let preview = application.descendants(matching: .any)["Menu bar preview"]
-    XCTAssertTrue(preview.exists)
-    records.append(scenarioRecord(tab: "Settings", label: "Live menu bar preview", element: preview, action: "observe"))
-    records.append(scenarioRecord(tab: "Settings", label: "Model order", element: order, action: "select Stable"))
-    records.append(scenarioRecord(tab: "Settings", label: "Status format", element: format, action: "select Custom"))
-    records.append(scenarioRecord(tab: "Settings", label: "Decimals", element: decimals, action: "increment"))
-    records.append(scenarioRecord(tab: "Settings", label: "Template and tokens", element: template, action: "edit"))
-    records.append(
-      scenarioRecord(tab: "Settings", label: "Live status content and fixed anchor", element: template))
-
     return records
   }
 
@@ -1015,6 +1032,39 @@ final class LiveControlAuditUITests: XCTestCase {
   }
 
   @MainActor
+  private func toggleModelGroupAndRestore(
+    _ provider: ProviderID, toggle: XCUIElement, surface: XCUIElement, application: XCUIApplication
+  ) throws {
+    let before = try modelSelectionStates(provider, in: surface)
+    XCTAssertFalse(before.isEmpty, "No model checkboxes for \(provider.displayName)")
+    let selected = !before.values.allSatisfy { $0 }
+    toggle.click()
+    XCTAssertTrue(
+      waitUntil(timeout: responsivenessBudget) {
+        (try? self.modelSelectionStates(provider, in: surface)) == before.mapValues { _ in selected }
+      })
+    toggle.click()
+    XCTAssertTrue(
+      waitUntil(timeout: responsivenessBudget) {
+        (try? self.modelSelectionStates(provider, in: surface)) == before.mapValues { _ in !selected }
+      })
+    for identifier in before.keys.sorted() where before[identifier] != !selected {
+      let model = application.checkBoxes[identifier]
+      XCTAssertTrue(reveal(model, in: surface))
+      model.click()
+    }
+    XCTAssertEqual(try modelSelectionStates(provider, in: surface), before)
+  }
+
+  @MainActor
+  private func modelSelectionStates(_ provider: ProviderID, in surface: XCUIElement) throws -> [String: Bool] {
+    Dictionary(
+      uniqueKeysWithValues: snapshots(in: try surface.snapshot())
+        .filter { $0.elementType == .checkBox && $0.identifier.hasPrefix("model-selection-\(provider.rawValue)") }
+        .map { ($0.identifier, checked($0.value)) })
+  }
+
+  @MainActor
   private func incrementStepper(_ stepper: XCUIElement) {
     let before = String(describing: stepper.value)
     let increment = stepper.descendants(matching: .incrementArrow).firstMatch
@@ -1038,9 +1088,18 @@ final class LiveControlAuditUITests: XCTestCase {
 
   @MainActor
   private func isSelected(_ element: XCUIElement) -> Bool {
-    if let number = element.value as? NSNumber { return number.boolValue }
-    let value = (element.value as? String ?? "").lowercased()
-    return value == "1" || value == "on" || value.contains("selected")
+    checked(element.value)
+  }
+
+  private func checked(_ value: Any?) -> Bool {
+    let text = (value as? NSNumber)?.stringValue ?? (value as? String)?.lowercased()
+    switch text {
+    case "1", "on", "selected", "true": return true
+    case "0", "off", "unselected", "false": return false
+    default:
+      XCTFail("Expected a binary control value, received \(String(describing: value))")
+      return false
+    }
   }
 
   @MainActor
@@ -1145,7 +1204,9 @@ final class LiveControlAuditUITests: XCTestCase {
       hittable: false, interacted: false, action: action, result: "passed", frame: FrameRecord(.zero))
   }
 
-  private func assertRequiredInventory(_ records: [ControlAuditRecord], tab: String, section: SettingsSection?) {
+  private func assertRequiredInventory(
+    _ records: [ControlAuditRecord], tab: String, section: SettingsSection?, modelSelectionOnly: Bool
+  ) {
     let recorded = Set(records.map { "\($0.tab)|\($0.label)" })
     var required: Set<String> = [
       "Usage|Refresh all providers", "Usage|Usage-site links", "Usage|Sign-in prompts",
@@ -1177,7 +1238,9 @@ final class LiveControlAuditUITests: XCTestCase {
       ])
     }
     required = required.filter {
-      $0.hasPrefix("\(tab)|") && (section == nil || settingsSection(for: String($0.dropFirst(9))) == section)
+      let label = String($0.dropFirst(9))
+      return $0.hasPrefix("\(tab)|") && (section == nil || settingsSection(for: label) == section)
+        && (section != .menuBar || isModelSelectionControl(label) == modelSelectionOnly)
     }
     XCTAssertTrue(
       required.isSubset(of: recorded),
@@ -1206,6 +1269,11 @@ final class LiveControlAuditUITests: XCTestCase {
       }
       return .menuBar
     }
+  }
+
+  private func isModelSelectionControl(_ label: String) -> Bool {
+    ["Model filter", "Command-F model filter", "Hide unused models", "Model selection"].contains(label)
+      || label.hasSuffix(" model select-all")
   }
 
   @MainActor

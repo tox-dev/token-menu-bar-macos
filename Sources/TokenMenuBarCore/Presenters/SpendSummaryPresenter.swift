@@ -36,25 +36,24 @@ public struct SpendModelShare: Sendable, Equatable, Identifiable {
 
 public struct SpendSummary: Sendable, Equatable {
   public static let windowDays = 30
-  public static let topModelCount = 5
 
   public let today: Double
   public let yesterday: Double
   public let lastWindow: Double
-  public let topModels: [SpendModelShare]
+  public let models: [SpendModelShare]
   public let providers: [ProviderID]
 
   public init(
-    today: Double, yesterday: Double, lastWindow: Double, topModels: [SpendModelShare], providers: [ProviderID]
+    today: Double, yesterday: Double, lastWindow: Double, models: [SpendModelShare], providers: [ProviderID]
   ) {
     self.today = today
     self.yesterday = yesterday
     self.lastWindow = lastWindow
-    self.topModels = topModels
+    self.models = models
     self.providers = providers
   }
 
-  public static let empty = SpendSummary(today: 0, yesterday: 0, lastWindow: 0, topModels: [], providers: [])
+  public static let empty = SpendSummary(today: 0, yesterday: 0, lastWindow: 0, models: [], providers: [])
 
   public var hasData: Bool {
     !providers.isEmpty
@@ -68,12 +67,17 @@ public struct SpendSummary: Sendable, Equatable {
   }
 
   public var attribution: String {
-    "API-equivalent cost across \(providers.map(\.displayName).joined(separator: " + ")) · daily UTC"
+    "\(providers.map(\.displayName).joined(separator: " + ")) API-equivalent estimates · daily UTC"
   }
 
   public var breakdown: String {
-    (["Top models over the last \(Self.windowDays) days:"] + topModels.map(\.text)).joined(separator: "\n")
+    (["Models over the last \(Self.windowDays) days:"] + models.map(\.text)).joined(separator: "\n")
   }
+}
+
+public struct SpendReport: Sendable, Equatable {
+  public let total: SpendSummary
+  public let byProvider: [ProviderID: SpendSummary]
 }
 
 public enum SpendSummaryPresenter {
@@ -83,11 +87,15 @@ public enum SpendSummaryPresenter {
 
   public static func load(
     history: UsageHistoryStore, providers: [ProviderID], now: Date, timeZone: TimeZone
-  ) async throws -> SpendSummary {
+  ) async throws -> SpendReport {
     let days = dayStamps(now: now, timeZone: timeZone)
     let rows = try await history.analytics(
       metric: .costUSD, providers: suppliers.filter(Set(providers).contains), from: days.start, to: days.today)
-    return summary(rows: rows, now: now, timeZone: timeZone)
+    return SpendReport(
+      total: summary(rows: rows, now: now, timeZone: timeZone),
+      byProvider: Dictionary(grouping: rows, by: \.provider).mapValues {
+        summary(rows: $0, now: now, timeZone: timeZone)
+      })
   }
 
   public static func summary(rows: [HistoryAnalyticsRow], now: Date, timeZone: TimeZone) -> SpendSummary {
@@ -105,8 +113,7 @@ public enum SpendSummaryPresenter {
       today: total(window, day: days.today),
       yesterday: total(window, day: days.yesterday),
       lastWindow: window.reduce(0) { $0 + $1.point.value },
-      topModels: Array(
-        byModel.values.sorted { ($1.cost, $0.id) < ($0.cost, $1.id) }.prefix(SpendSummary.topModelCount)),
+      models: byModel.values.sorted { ($1.cost, $0.id) < ($0.cost, $1.id) },
       providers: Array(Set(window.map(\.provider))).sorted())
   }
 

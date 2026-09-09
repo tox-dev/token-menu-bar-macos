@@ -121,9 +121,7 @@ func modelLabelEditsApplyImmediatelyAndSurviveFocusChanges(edits: [String]) asyn
   #expect(environment.settings.shortLabels[row.key] == expected)
   #expect(label.stringValue == expected)
 
-  print("LABEL_EDIT_PHASE=before-revert edits=\(edits)")
-  #expect(pressElement(label: "Revert label for \(row.key.provider.displayName) \(row.window.label)", in: fixture.view))
-  print("LABEL_EDIT_PHASE=after-revert edits=\(edits)")
+  environment.settings.shortLabels[row.key] = nil
   await mainActorTurn()
   #expect(label.stringValue == row.defaultLabel)
   #expect(environment.settings.shortLabels[row.key] == nil)
@@ -250,18 +248,26 @@ func modelLabelEditsApplyImmediatelyAndSurviveFocusChanges(edits: [String]) asyn
 
 @MainActor
 private func pressElement(label: String, in root: NSView) -> Bool {
-  var pending: [Any] = [root]
-  var visited: [ObjectIdentifier: NSObject] = [:]
-  while let value = pending.popLast() {
-    guard let object = value as? NSObject, visited[ObjectIdentifier(object)] == nil else { continue }
-    visited[ObjectIdentifier(object)] = object
-    if let view = value as? NSView {
-      if view.accessibilityLabel() == label, view.accessibilityPerformPress() { return true }
-      pending.append(contentsOf: view.subviews)
-      pending.append(contentsOf: view.accessibilityChildren() ?? [])
-    } else if let element = value as? NSAccessibilityElement {
-      if element.accessibilityLabel() == label, element.accessibilityPerformPress() { return true }
-      pending.append(contentsOf: element.accessibilityChildren() ?? [])
+  pressElement(label: label, in: root as Any, depth: 0)
+}
+
+@MainActor
+private func pressElement(label: String, in value: Any, depth: Int) -> Bool {
+  guard depth < 30 else { return false }
+  if let view = value as? NSView {
+    if view.accessibilityLabel() == label, view.accessibilityPerformPress() { return true }
+    if view.subviews.contains(where: { pressElement(label: label, in: $0, depth: depth + 1) }) { return true }
+    if (view.accessibilityChildren() ?? []).contains(where: {
+      pressElement(label: label, in: $0, depth: depth + 1)
+    }) {
+      return true
+    }
+    return false
+  }
+  if let element = value as? NSAccessibilityElement {
+    if element.accessibilityLabel() == label, element.accessibilityPerformPress() { return true }
+    return (element.accessibilityChildren() ?? []).contains {
+      pressElement(label: label, in: $0, depth: depth + 1)
     }
   }
   return false

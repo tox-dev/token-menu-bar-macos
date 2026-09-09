@@ -68,6 +68,7 @@ public struct SpendSummaryTiles: View {
       ForEach(summary.tiles) { tile in
         VStack(alignment: .leading, spacing: 2) {
           Text(tile.title).font(.callout).semanticForeground(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
           Text(tile.text).font(.body.monospacedDigit())
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -82,5 +83,35 @@ public struct SpendSummaryTiles: View {
     .richHelp(TooltipContent(title: summary.attribution, body: summary.breakdown))
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("spend-summary")
+  }
+}
+
+struct ProviderCostSummary: View {
+  let summary: SpendSummary
+  let provider: ProviderID
+  let disclosures: DisclosureState
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 5) {
+      Text(summary.attribution).font(.caption).semanticForeground(.secondary)
+        .fixedSize(horizontal: false, vertical: true)
+      SpendSummaryTiles(summary: summary)
+      SupportingDetails("Model cost estimates", id: "usage.\(provider.rawValue).cost", state: disclosures) {
+        Text("Estimated from recorded tokens at API rates, not your subscription bill. Last 30 days, UTC.")
+          .font(.caption).fixedSize(horizontal: false, vertical: true)
+        ForEach(summary.models) { model in
+          HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(model.model).font(.callout.monospaced()).fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            Text(Format.currency(model.cost)).font(.callout.monospacedDigit()).fixedSize()
+          }
+          .accessibilityElement(children: .ignore)
+          .accessibilityLabel(model.text)
+        }
+      }
+    }
+    .accessibilityElement(children: .contain)
+    .accessibilityIdentifier("provider-cost-\(provider.rawValue)")
+    .accessibilityValue(summary.breakdown)
   }
 }

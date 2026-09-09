@@ -38,6 +38,29 @@ func settingsSetupGuidanceMatchesProviderDiscovery(hasProviders: Bool) async thr
       excludes: hasProviders ? [guidance] : []))
 }
 
+@Test(arguments: [ProviderID.claude, .codex], [false, true]) @MainActor
+func providerCostsKeepAttributionVisibleAndExposeAllModels(provider: ProviderID, expanded: Bool) async throws {
+  let rows = ["ALPHA", "BRAVO", "CHARLIE", "DELTA", "ECHO", "FOXTROT", "GOLF"].enumerated().map { index, model in
+    HistoryAnalyticsRow(
+      provider: provider,
+      point: AnalyticsPoint(day: DayStamp.string(fixedNow), metric: .costUSD, series: model, value: Double(index)))
+  }
+  let disclosures = DisclosureState()
+  disclosures.setExpanded(expanded, for: "usage.\(provider.rawValue).cost")
+  try await capture(
+    host(
+      ProviderCostSummary(
+        summary: SpendSummaryPresenter.summary(rows: rows, now: fixedNow, timeZone: .current),
+        provider: provider, disclosures: disclosures
+      )
+      .environment(\.colorScheme, .light).padding(12).background(Color.white), width: 700, height: 500),
+    named: "cost-\(provider.rawValue)-\(expanded)",
+    expectation: RenderedText(
+      contains: [provider.displayName, "API-equivalent estimates", "Model cost estimates"]
+        + (expanded ? ["ALPHA", "GOLF", "not your subscription bill"] : []),
+      excludes: expanded ? [] : ["ALPHA", "GOLF"]))
+}
+
 @MainActor
 private func captureSettings(_ environment: UIEnvironment, named name: String, expectation: RenderedText) async throws {
   let hosting = host(

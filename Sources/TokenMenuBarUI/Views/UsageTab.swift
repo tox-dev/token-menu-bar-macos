@@ -23,7 +23,6 @@ public struct UsageTab: View {
         if let card = environment.firstRunCard {
           FirstRunCardView(environment: environment, card: card)
         }
-        UsageSpendSummary(environment: environment, spend: spend)
         if presentation.cards.isEmpty {
           HStack(alignment: .center, spacing: 12) {
             EmptyStateView(
@@ -41,11 +40,12 @@ public struct UsageTab: View {
           }
         }
         ForEach(presentation.cards) { card in
-          ProviderCardView(card: card, environment: environment, onRefreshProvider: onRefreshProvider)
+          ProviderCardView(card: card, environment: environment, onRefreshProvider: onRefreshProvider, spend: spend)
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
     }
+    .background(SpendSummaryActivity(environment: environment, spend: spend))
   }
 
   private func header(_ presentation: UsagePresentation) -> some View {
@@ -76,32 +76,13 @@ public struct UsageTab: View {
   }
 }
 
-private struct UsageSpendSummary: View {
+private struct SpendSummaryActivity: View {
   let environment: UIEnvironment
   let spend: SpendSummaryModel
 
   var body: some View {
-    Group {
-      if schedule.providers.contains(.claude)
-        || spend.summary?.providers.contains(where: schedule.providers.contains) == true
-      {
-        VStack(alignment: .leading, spacing: 2) {
-          if let summary = spend.summary, summary.hasData {
-            SpendSummaryTiles(summary: summary)
-          } else {
-            Text(
-              spend.isLoading
-                ? "Loading cost history…"
-                : spend.error == nil ? "No cost history in the last 30 days" : "Cost history unavailable"
-            )
-            .font(.callout).semanticForeground(.secondary)
-          }
-          if let error = spend.error { Text(error).font(.caption).fixedSize(horizontal: false, vertical: true) }
-        }
-        .frame(minHeight: 58, alignment: .topLeading)
-      }
-    }
-    .task(id: schedule) { await loadSpend(schedule) }
+    Color.clear.allowsHitTesting(false)
+      .task(id: schedule) { await loadSpend(schedule) }
   }
 
   private var schedule: SpendSummarySchedule {

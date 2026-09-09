@@ -4,7 +4,7 @@ import Observation
 @MainActor
 @Observable
 public final class SpendSummaryModel {
-  public private(set) var summary: SpendSummary?
+  private var report: SpendReport?
   public private(set) var error: String?
   public private(set) var isLoading = false
   private var generation = 0
@@ -12,10 +12,13 @@ public final class SpendSummaryModel {
 
   public init() {}
 
+  public var summary: SpendSummary? { report?.total }
+  public var byProvider: [ProviderID: SpendSummary] { report?.byProvider ?? [:] }
+
   public func load(history: UsageHistoryStore, providers: Set<ProviderID>, now: Date, timeZone: TimeZone) async {
     if self.providers != providers {
       self.providers = providers
-      summary = nil
+      report = nil
       error = nil
     }
     generation += 1
@@ -26,7 +29,7 @@ public final class SpendSummaryModel {
       let loaded = try await SpendSummaryPresenter.load(
         history: history, providers: providers.sorted(), now: now, timeZone: timeZone)
       guard request == generation, !Task.isCancelled else { return }
-      summary = loaded
+      report = loaded
       error = nil
     } catch {
       guard request == generation, !Task.isCancelled else { return }

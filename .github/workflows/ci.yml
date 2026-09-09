@@ -96,8 +96,8 @@ jobs:
         env:
           TOKEN_MENU_BAR_RENDER_ARTIFACTS: ${{ runner.temp }}/rendered
         run: |
-          just test 'settingsTemplateControls|settingsDemoNotice|settingsSetupGuidance|renderedTextVerifier'
-          Scripts/check-rendered-text.sh "$TOKEN_MENU_BAR_RENDER_ARTIFACTS" 12
+          just test 'spend|providerCosts|clearingAnalyticsOnlyHistory|datePicker|settingsTemplateControls|settingsDemoNotice|settingsSetupGuidance|renderedTextVerifier'
+          Scripts/check-rendered-text.sh "$TOKEN_MENU_BAR_RENDER_ARTIFACTS" 16
           fixtures=("$TOKEN_MENU_BAR_RENDER_ARTIFACTS"/run.*/verifier-present.png)
           [[ "${#fixtures[@]}" == 1 ]]
           Scripts/test-rendered-text.sh "${fixtures[0]}"
@@ -127,13 +127,13 @@ jobs:
           path: .build
           key: native-labels-14-${{ hashFiles('Package.swift', 'Sources/**', 'Tests/**') }}
           restore-keys: native-labels-14-
-      - name: Verify native field editing and revert
+      - name: Verify native field editing and date pickers
         timeout-minutes: 4
         run: |
           set -o pipefail
           mkdir -p .build
           Scripts/with-test-desktop.sh swift test --jobs 2 --no-parallel \
-            --filter modelLabelEditsApplyImmediatelyAndSurviveFocusChanges 2>&1 | tee .build/native-labels.log
+            --filter 'modelLabelEditsApplyImmediatelyAndSurviveFocusChanges|datePicker' 2>&1 | tee .build/native-labels.log
       - name: Retain native crash evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -156,8 +156,8 @@ jobs:
             selector: LiveControlAuditUITests/testHistoryDatesAndControlsRespond
           - name: menu-bar
             selector: LiveControlAuditUITests/testSettingsMenuBarControlsRespond
-          - name: text-wide-light
-            selector: LiveControlAuditUITests/testLongTextAtWideWidthInLightAppearance
+          - name: models
+            selector: LiveControlAuditUITests/testSettingsModelSelectionControlsRespond
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -198,21 +198,3 @@ jobs:
             .build/ui-artifacts
           include-hidden-files: true
           retention-days: 1
-
-  live-ocr:
-    needs: [ui, ocr]
-    if: ${{ !cancelled() && needs.ui.result != 'skipped' && needs.ocr.result == 'success' }}
-    runs-on: macos-26
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - name: Install the pinned OCR engine
-        run: Scripts/install-ocr.sh
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
-        with:
-          name: focused-ui-text-wide-light-macos-14
-          path: .build/live-text
-      - name: Check live warning-banner text
-        run: Scripts/check-rendered-text.sh .build/live-text/ui-artifacts 1

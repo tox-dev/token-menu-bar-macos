@@ -1,0 +1,63 @@
+{
+  "performance": [
+    "TabSwitchBenchmarkUITests/testFirstSettingsClickFromFreshLaunch",
+    "TabSwitchBenchmarkUITests/testProfileMockedTabSwitches",
+    "TabSwitchBenchmarkUITests/testTabSwitchLatencyAndFrameStability"
+  ],
+  "lifecycle": [
+    "TokenMenuBarApplicationUITests/testQuitClosesTheVerificationApplication",
+    "TokenMenuBarApplicationUITests/testDemoCanTurnOffAndBackOnWithoutLeavingVerification",
+    "TokenMenuBarApplicationUITests/testStatusItemReopensThePopoverAfterEscape",
+    "TokenMenuBarApplicationUITests/testEveryTabExposesNamedControls",
+    "TokenMenuBarApplicationUITests/testTabSwitchReturnsToIdle",
+    "TokenMenuBarApplicationUITests/testCommandFFocusesTheModelFilter",
+    "TokenMenuBarApplicationUITests/testEscapeClosesEveryTab",
+    "TokenMenuBarApplicationUITests/testLaunchStaysWithinBudget",
+    "TokenMenuBarApplicationUITests/testPhysicalFootprintStaysWithinBudget",
+    "TokenMenuBarApplicationUITests/testIdleCPUStaysWithinBudget"
+  ],
+  "usage": [
+    "LiveControlAuditUITests/testUsageControlsRespond"
+  ],
+  "history": [
+    "LiveControlAuditUITests/testHistoryDatesAndControlsRespond"
+  ],
+  "settings-menu-bar": [
+    "LiveControlAuditUITests/testSettingsMenuBarControlsRespond"
+  ],
+  "settings-models": [
+    "LiveControlAuditUITests/testSettingsModelSelectionControlsRespond"
+  ],
+  "settings-about": [
+    "LiveControlAuditUITests/testSettingsAboutControlsRespond"
+  ],
+  "settings-providers": [
+    "LiveControlAuditUITests/testSettingsProviderControlsRespond"
+  ],
+  "settings-data": [
+    "LiveControlAuditUITests/testSettingsDataControlsRespond"
+  ],
+  "settings-notifications": [
+    "LiveControlAuditUITests/testSettingsNotificationControlsRespond"
+  ],
+  "settings-log": [
+    "LiveControlAuditUITests/testSettingsLogControlsRespond"
+  ],
+  "text-wide-light": [
+    "LiveControlAuditUITests/testLongTextAtWideWidthInLightAppearance"
+  ],
+  "text-narrow-light": [
+    "LiveControlAuditUITests/testLongTextAtNarrowWidthInLightAppearance"
+  ],
+  "text-wide-dark": [
+    "LiveControlAuditUITests/testLongTextAtWideWidthInDarkAppearance"
+  ],
+  "text-narrow-dark": [
+    "LiveControlAuditUITests/testLongTextAtNarrowWidthInDarkAppearance"
+  ],
+  "tooltips": [
+    "LiveControlAuditUITests/testUsageRichTooltipsStayAdjacent",
+    "LiveControlAuditUITests/testHistoryRichTooltipsStayAdjacent",
+    "LiveControlAuditUITests/testSettingsRichTooltipsStayAdjacentAndTabsHaveNone"
+  ]
+}

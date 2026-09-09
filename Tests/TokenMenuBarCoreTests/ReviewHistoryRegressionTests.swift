@@ -14,8 +14,8 @@ func spendIncludesCurrentUTCDayAcrossLocalBoundaries(timestamp: String) async th
       fetchedAt: now))
   let summary = try await SpendSummaryPresenter.load(
     history: history, providers: [.claude], now: now, timeZone: TimeZone(identifier: "America/Los_Angeles")!)
-  #expect(summary.today == 3)
-  #expect(summary.lastWindow == 3)
+  #expect(summary.total.today == 3)
+  #expect(summary.total.lastWindow == 3)
 }
 
 @Test @MainActor func spendRetainsLastKnownTotalsWhenRefreshFails() async throws {
@@ -30,6 +30,7 @@ func spendIncludesCurrentUTCDayAcrossLocalBoundaries(timestamp: String) async th
   try await history.breakDatabase()
   await model.load(history: history, providers: [.claude], now: fixedNow, timeZone: .current)
   #expect(model.summary?.today == 3)
+  #expect(model.byProvider[.claude]?.today == 3)
   #expect(model.error == "Cost history could not be updated. Showing last-known totals.")
 }
 
@@ -43,5 +44,6 @@ func spendIncludesCurrentUTCDayAcrossLocalBoundaries(timestamp: String) async th
   #expect(try await history.clear() == 1)
   let summary = try await SpendSummaryPresenter.load(
     history: history, providers: [.claude], now: fixedNow, timeZone: .current)
-  #expect(summary == .empty)
+  #expect(summary.total == .empty)
+  #expect(summary.byProvider.isEmpty)
 }
