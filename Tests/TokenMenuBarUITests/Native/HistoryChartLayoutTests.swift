@@ -57,7 +57,10 @@ func historyChartUsesTheHeightBesideItsLegend(modelCount: Int, width: Double) as
   func frame(in element: AnyObject) -> CGRect? {
     guard visited.insert(ObjectIdentifier(element)).inserted else { return nil }
     if element.accessibilityIdentifier?() == identifier { return element.accessibilityFrame?() }
-    return (element.accessibilityChildren?() ?? []).lazy.compactMap { frame(in: $0 as AnyObject) }.first
+    for child in element.accessibilityChildren?() ?? [] {
+      if let found = frame(in: child as AnyObject) { return found }
+    }
+    return nil
   }
   return frame(in: root)
 }
