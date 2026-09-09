@@ -89,41 +89,6 @@ func tabSelectionDoesNotInvalidateRetainedContent(tab: PopoverTab) throws {
   #expect(hosting.fittingSize.height < loadingHeight - 200)
 }
 
-@Test(arguments: [3, 30], [700.0, 880.0]) @MainActor
-func historyChartUsesTheHeightBesideItsLegend(modelCount: Int, width: Double) async throws {
-  let environment = try makeEnvironment()
-  let snapshot = ProviderSnapshot(
-    provider: .claude,
-    windows: (0..<modelCount).map {
-      QuotaWindow(
-        id: "model-\($0)", label: "Synthetic model \($0)", group: .other, usedPercent: Double($0 + 1), resetsAt: nil)
-    }, fetchedAt: fixedNow)
-  environment.state.update(.claude) { $0.snapshot = snapshot }
-  try await environment.history.record(snapshot, now: fixedNow.addingTimeInterval(-60))
-  environment.settings.selectedWindows = snapshot.windows.map { WindowKey(.claude, $0) }
-  environment.settings.hasCustomSelection = true
-  environment.settings.lastTab = .history
-  environment.state.popoverVisible = true
-  let hosting = host(HistoryTab(environment: environment), width: width, height: 2000)
-  await mainActorTurn()
-  await environment.historyPresenter.waitForLoad()
-  hosting.layoutSubtreeIfNeeded()
-  let anchors = tooltipAnchors(in: hosting)
-  let chart = try #require(anchors.first { $0.tooltipContent.title == "History chart" })
-  let rows = anchors.filter {
-    $0.tooltipContent.body.first?.text.hasPrefix("Shows the value at the selected date.") == true
-  }
-  #expect(rows.count == modelCount)
-  let legend = rows.reduce(CGRect.null) { $0.union(hosting.convert($1.bounds, from: $1)) }
-  let chartFrame = hosting.convert(chart.bounds, from: chart)
-  if width >= 880 {
-    #expect(chartFrame.height >= max(PopoverGeometry.historyChartHeight, legend.height))
-    #expect(chartFrame.height <= max(PopoverGeometry.historyChartHeight, legend.height + 100))
-  } else {
-    #expect(chartFrame.height == PopoverGeometry.historyChartHeight)
-  }
-}
-
 @MainActor private func tooltipAnchors(in root: NSView) -> [TooltipTrackingView] {
   root.subviews.flatMap { view in
     (view as? TooltipTrackingView).map { [$0] } ?? tooltipAnchors(in: view)

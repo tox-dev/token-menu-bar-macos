@@ -123,7 +123,7 @@ jobs:
             Scripts/check-test-isolation.sh
             Scripts/with-test-desktop.sh Scripts/with-render-checks.sh 0 swift test --jobs 2 --no-parallel \
               --enable-code-coverage -Xswiftc -Xllvm -Xswiftc -instrprof-atomic-counter-update-all \
-              --filter 'hiddenWeeklyLimit|restricted|customFormatsCannotHide|anUnusedSession|quotaRestriction|nonbindingWeekly|scopedClaude|accountWeekly|codexQuotaRestrictions|codexScopedWeekly|unrelatedProviders|unknownBlocking|unknownCodexQuota|inactiveSelectedQuota|multipleExhausted|statusRestriction|iconOnlyStatus|builder|countdown|pctOrReset|template|statusItemKeepsTheQuotaWarning|rendererBuildsTitles|appIconDrawsEveryTone|TooltipTests|tooltipTiming|claude|gemini|providerHeader|providerNotice|providerDetails|providerDisclosures'
+              --filter 'hiddenWeeklyLimit|restricted|customFormatsCannotHide|anUnusedSession|quotaRestriction|nonbindingWeekly|scopedClaude|accountWeekly|codexQuotaRestrictions|codexScopedWeekly|unrelatedProviders|unknownBlocking|unknownCodexQuota|inactiveSelectedQuota|multipleExhausted|statusRestriction|iconOnlyStatus|builder|countdown|pctOrReset|template|statusItemKeepsTheQuotaWarning|rendererBuildsTitles|appIconDrawsEveryTone|TooltipTests|tooltipTiming|claude|gemini|providerHeader|providerNotice|providerDetails|providerDisclosures|historyChartUsesTheHeightBesideItsLegend'
           else
             just test 'transcriptReaderFinishesAColdTreeOutsideTheProviderPoll|rolloutReaderBoundsTreeEnumerationSlices'
           fi 2>&1 | tee .build/reader-tests.log | awk '/Test |Test run|error:|warning:|Build complete/ { print; fflush() }'
