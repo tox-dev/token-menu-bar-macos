@@ -201,8 +201,11 @@ public enum StatusTemplate {
   static func run(for name: String, context: StatusCellContext) -> StatusRun? {
     let percent = context.window.usedPercent
     let display = context.display
-    if context.isLimited, ["pct", "pct0", "pct1", "pct2", "remaining"].contains(name) {
-      return StatusRun(text: "Limit", kind: .usage(100))
+    if context.isLimited {
+      switch name {
+      case "pct", "pct0", "pct1", "pct2", "remaining": return StatusRun(text: "Limit", kind: .usage(100))
+      default: break
+      }
     }
     switch name {
     case "cell": return StatusRun(text: context.cellLabel, kind: .label)

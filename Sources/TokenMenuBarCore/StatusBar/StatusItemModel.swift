@@ -185,14 +185,19 @@ public enum StatusItemBuilder {
       restrictions[key] = restriction
       return (key, snapshot, restriction?.projected(window) ?? window)
     }
+    let exhausted = selectedEntries.filter {
+      $0.2.isActive && $0.2.usedPercent >= 100 && ($0.2.resetsAt.map { $0 > input.now } ?? true)
+    }
     let tone: StatusIconTone =
-      !restrictions.isEmpty
+      !exhausted.isEmpty
       ? .attention
       : input.availability.values.contains(.authenticationRequired)
         ? .attention : input.availability.values.contains(.networkUnavailable) ? .offline : .normal
     if input.tier == .iconOnly {
-      let summary = restrictions.keys.sorted().map { key in
-        "\(key.provider.displayName): \(restrictions[key]!.explanation(now: input.now))"
+      let summary = exhausted.map { key, _, window in
+        "\(key.provider.displayName): "
+          + (restrictions[key]?.explanation(now: input.now)
+            ?? "\(window.label) limit reached; resets \(Format.countdown(to: window.resetsAt, now: input.now)).")
       }.uniqued().joined(separator: "\n")
       return StatusItemModel(
         cells: [], iconTone: tone, showsIcon: true, countdownActive: false,
@@ -211,8 +216,10 @@ public enum StatusItemBuilder {
     if input.order == .percent { entries.sort { $0.2.usedPercent > $1.2.usedPercent } }
     let countdown =
       format != .miniBars
-      && (template.referencesCountdown
-        || template.referencesExhaustedCountdown && entries.contains { $0.2.usedPercent >= 100 })
+      && entries.contains { entry in
+        guard let reset = entry.2.resetsAt, reset > input.now else { return false }
+        return template.referencesCountdown || template.referencesExhaustedCountdown && entry.2.usedPercent >= 100
+      }
     let cells: [StatusCell]
     if format == .miniBars {
       let providers = input.order == .percent ? orderedProviders(entries) : entries.map(\.0.provider).uniqued()

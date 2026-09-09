@@ -120,7 +120,7 @@ jobs:
             Scripts/with-test-desktop.sh Scripts/with-render-checks.sh 0 swift test --jobs 2 --no-parallel \
               --filter 'verificationChoosers|liveDependencyHelpers|rootViewWithoutAChooser|startupClosureControllerRootCallbacks|liveChooserDefaults|popoverClosingCancels|popoverKeepsTheSheet|popoverCloseRestores|popoverRoutes|popoverLeaves'
           elif [[ "$CHECK" == quota ]]; then
-            just test 'hiddenWeeklyLimit|restrictedStatus|customFormatsCannotHide|restrictedMiniBars|anUnusedSession|quotaRestriction|nonbindingWeekly|scopedClaude|accountWeekly|codexQuotaRestrictions|codexScopedWeekly|unrelatedProviders|unknownBlocking|multipleExhausted|statusRestriction|iconOnlyStatus|builder|countdown|pctOrReset|template'
+            just test 'hiddenWeeklyLimit|restricted|customFormatsCannotHide|anUnusedSession|quotaRestriction|nonbindingWeekly|scopedClaude|accountWeekly|codexQuotaRestrictions|codexScopedWeekly|unrelatedProviders|unknownBlocking|unknownCodexQuota|inactiveSelectedQuota|multipleExhausted|statusRestriction|iconOnlyStatus|builder|countdown|pctOrReset|template'
           else
             just test 'transcriptReaderFinishesAColdTreeOutsideTheProviderPoll|rolloutReaderBoundsTreeEnumerationSlices'
           fi 2>&1 | tee .build/reader-tests.log | awk '/Test |Test run|error:|warning:|Build complete/ { print; fflush() }'

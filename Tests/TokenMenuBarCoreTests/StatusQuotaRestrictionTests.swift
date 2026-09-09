@@ -51,6 +51,22 @@ func quotaRestrictionSurvivesWidthAdaptation(tier: StatusTier) {
   #expect(model.accessibilitySummary == "Claude: Included quota limited by All models (100% used; resets 2d 0h).")
 }
 
+@Test func iconOnlyStatusWarnsWhenTheSelectedQuotaItselfIsExhausted() {
+  let model = StatusItemBuilder.build(restrictedInput(sessionPercent: 100, weeklyPercent: 40).with(tier: .iconOnly))
+  #expect(model.iconTone == .attention)
+  #expect(model.accessibilitySummary == "Claude: Current session limit reached; resets 2 hr 0 min.")
+}
+
+@Test func inactiveSelectedQuotaDoesNotInheritARestriction() {
+  let model = StatusItemBuilder.build(restrictedInput(sessionActive: false))
+  #expect(model.cells[0].percent == 36)
+}
+
+@Test func unknownCodexQuotaDoesNotInheritTheAccountWeeklyLimit() {
+  let model = StatusItemBuilder.build(restrictedInput(provider: .codex, sessionGroup: .other))
+  #expect(model.cells[0].percent == 36)
+}
+
 @Test(arguments: [
   ("not exhausted", 99.0, 172_800.0, true),
   ("already reset", 100.0, -1.0, true),
@@ -72,7 +88,8 @@ func nonbindingWeeklyQuotaDoesNotBlockTheSession(
 }
 
 @Test func accountWeeklyQuotaBlocksASelectedClaudeModel() {
-  let model = StatusItemBuilder.build(restrictedInput(sessionID: "weekly:fable", sessionScope: "Fable"))
+  let model = StatusItemBuilder.build(
+    restrictedInput(sessionID: "weekly:fable", sessionScope: "Fable", sessionGroup: .weekly))
   #expect(StatusTemplate.plainText(model.cells[0].lines) == "FAB\nLimit")
 }
 
@@ -99,6 +116,15 @@ func unrelatedProvidersDoNotInheritClaudeQuotaRules(provider: ProviderID) {
   #expect(StatusTemplate.plainText(model.cells[0].lines) == "CC 5h Limit · --")
 }
 
+@Test(arguments: [StatusFormat.percentCountdown, .countdownWhenExhausted])
+func restrictedUnknownResetDoesNotStartAnIdleTicker(format: StatusFormat) {
+  #expect(!StatusItemBuilder.build(restrictedInput(format: format, weeklyReset: nil)).countdownActive)
+}
+
+@Test func restrictedKnownResetStartsTheCountdownTicker() {
+  #expect(StatusItemBuilder.build(restrictedInput(format: .countdownWhenExhausted)).countdownActive)
+}
+
 @Test func multipleExhaustedQuotasUseTheLastReset() {
   let model = StatusItemBuilder.build(
     restrictedInput(format: .countdownWhenExhausted, sessionPercent: 100, weeklyReset: fixedNow.addingTimeInterval(60)))
@@ -114,6 +140,7 @@ func unrelatedProvidersDoNotInheritClaudeQuotaRules(provider: ProviderID) {
 private func restrictedInput(
   provider: ProviderID = .claude, display: UsageDisplay = .used, format: StatusFormat = .stacked,
   template: String = "{label}", sessionID: String = "session", sessionScope: String? = nil,
+  sessionGroup: WindowGroup = .session, sessionActive: Bool = true,
   sessionPercent: Double = 36, weeklyID: String = "weekly", weeklyScope: String? = nil,
   weeklyPercent: Double = 100, weeklyReset: Date? = fixedNow.addingTimeInterval(172_800), weeklyActive: Bool = true
 ) -> StatusItemInput {
@@ -123,8 +150,8 @@ private func restrictedInput(
         provider: provider,
         windows: [
           QuotaWindow(
-            id: sessionID, label: "Current session", group: .session, usedPercent: sessionPercent,
-            resetsAt: fixedNow.addingTimeInterval(7200), duration: 18000, scope: sessionScope),
+            id: sessionID, label: "Current session", group: sessionGroup, usedPercent: sessionPercent,
+            resetsAt: fixedNow.addingTimeInterval(7200), duration: 18000, isActive: sessionActive, scope: sessionScope),
           QuotaWindow(
             id: weeklyID, label: "All models", group: .weekly, usedPercent: weeklyPercent, resetsAt: weeklyReset,
             duration: 604_800, isActive: weeklyActive, scope: weeklyScope),
