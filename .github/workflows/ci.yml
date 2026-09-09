@@ -39,32 +39,45 @@ jobs:
           set -o pipefail
           swift - <<'SWIFT' | tee "$TOKEN_MENU_BAR_RENDER_ARTIFACTS/recognition.txt"
           import Foundation
+          import ImageIO
           import Vision
 
           let directory = URL(fileURLWithPath: ProcessInfo.processInfo.environment["TOKEN_MENU_BAR_RENDER_ARTIFACTS"]!)
           let png = try Data(contentsOf: directory.appendingPathComponent("providers-false.png"))
-          for revision in VNRecognizeTextRequest.supportedRevisions {
-            for level in [VNRequestTextRecognitionLevel.fast, .accurate] {
-              autoreleasepool {
-                let mode = level == .fast ? "fast" : "accurate"
-                do {
-                  let request = VNRecognizeTextRequest()
-                  request.revision = revision
-                  request.recognitionLevel = level
-                  request.recognitionLanguages = ["en-US"]
-                  request.usesLanguageCorrection = true
-                  for (stage, devices) in try request.supportedComputeStageDevices {
-                    guard let cpu = devices.first(where: { if case .cpu = $0 { true } else { false } }) else {
-                      throw ProbeError.noCPU
-                    }
-                    request.setComputeDevice(cpu, for: stage)
+          let image = CGImageSourceCreateImageAtIndex(CGImageSourceCreateWithData(png as CFData, nil)!, 0, nil)!
+          recognize(image, name: "whole")
+          for height in [512, 1024] {
+            for offset in stride(from: 0, to: image.height, by: height - 128) {
+              let rect = CGRect(
+                x: 0, y: CGFloat(offset), width: CGFloat(image.width),
+                height: CGFloat(min(height, image.height - offset)))
+              recognize(image.cropping(to: rect)!, name: "\(height)-\(offset)")
+            }
+          }
+
+          func recognize(_ image: CGImage, name: String) {
+            autoreleasepool {
+              do {
+                let request = VNRecognizeTextRequest()
+                request.revision = VNRecognizeTextRequestRevision3
+                request.recognitionLevel = .fast
+                request.recognitionLanguages = ["en-US"]
+                request.usesLanguageCorrection = true
+                for (stage, devices) in try request.supportedComputeStageDevices {
+                  guard let cpu = devices.first(where: { if case .cpu = $0 { true } else { false } }) else {
+                    throw ProbeError.noCPU
                   }
-                  try VNImageRequestHandler(data: png, options: [:]).perform([request])
-                  let text = (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: " ")
-                  print("revision=\(revision) mode=\(mode) text=\(text)")
-                } catch {
-                  print("revision=\(revision) mode=\(mode) error=\(String(reflecting: error))")
+                  request.setComputeDevice(cpu, for: stage)
                 }
+                try VNImageRequestHandler(cgImage: image, options: [:]).perform([request])
+                for observation in request.results ?? [] {
+                  let candidates = observation.topCandidates(3)
+                  if candidates.contains(where: { $0.string.contains("provider") }) {
+                    print("region=\(name) candidates=\(candidates.map(\.string))")
+                  }
+                }
+              } catch {
+                print("region=\(name) error=\(String(reflecting: error))")
               }
             }
           }
