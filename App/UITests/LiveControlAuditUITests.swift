@@ -64,6 +64,13 @@ final class LiveControlAuditUITests: XCTestCase {
         arrow.click()
         XCTAssertTrue(waitUntil(timeout: 1) { (value.value as? String ?? value.label) != before })
       }
+      let adjustable = try accessibilityElement(
+        identifier: "baseline-stepper", processIdentifier: verification.processIdentifier())
+      let beforeAdjustment = value.value as? String ?? value.label
+      let adjustment = AXUIElementPerformAction(adjustable, kAXIncrementAction as CFString)
+      print("CONTROL_BASELINE host=\(host) increment_action=\(adjustment.rawValue)")
+      XCTAssertEqual(adjustment, .success)
+      XCTAssertTrue(waitUntil(timeout: 1) { (value.value as? String ?? value.label) != beforeAdjustment })
       let level = application.descendants(matching: .any)["Baseline level"]
       XCTAssertEqual(segments(in: level).count, 3)
       for segment in segments(in: level) {
@@ -77,6 +84,25 @@ final class LiveControlAuditUITests: XCTestCase {
         }
       }
     }
+  }
+
+  @MainActor
+  private func accessibilityElement(identifier: String, processIdentifier: pid_t) throws -> AXUIElement {
+    var remaining = [AXUIElementCreateApplication(processIdentifier)]
+    while let element = remaining.popLast() {
+      var value: CFTypeRef?
+      if AXUIElementCopyAttributeValue(element, kAXIdentifierAttribute as CFString, &value) == .success,
+        value as? String == identifier
+      {
+        return element
+      }
+      if AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &value) == .success,
+        let children = value as? [AXUIElement]
+      {
+        remaining.append(contentsOf: children)
+      }
+    }
+    throw NSError(domain: "ControlBaseline", code: 1, userInfo: [NSLocalizedDescriptionKey: "Missing \(identifier)"])
   }
 
   @MainActor
@@ -122,6 +148,35 @@ final class LiveControlAuditUITests: XCTestCase {
     attachment.name = name
     attachment.lifetime = .keepAlways
     add(attachment)
+  }
+
+  @MainActor
+  func testHistoryExportSavesTheSelectedPeriod() throws {
+    let verification = VerificationApplication(
+      testName: name, profile: VerificationProfile(fixture: .controlAudit, nativePanels: true))
+    addTeardownBlock { @MainActor in verification.terminate() }
+    verification.launch()
+    XCTAssertTrue(verification.tabs.waitForExistence(timeout: 5))
+    verification.tab("History").click()
+    let application = verification.application
+    let period = application.descendants(matching: .any)["history-period"]
+    segment("Today", in: period).click()
+    let destination = verification.supportDirectory.appendingPathComponent("token-menu-bar-history.csv")
+    XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
+
+    application.buttons["history-export"].click()
+    let save = application.buttons["Save"]
+    XCTAssertTrue(save.waitForExistence(timeout: 2))
+    XCTAssertTrue(save.isHittable)
+    save.click()
+
+    XCTAssertTrue(waitUntil(timeout: 2) { FileManager.default.fileExists(atPath: destination.path) })
+    let rows = try String(contentsOf: destination, encoding: .utf8).split(separator: "\n")
+    XCTAssertEqual(rows.first, "timestamp,key,label,used_percent,resets_at")
+    XCTAssertGreaterThan(rows.count, 1, "The selected period exported no synthetic samples")
+    XCTAssertTrue(verification.tabs.isEnabled)
+    verification.tab("Usage").click()
+    XCTAssertTrue(application.descendants(matching: .any)["tab-content-Usage"].waitForExistence(timeout: 2))
   }
 
   @MainActor
