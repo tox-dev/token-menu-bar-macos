@@ -2,6 +2,11 @@ name: Settings OCR diagnostic
 
 on:
   workflow_dispatch:
+    inputs:
+      probe:
+        type: choice
+        options: [ocr, scroll]
+        default: ocr
 
 permissions:
   contents: read
@@ -9,6 +14,7 @@ permissions:
 
 jobs:
   recognize:
+    if: ${{ inputs.probe == 'ocr' }}
     runs-on: xcode-27
     timeout-minutes: 15
     steps:
@@ -107,3 +113,21 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
+
+  scroll:
+    if: ${{ inputs.probe == 'scroll' }}
+    runs-on: macos-14
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Select Xcode 16
+        env:
+          MIN_XCODE_MAJOR: 16
+          EXACT_XCODE_MAJOR: 16
+        run: Scripts/select-xcode.sh
+      - name: Test nonpresenting input pass-through
+        run: |
+          env -u TOKEN_MENU_BAR_TEST_DESKTOP swift test --jobs 2 --no-parallel \
+            --filter scrollerStylerLeavesUnderlyingControlsInteractive

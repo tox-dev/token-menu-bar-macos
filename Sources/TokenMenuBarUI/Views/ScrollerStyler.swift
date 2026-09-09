@@ -33,6 +33,8 @@ public struct ScrollerStyler: NSViewRepresentable {
   }
 
   @MainActor final class ProbeView: NSView {
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
     override func viewDidMoveToSuperview() {
       super.viewDidMoveToSuperview()
       ScrollerStyler.applyEnclosing(from: self)

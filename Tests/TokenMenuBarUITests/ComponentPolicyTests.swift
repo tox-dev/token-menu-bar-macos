@@ -68,6 +68,15 @@ import TokenMenuBarTestSupport
   }
 }
 
+@Test @MainActor func scrollerStylerLeavesUnderlyingControlsInteractive() {
+  let container = NSView(frame: CGRect(x: 0, y: 0, width: 120, height: 40))
+  let button = NSButton(frame: container.bounds)
+  container.addSubview(button)
+  container.addSubview(ScrollerStyler.ProbeView(frame: container.bounds))
+
+  #expect(container.hitTest(CGPoint(x: 60, y: 20)) === button)
+}
+
 @Test @MainActor func scrollerStylerUsesAutoHidingVerticalOverlay() {
   let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 100, height: 100))
   let probe = ScrollerStyler.ProbeView(frame: .zero)
