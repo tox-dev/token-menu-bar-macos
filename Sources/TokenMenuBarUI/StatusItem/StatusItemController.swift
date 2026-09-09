@@ -333,7 +333,7 @@ public final class StatusItemController {
       }
       button.attributedTitle = StatusItemRenderer.attributedTitle(for: model, height: height, dark: isDark)
       button.setAccessibilityLabel(StatusItemRenderer.accessibilityDescription(for: model))
-      button.toolTip = model.cells.map(\.tooltip).joined(separator: "\n")
+      button.toolTip = model.tooltip
     }
     // Switching from variable to fixed length adds AppKit spacing and moves the popover anchor.
     let length = frozenLength ?? ceil(button.cell!.cellSize.width)

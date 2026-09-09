@@ -214,6 +214,18 @@ private final class ResumableClock: @unchecked Sendable {
   #expect(controller.item.button?.imagePosition != .noImage)
 }
 
+@Test @MainActor func statusItemKeepsTheQuotaWarningInItsIconTooltip() {
+  let controller = StatusItemController(log: makeLog(), autosaveName: nil, presentMenu: { _ in })
+  defer { controller.remove() }
+  let model = StatusItemModel(
+    cells: [], iconTone: .attention, showsIcon: true, countdownActive: false,
+    accessibilitySummary: "Claude: Weekly included quota exhausted. Resets in 2 days.")
+
+  controller.update(model)
+
+  #expect(controller.item.button?.toolTip == model.accessibilitySummary)
+}
+
 @Test @MainActor func statusItemRendersAnIconBesideNonemptyCells() {
   let controller = statusController()
   defer { controller.remove() }

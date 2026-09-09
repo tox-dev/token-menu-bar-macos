@@ -204,6 +204,7 @@ public enum StatusTemplate {
     if context.isLimited {
       switch name {
       case "pct", "pct0", "pct1", "pct2", "remaining": return StatusRun(text: "Limit", kind: .usage(100))
+      case "pctOrReset" where context.window.resetsAt == nil: return StatusRun(text: "Limit", kind: .usage(100))
       default: break
       }
     }

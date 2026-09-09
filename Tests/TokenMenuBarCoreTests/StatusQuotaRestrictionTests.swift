@@ -51,6 +51,13 @@ func quotaRestrictionSurvivesWidthAdaptation(tier: StatusTier) {
   #expect(model.accessibilitySummary == "Claude: Included quota limited by All models (100% used; resets 2d 0h).")
 }
 
+@Test(arguments: [StatusTier.configured, .miniBars, .iconOnly])
+func quotaRestrictionRemainsInTheTooltip(tier: StatusTier) {
+  #expect(
+    StatusItemBuilder.build(restrictedInput().with(tier: tier)).tooltip
+      .contains("Included quota limited by All models (100% used; resets 2d 0h)."))
+}
+
 @Test func iconOnlyStatusWarnsWhenTheSelectedQuotaItselfIsExhausted() {
   let model = StatusItemBuilder.build(restrictedInput(sessionPercent: 100, weeklyPercent: 40).with(tier: .iconOnly))
   #expect(model.iconTone == .attention)
@@ -114,6 +121,11 @@ func unrelatedProvidersDoNotInheritClaudeQuotaRules(provider: ProviderID) {
 @Test func unknownBlockingResetDoesNotPromiseTheSessionReset() {
   let model = StatusItemBuilder.build(restrictedInput(format: .percentCountdown, weeklyReset: nil))
   #expect(StatusTemplate.plainText(model.cells[0].lines) == "CC 5h Limit · --")
+}
+
+@Test func restrictedCountdownWithUnknownResetShowsLimit() {
+  let model = StatusItemBuilder.build(restrictedInput(format: .countdownWhenExhausted, weeklyReset: nil))
+  #expect(StatusTemplate.plainText(model.cells[0].lines) == "CC 5h\nLimit")
 }
 
 @Test(arguments: [StatusFormat.percentCountdown, .countdownWhenExhausted])

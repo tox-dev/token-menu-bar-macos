@@ -59,6 +59,10 @@ public struct StatusItemModel: Hashable, Sendable {
   }
 
   public static let empty = StatusItemModel(cells: [], iconTone: .normal, showsIcon: true, countdownActive: false)
+
+  public var tooltip: String {
+    accessibilitySummary ?? cells.map(\.tooltip).joined(separator: "\n")
+  }
 }
 
 public enum WindowOrder: String, CaseIterable, Codable, Sendable {

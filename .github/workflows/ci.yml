@@ -120,15 +120,31 @@ jobs:
             Scripts/with-test-desktop.sh Scripts/with-render-checks.sh 0 swift test --jobs 2 --no-parallel \
               --filter 'verificationChoosers|liveDependencyHelpers|rootViewWithoutAChooser|startupClosureControllerRootCallbacks|liveChooserDefaults|popoverClosingCancels|popoverKeepsTheSheet|popoverCloseRestores|popoverRoutes|popoverLeaves'
           elif [[ "$CHECK" == quota ]]; then
-            just test 'hiddenWeeklyLimit|restricted|customFormatsCannotHide|anUnusedSession|quotaRestriction|nonbindingWeekly|scopedClaude|accountWeekly|codexQuotaRestrictions|codexScopedWeekly|unrelatedProviders|unknownBlocking|unknownCodexQuota|inactiveSelectedQuota|multipleExhausted|statusRestriction|iconOnlyStatus|builder|countdown|pctOrReset|template'
+            Scripts/check-test-isolation.sh
+            Scripts/with-test-desktop.sh Scripts/with-render-checks.sh 0 swift test --jobs 2 --no-parallel \
+              --enable-code-coverage -Xswiftc -Xllvm -Xswiftc -instrprof-atomic-counter-update-all \
+              --filter 'hiddenWeeklyLimit|restricted|customFormatsCannotHide|anUnusedSession|quotaRestriction|nonbindingWeekly|scopedClaude|accountWeekly|codexQuotaRestrictions|codexScopedWeekly|unrelatedProviders|unknownBlocking|unknownCodexQuota|inactiveSelectedQuota|multipleExhausted|statusRestriction|iconOnlyStatus|builder|countdown|pctOrReset|template|statusItemKeepsTheQuotaWarning|rendererBuildsTitles|appIconDrawsEveryTone'
           else
             just test 'transcriptReaderFinishesAColdTreeOutsideTheProviderPoll|rolloutReaderBoundsTreeEnumerationSlices'
           fi 2>&1 | tee .build/reader-tests.log | awk '/Test |Test run|error:|warning:|Build complete/ { print; fflush() }'
+      - name: Report quota coverage
+        if: inputs.controls == 'quota'
+        run: |
+          bin_dir="$(swift build --show-bin-path)"
+          xcrun llvm-profdata merge -sparse "$bin_dir"/codecov/*.profraw -o "$bin_dir/codecov/quota.profdata"
+          binary="$bin_dir/TokenMenuBarPackageTests.xctest/Contents/MacOS/TokenMenuBarPackageTests"
+          xcrun llvm-cov show "$binary" -instr-profile "$bin_dir/codecov/quota.profdata" -use-color=false \
+            Sources/TokenMenuBarCore/StatusBar/StatusQuotaRestriction.swift \
+            Sources/TokenMenuBarCore/StatusBar/StatusItemModel.swift \
+            Sources/TokenMenuBarCore/StatusBar/StatusTemplate.swift \
+            Tests/TokenMenuBarCoreTests/StatusQuotaRestrictionTests.swift > .build/quota-coverage.txt
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
           name: ${{ inputs.controls }}-tests-macos-26
-          path: .build/reader-tests.log
+          path: |
+            .build/reader-tests.log
+            .build/quota-coverage.txt
           retention-days: 1
 
   ui:
