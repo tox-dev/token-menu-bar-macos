@@ -124,7 +124,6 @@ public struct WindowSelectionList: View {
         .opacity(0)
         .accessibilityHidden(true)
     }
-    .onAppear(perform: prepareDrafts)
     .task(id: activityRequest) { await loadActivity(activityRequest) }
     .onChange(of: focusRequest) { _, request in
       guard let request else { return }
@@ -676,15 +675,7 @@ public struct WindowSelectionList: View {
     guard let row = row(key) else { return }
     let draft = ShortLabelPolicy.draft(label)
     labelDrafts[key] = draft
-    guard
-      ShortLabelPolicy.conflictingKey(
-        draft, for: key, windows: availableWindows, overrides: settings.shortLabels) == nil
-    else { return }
-    let value = ShortLabelPolicy.override(draft, default: row.defaultLabel)
-    guard settings.shortLabels[key] != value else { return }
-    labelDrafts[key] = value ?? row.defaultLabel
-    settings.setShortLabel(value, for: key)
-    environment.actions.settingsChanged()
+    commitLabel(key, draft: draft, default: row.defaultLabel)
   }
 
   func commitLabel(_ key: WindowKey) {
@@ -693,15 +684,19 @@ public struct WindowSelectionList: View {
   }
 
   func commitLabel(_ key: WindowKey, default defaultLabel: String) {
-    let draft = labelDrafts[key] ?? defaultLabel
+    guard let draft = labelDrafts[key] else { return }
+    commitLabel(key, draft: draft, default: defaultLabel)
+  }
+
+  private func commitLabel(_ key: WindowKey, draft: String, default defaultLabel: String) {
     guard
       ShortLabelPolicy.conflictingKey(
         draft, for: key, windows: availableWindows, overrides: settings.shortLabels) == nil
     else { return }
     let value = ShortLabelPolicy.override(draft, default: defaultLabel)
+    labelDrafts[key] = nil
     guard settings.shortLabels[key] != value else { return }
     settings.setShortLabel(value, for: key)
-    labelDrafts[key] = value ?? defaultLabel
     environment.actions.settingsChanged()
   }
 
@@ -709,13 +704,8 @@ public struct WindowSelectionList: View {
     for key in labelDrafts.keys { commitLabel(key) }
   }
 
-  func prepareDrafts() {
-    for row in groups.flatMap(\.rows) where labelDrafts[row.key] == nil { labelDrafts[row.key] = row.label }
-  }
-
   func revert(_ row: SettingsModelRow) {
-    labelDrafts[row.key] = row.defaultLabel
-    commitLabel(row.key, default: row.defaultLabel)
+    commitLabel(row.key, draft: row.defaultLabel, default: row.defaultLabel)
   }
 
   func isOverridden(_ row: SettingsModelRow) -> Bool {

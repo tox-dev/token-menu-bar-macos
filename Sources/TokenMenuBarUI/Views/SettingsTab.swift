@@ -594,13 +594,21 @@ public struct SettingsTab: View {
         if settings.statusFormat == .custom {
           PanelRow("Template") {
             VStack(alignment: .leading, spacing: 3) {
-              TextField("Template", text: menuBarSetting(\.customTemplate))
+              TextEditor(text: menuBarSetting(\.customTemplate))
                 .font(.body.monospaced())
+                .autocorrectionDisabled()
+                .frame(height: 54)
+                .overlay {
+                  RoundedRectangle(cornerRadius: 4).strokeBorder(Color.primary.opacity(0.2))
+                    .allowsHitTesting(false)
+                }
+                .accessibilityLabel("Template")
+                .accessibilityIdentifier("status-template")
                 .richHelp(
                   TooltipContent(
                     title: "Custom template",
                     body:
-                      "Builds each status cell from the listed tokens. "
+                      "Builds each status cell from the listed tokens. Return starts another line. "
                       + "The {label} token uses the short label beside each model; unknown tokens render no text."
                   ))
               Text("{cell}  {pct}  {label}  {provider}  {window}  {reset}  {pctOrReset}")

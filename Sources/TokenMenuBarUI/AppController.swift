@@ -493,8 +493,13 @@ public final class AppController {
         guard view is NSDatePicker || view is NSPopUpButton || view is NSStepper else { continue }
         let point = view.convert(CGPoint(x: view.bounds.midX, y: view.bounds.midY), to: root.superview)
         let hit = root.hitTest(point)
+        let frame = window.convertToScreen(view.convert(view.bounds, to: nil))
+        let screenPoint = CGPoint(x: frame.midX, y: frame.midY)
+        let windowHit = view.isHiddenOrHasHiddenAncestor ? nil : window.accessibilityHitTest(screenPoint)
+        let applicationHit =
+          view.isHiddenOrHasHiddenAncestor ? nil : NSApplication.shared.accessibilityHitTest(screenPoint)
         dependencies.log.logInfo(
-          "hit.control class=\(type(of: view)) id=\(view.accessibilityIdentifier()) frame=\(window.convertToScreen(view.convert(view.bounds, to: nil))) enabled=\((view as? NSControl)?.isEnabled ?? false) hidden=\(view.isHiddenOrHasHiddenAncestor) point=\(point) hit=\(hit.map { String(describing: type(of: $0)) } ?? "nil") responder=\(String(describing: window.firstResponder))"
+          "hit.control class=\(type(of: view)) id=\(view.accessibilityIdentifier()) frame=\(frame) enabled=\((view as? NSControl)?.isEnabled ?? false) axEnabled=\(view.isAccessibilityEnabled()) hidden=\(view.isHiddenOrHasHiddenAncestor) point=\(point) hit=\(hit.map { String(describing: type(of: $0)) } ?? "nil") axWindow=\(windowHit.map { String(describing: type(of: $0)) } ?? "nil") axApplication=\(applicationHit.map { String(describing: type(of: $0)) } ?? "nil") responder=\(String(describing: window.firstResponder))"
         )
       }
     }

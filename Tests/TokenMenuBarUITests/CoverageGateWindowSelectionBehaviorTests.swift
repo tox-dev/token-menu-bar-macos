@@ -23,7 +23,10 @@ import TokenMenuBarTestSupport
   list.label(row.key, window: row.window).wrappedValue = "CUSTOM"
   #expect(environment.settings.shortLabels[row.key] == "CUSTOM")
 
-  drafts[row.key] = nil
+  list.commitLabel(row.key, default: row.defaultLabel)
+  #expect(environment.settings.shortLabels[row.key] == "CUSTOM")
+
+  drafts[row.key] = ""
   list.commitLabel(row.key, default: row.defaultLabel)
   #expect(environment.settings.shortLabels[row.key] == nil)
 
@@ -34,6 +37,33 @@ import TokenMenuBarTestSupport
     list.label(missingKey, window: missingWindow).wrappedValue
       == StatusItemBuilder.defaultShortLabel(provider: .gemini, window: missingWindow))
   #expect(list.labelConflictDescription(row, conflictingKey: missingKey).contains("Gemini missing"))
+}
+
+@Test(arguments: ["OTHER", nil] as [String?]) @MainActor
+func modelLabelsFollowSavedChangesWithoutRestoringCommittedDrafts(replacement: String?) throws {
+  let environment = try makeEnvironment()
+  var drafts: [WindowKey: String] = [:]
+  let list = WindowSelectionList(
+    environment: environment, labelDrafts: Binding(get: { drafts }, set: { drafts = $0 }))
+  let row = try #require(list.groups.first?.rows.first)
+  list.label(row).wrappedValue = "FIRST"
+  #expect(environment.settings.shortLabels[row.key] == "FIRST")
+
+  environment.settings.shortLabels[row.key] = replacement
+  list.commitDrafts()
+
+  #expect(environment.settings.shortLabels[row.key] == replacement)
+  #expect(list.label(row.key, window: row.window).wrappedValue == (replacement ?? row.defaultLabel))
+}
+
+@Test @MainActor func modelLabelsPersistWithoutAnExternalDraftBinding() throws {
+  let environment = try makeEnvironment()
+  let list = WindowSelectionList(environment: environment)
+  let row = try #require(list.groups.first?.rows.first)
+  list.label(row).wrappedValue = "FIRST"
+  #expect(environment.settings.shortLabels[row.key] == "FIRST")
+  list.revert(row)
+  #expect(environment.settings.shortLabels[row.key] == nil)
 }
 
 @Test @MainActor func coverageGateWindowReorderControlsRunButtonAndAccessibilityActions() throws {
@@ -77,7 +107,7 @@ import TokenMenuBarTestSupport
   #expect(environment.settings.modelOrder != originalModels)
   list.revertAction(row)()
   #expect(environment.settings.shortLabels[row.key] == nil)
-  #expect(drafts[row.key] == row.defaultLabel)
+  #expect(drafts[row.key] == nil)
   let provider = list.reorderDragAction("model:\(row.key.storageKey)")()
   #expect(provider.canLoadObject(ofClass: NSString.self))
 

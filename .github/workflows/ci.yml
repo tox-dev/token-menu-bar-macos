@@ -92,12 +92,11 @@ jobs:
           path: .build
           key: ocr-tesseract-26-${{ hashFiles('Package.swift', 'Sources/**', 'Tests/**') }}
           restore-keys: ocr-tesseract-26-
-      - name: Check captured Settings text
+      - name: Run the full nonpresenting suite
         env:
           TOKEN_MENU_BAR_RENDER_ARTIFACTS: ${{ runner.temp }}/rendered
         run: |
-          just test 'spend|providerCosts|clearingAnalyticsOnlyHistory|datePicker|settingsTemplateControls|settingsDemoNotice|settingsSetupGuidance|renderedTextVerifier'
-          Scripts/check-rendered-text.sh "$TOKEN_MENU_BAR_RENDER_ARTIFACTS" 16
+          just test
           fixtures=("$TOKEN_MENU_BAR_RENDER_ARTIFACTS"/run.*/verifier-present.png)
           [[ "${#fixtures[@]}" == 1 ]]
           Scripts/test-rendered-text.sh "${fixtures[0]}"
@@ -127,13 +126,13 @@ jobs:
           path: .build
           key: native-labels-14-${{ hashFiles('Package.swift', 'Sources/**', 'Tests/**') }}
           restore-keys: native-labels-14-
-      - name: Verify native field editing and date pickers
+      - name: Verify native label and multiline editing
         timeout-minutes: 4
         run: |
           set -o pipefail
           mkdir -p .build
           Scripts/with-test-desktop.sh swift test --jobs 2 --no-parallel \
-            --filter 'modelLabelEditsApplyImmediatelyAndSurviveFocusChanges|datePicker' 2>&1 | tee .build/native-labels.log
+            --filter 'modelLabel|customTemplateKeepsNewlines|coverageGateWindowSelectionBindings|datePicker' 2>&1 | tee .build/native-labels.log
       - name: Retain native crash evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a

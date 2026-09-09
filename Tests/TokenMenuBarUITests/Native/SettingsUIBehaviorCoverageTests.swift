@@ -127,6 +127,37 @@ func modelLabelEditsApplyImmediatelyAndSurviveFocusChanges(edits: [String]) asyn
   #expect(environment.settings.shortLabels[row.key] == nil)
 }
 
+@Test(arguments: [["{label}\n{pct}"], ["{label}", "\n", "{pct}"]]) @MainActor
+func customTemplateKeepsNewlinesDuringNativeEditing(edits: [String]) async throws {
+  let environment = try makeEnvironment()
+  environment.settings.statusFormat = .custom
+  environment.disclosures.setExpanded(true, for: "settings.display")
+  let fixture = NativeHosting(
+    SettingsTab(environment: environment, mountsIncrementally: false), width: 880, height: 1_600)
+  defer { fixture.close() }
+  fixture.show()
+  let window = try #require(fixture.view.window)
+  window.makeKey()
+  let editor = try #require(
+    allViews(in: fixture.view).compactMap { $0 as? NSTextView }.first {
+      $0.isEditable && $0.string == environment.settings.customTemplate
+    })
+  #expect(window.makeFirstResponder(editor))
+  editor.selectAll(nil)
+  for edit in edits {
+    editor.insertText(edit, replacementRange: editor.selectedRange())
+    await mainActorTurn()
+  }
+  await waitUntil { environment.settings.customTemplate == edits.joined() }
+  #expect(environment.settings.customTemplate == "{label}\n{pct}")
+  #expect(editor.string == "{label}\n{pct}")
+  #expect(try #require(SettingsTab(environment: environment).previewModel.cells.first).lines.count == 2)
+
+  environment.settings.customTemplate = "{provider}\n{label}:{pct}"
+  await waitUntil { editor.string == environment.settings.customTemplate }
+  #expect(editor.string == "{provider}\n{label}:{pct}")
+}
+
 @Test @MainActor func settingsRemountIsReadyWithoutADeferredFill() async throws {
   let environment = try makeEnvironment()
   let firstReady = ReadyState()

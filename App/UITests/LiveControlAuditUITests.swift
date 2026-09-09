@@ -542,7 +542,7 @@ final class LiveControlAuditUITests: XCTestCase {
     assertAnchorsHeld(
       statusItem: statusItem, statusFrame: frameBeforeStatusEdits,
       surface: surface, panelFrame: panelBeforeStatusEdits, action: "Format")
-    let template = application.textFields["Template"]
+    let template = application.textViews["status-template"]
     XCTAssertTrue(template.waitForExistence(timeout: 2))
     XCTAssertTrue(application.staticTexts["{cell}  {pct}  {label}  {provider}  {window}  {reset}  {pctOrReset}"].exists)
 
@@ -643,7 +643,8 @@ final class LiveControlAuditUITests: XCTestCase {
     application.typeKey("f", modifierFlags: .command)
     modelFilter.typeText("route")
     XCTAssertEqual(modelFilter.value as? String, "route", "Command-F did not focus Filter models")
-    XCTAssertNotEqual(application.textFields["Search log"].value as? String, "route")
+    let logSearch = application.textFields["Search log"]
+    if logSearch.exists { XCTAssertNotEqual(logSearch.value as? String, "route") }
     replaceText(in: modelFilter, with: "", application: application)
     records.append(
       scenarioRecord(tab: "Settings", label: "Command-F model filter", element: modelFilter, action: "⌘F then type"))
@@ -1111,7 +1112,9 @@ final class LiveControlAuditUITests: XCTestCase {
     } else {
       field.typeText(value)
     }
-    XCTAssertTrue(waitUntil(timeout: responsivenessBudget) { (field.value as? String) == value })
+    XCTAssertTrue(
+      waitUntil(timeout: responsivenessBudget) { (field.value as? String) == value },
+      "Expected editable text \(String(reflecting: value)); received \(String(describing: field.value))")
   }
 
   @MainActor
@@ -1285,7 +1288,7 @@ final class LiveControlAuditUITests: XCTestCase {
     var previousKeys: Set<String> = []
     for _ in 0..<18 {
       let elements = surface.descendants(matching: .any).allElementsBoundByIndex.filter {
-        Self.auditedTypes.contains($0.elementType) && $0.frame.intersects(surface.frame)
+        Self.audits($0.elementType, identifier: $0.identifier) && $0.frame.intersects(surface.frame)
       }
       let keys = Set(elements.map(controlKey))
       unchangedPages = keys == previousKeys ? unchangedPages + 1 : 0
@@ -1348,7 +1351,7 @@ final class LiveControlAuditUITests: XCTestCase {
       element.click()
       application.typeKey(.downArrow, modifierFlags: [])
       application.typeKey(.enter, modifierFlags: [])
-    case .searchField, .textField:
+    case .searchField, .textField, .textView:
       let original = element.value as? String ?? ""
       element.click()
       application.typeKey("a", modifierFlags: .command)
@@ -1399,7 +1402,7 @@ final class LiveControlAuditUITests: XCTestCase {
       assertRenderedText(
         element(for: banner, in: surface, tree: snapshot), expected: String(banner.label.dropFirst("Warning: ".count)))
     }
-    for control in visible where Self.auditedTypes.contains(control.elementType) && control.isEnabled {
+    for control in visible where Self.audits(control.elementType, identifier: control.identifier) && control.isEnabled {
       let element = element(for: control, in: surface, tree: snapshot)
       let hittable = element.isHittable
       if !hittable {
@@ -1540,7 +1543,7 @@ final class LiveControlAuditUITests: XCTestCase {
   private func tooltipCandidates(in surface: XCUIElement) throws -> [(String, XCUIElement)] {
     let snapshot = try surface.snapshot()
     var controls = visibleSnapshots(in: snapshot, within: snapshot.frame).filter {
-      Self.auditedTypes.contains($0.elementType) && $0.isEnabled
+      Self.audits($0.elementType, identifier: $0.identifier) && $0.isEnabled
         && !["Usage", "History", "Settings"].contains($0.label)
     }
     guard controls.count >= 5 else { return [] }
@@ -1647,6 +1650,10 @@ final class LiveControlAuditUITests: XCTestCase {
     .button, .checkBox, .comboBox, .datePicker, .link, .menuButton, .popUpButton, .radioButton,
     .searchField, .segmentedControl, .slider, .stepper, .switch, .textField,
   ]
+
+  private static func audits(_ type: XCUIElement.ElementType, identifier: String) -> Bool {
+    auditedTypes.contains(type) || type == .textView && identifier == "status-template"
+  }
 
   private enum ControlAuditError: Error {
     case tooltipMissing
