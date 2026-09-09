@@ -195,6 +195,8 @@ public struct HistoryTab: View {
       "From", selection: startBinding, displayedComponents: dateComponents
     )
     .accessibilityIdentifier("history-from")
+    .accessibilityLabel("From")
+    .accessibilityValue(startBinding.wrappedValue.formatted(date: .abbreviated, time: .shortened))
     .environment(\.timeZone, presenter.chartTimeZone)
     .richHelp(
       TooltipContent(
@@ -208,6 +210,8 @@ public struct HistoryTab: View {
       "To", selection: endBinding, displayedComponents: dateComponents
     )
     .accessibilityIdentifier("history-to")
+    .accessibilityLabel("To")
+    .accessibilityValue(endBinding.wrappedValue.formatted(date: .abbreviated, time: .shortened))
     .environment(\.timeZone, presenter.chartTimeZone)
     .richHelp(
       TooltipContent(

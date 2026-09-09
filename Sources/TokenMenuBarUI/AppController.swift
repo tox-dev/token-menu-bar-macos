@@ -504,6 +504,11 @@ public final class AppController {
           "hit.control class=\(type(of: view)) id=\(view.accessibilityIdentifier()) frame=\(frame) enabled=\((view as? NSControl)?.isEnabled ?? false) axEnabled=\(view.isAccessibilityEnabled()) hidden=\(view.isHiddenOrHasHiddenAncestor) point=\(point) hit=\(hit.map { String(describing: type(of: $0)) } ?? "nil") axWindow=\(windowHit.map { String(describing: type(of: $0)) } ?? "nil") axApplication=\(applicationHit.map { String(describing: type(of: $0)) } ?? "nil") responder=\(String(describing: window.firstResponder))"
         )
         if !view.isHiddenOrHasHiddenAncestor {
+          if let stepper = view as? NSStepper {
+            dependencies.log.logInfo(
+              "hit.stepper value=\(stepper.doubleValue) min=\(stepper.minValue) max=\(stepper.maxValue) increment=\(stepper.increment) wraps=\(stepper.valueWraps)"
+            )
+          }
           for element in [windowHit, applicationHit].compactMap({ $0 }) + (view.accessibilityChildren() ?? []) {
             recordAccessibilityState(element)
           }

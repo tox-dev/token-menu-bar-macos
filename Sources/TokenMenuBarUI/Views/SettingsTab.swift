@@ -1011,16 +1011,19 @@ public struct SettingsTab: View {
   private var data: some View {
     VStack(alignment: .leading, spacing: 7) {
       PanelRow("Retention") {
-        Stepper("\(settings.historyRetentionDays) days", value: historyRetentionDays, in: 7...365)
-          .accessibilityLabel("History retention in days")
-          .accessibilityIdentifier("history-retention")
-          .richHelp(
-            TooltipContent(
-              title: "History retention",
-              body:
-                "Keeps usage samples for 7 to 365 days. A longer period uses more disk space "
-                + "and makes older ranges available in History."
-            ))
+        HStack(spacing: 6) {
+          Text("\(settings.historyRetentionDays) days")
+          NativeIntegerStepper(
+            value: historyRetentionDays, range: 7...365,
+            label: "History retention in days", identifier: "history-retention")
+        }
+        .richHelp(
+          TooltipContent(
+            title: "History retention",
+            body:
+              "Keeps usage samples for 7 to 365 days. A longer period uses more disk space "
+              + "and makes older ranges available in History."
+          ))
       }
       SupportingDetails(
         "Collection and integrations", id: "settings.collection", state: environment.disclosures,

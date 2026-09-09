@@ -180,6 +180,47 @@ final class NativeButtonContainer: NSView {
   }
 }
 
+struct NativeIntegerStepper: NSViewRepresentable {
+  @Binding var value: Int
+  let range: ClosedRange<Int>
+  let label: String
+  let identifier: String
+
+  func makeNSView(context: Context) -> NSStepper {
+    let stepper = NSStepper()
+    stepper.controlSize = .small
+    stepper.minValue = Double(range.lowerBound)
+    stepper.maxValue = Double(range.upperBound)
+    stepper.increment = 1
+    stepper.valueWraps = false
+    stepper.target = context.coordinator
+    stepper.action = #selector(Coordinator.changed(_:))
+    stepper.setAccessibilityLabel(label)
+    stepper.setAccessibilityIdentifier(identifier)
+    return stepper
+  }
+
+  func updateNSView(_ stepper: NSStepper, context: Context) {
+    stepper.integerValue = value
+    stepper.isEnabled = context.environment.isEnabled
+    context.coordinator.value = $value
+  }
+
+  func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSStepper, context: Context) -> CGSize? {
+    nsView.fittingSize
+  }
+
+  func makeCoordinator() -> Coordinator { Coordinator(value: $value) }
+
+  @MainActor final class Coordinator: NSObject {
+    var value: Binding<Int>
+
+    init(value: Binding<Int>) { self.value = value }
+
+    @objc func changed(_ sender: NSStepper) { value.wrappedValue = sender.integerValue }
+  }
+}
+
 public struct NativeSegmentedControl<Value: Hashable>: NSViewRepresentable {
   @Binding private var selection: Value
   private let values: [Value]
