@@ -1,0 +1,15 @@
+{
+  "billingCycleStart": "2026-08-10T00:00:00.000Z",
+  "billingCycleEnd": "2026-09-10T00:00:00.000Z",
+  "planUsage": {
+    "limit": 5000,
+    "remaining": 2000,
+    "used": 3000,
+    "autoPercentUsed": 40,
+    "apiPercentUsed": 80
+  },
+  "spendLimitUsage": {
+    "limitType": "user"
+  },
+  "displayMessage": "You have used 60% of your plan."
+}

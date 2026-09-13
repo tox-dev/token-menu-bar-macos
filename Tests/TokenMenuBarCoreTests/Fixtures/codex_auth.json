@@ -1,0 +1,19 @@
+{
+  "auth_mode": "chatgpt",
+  "OPENAI_API_KEY": null,
+  "tokens": {
+    "id_token_claims": {
+      "email": "user@example.com",
+      "https://api.openai.com/auth": {
+        "chatgpt_plan_type": "pro",
+        "chatgpt_account_id": "acct_123",
+        "chatgpt_subscription_active_until": "2026-07-23T19:57:23+00:00"
+      },
+      "exp": 1788044000
+    },
+    "access_token": "ACCESS-EXAMPLE",
+    "refresh_token": "REFRESH-EXAMPLE",
+    "account_id": "00000000-0000-4000-8000-000000000000"
+  },
+  "last_refresh": "2026-08-28T19:59:48.413665Z"
+}

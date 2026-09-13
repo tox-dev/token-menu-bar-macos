@@ -1,0 +1,804 @@
+{
+  "data": [
+    {
+      "date": "2026-08-03",
+      "totals": {
+        "users": 1,
+        "threads": 0,
+        "turns": 1,
+        "credits": 3.5250000000000004
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 0,
+          "turns": 1,
+          "credits": 3.5250000000000004
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.3-codex-spark",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 0,
+          "turns": 1
+        }
+      ]
+    },
+    {
+      "date": "2026-08-06",
+      "totals": {
+        "users": 1,
+        "threads": 2,
+        "turns": 52,
+        "credits": 3018.73065,
+        "uncached_text_input_tokens": 1508758,
+        "cached_text_input_tokens": 36543232,
+        "text_output_tokens": 123294,
+        "text_total_tokens": 38175284
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 2,
+          "turns": 52,
+          "credits": 3018.73065,
+          "uncached_text_input_tokens": 1508758,
+          "cached_text_input_tokens": 36543232,
+          "text_output_tokens": 123294,
+          "text_total_tokens": 38175284
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.3-codex-spark",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 2,
+          "turns": 40
+        },
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 2,
+          "turns": 12
+        }
+      ]
+    },
+    {
+      "date": "2026-08-07",
+      "totals": {
+        "users": 1,
+        "threads": 63,
+        "turns": 123,
+        "credits": 19649.098375,
+        "uncached_text_input_tokens": 39549213,
+        "cached_text_input_tokens": 906882560,
+        "text_output_tokens": 4492553,
+        "text_total_tokens": 950924326
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 0,
+          "turns": 60,
+          "credits": 13374.183425,
+          "uncached_text_input_tokens": 20526747,
+          "cached_text_input_tokens": 680495104,
+          "text_output_tokens": 3069535,
+          "text_total_tokens": 704091386
+        },
+        {
+          "client_id": "CODEX_SERVICE_EXEC",
+          "users": 1,
+          "threads": 63,
+          "turns": 63,
+          "credits": 6274.91495,
+          "uncached_text_input_tokens": 19022466,
+          "cached_text_input_tokens": 226387456,
+          "text_output_tokens": 1423018,
+          "text_total_tokens": 246832940
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 63,
+          "turns": 123
+        }
+      ]
+    },
+    {
+      "date": "2026-08-08",
+      "totals": {
+        "users": 1,
+        "threads": 79,
+        "turns": 128,
+        "credits": 10270.333364999999,
+        "uncached_text_input_tokens": 20372459,
+        "cached_text_input_tokens": 470971648,
+        "text_output_tokens": 2452973,
+        "text_total_tokens": 493797080
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 0,
+          "turns": 49,
+          "credits": 5544.056225,
+          "uncached_text_input_tokens": 7691937,
+          "cached_text_input_tokens": 308174848,
+          "text_output_tokens": 973838,
+          "text_total_tokens": 316840623
+        },
+        {
+          "client_id": "CODEX_SERVICE_EXEC",
+          "users": 1,
+          "threads": 79,
+          "turns": 79,
+          "credits": 4726.27714,
+          "uncached_text_input_tokens": 12680522,
+          "cached_text_input_tokens": 162796800,
+          "text_output_tokens": 1479135,
+          "text_total_tokens": 176956457
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 79,
+          "turns": 128
+        }
+      ]
+    },
+    {
+      "date": "2026-08-09",
+      "totals": {
+        "users": 1,
+        "threads": 9,
+        "turns": 331,
+        "credits": 29912.351875,
+        "uncached_text_input_tokens": 44238447,
+        "cached_text_input_tokens": 1659520640,
+        "text_output_tokens": 4851384,
+        "text_total_tokens": 1708610471
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 2,
+          "turns": 324,
+          "credits": 28915.818675,
+          "uncached_text_input_tokens": 42753767,
+          "cached_text_input_tokens": 1607922304,
+          "text_output_tokens": 4630092,
+          "text_total_tokens": 1655306163
+        },
+        {
+          "client_id": "CODEX_SERVICE_EXEC",
+          "users": 1,
+          "threads": 7,
+          "turns": 7,
+          "credits": 996.5332,
+          "uncached_text_input_tokens": 1484680,
+          "cached_text_input_tokens": 51598336,
+          "text_output_tokens": 221292,
+          "text_total_tokens": 53304308
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 9,
+          "turns": 331
+        }
+      ]
+    },
+    {
+      "date": "2026-08-10",
+      "totals": {
+        "users": 1,
+        "threads": 103,
+        "turns": 842,
+        "credits": 33802.7182625,
+        "uncached_text_input_tokens": 56054469,
+        "cached_text_input_tokens": 1752140160,
+        "text_output_tokens": 6827137,
+        "text_total_tokens": 1815021766
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 1,
+          "turns": 740,
+          "credits": 28175.681675,
+          "uncached_text_input_tokens": 44165077,
+          "cached_text_input_tokens": 1495448064,
+          "text_output_tokens": 5282595,
+          "text_total_tokens": 1544895736
+        },
+        {
+          "client_id": "CODEX_SERVICE_EXEC",
+          "users": 1,
+          "threads": 102,
+          "turns": 102,
+          "credits": 5627.0365875,
+          "uncached_text_input_tokens": 11889392,
+          "cached_text_input_tokens": 256692096,
+          "text_output_tokens": 1544542,
+          "text_total_tokens": 270126030
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.4",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 13,
+          "turns": 13
+        },
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 90,
+          "turns": 829
+        }
+      ]
+    },
+    {
+      "date": "2026-08-11",
+      "totals": {
+        "users": 1,
+        "threads": 33,
+        "turns": 1155,
+        "credits": 38102.914300000004,
+        "uncached_text_input_tokens": 67455600,
+        "cached_text_input_tokens": 1923154304,
+        "text_output_tokens": 7508714,
+        "text_total_tokens": 1998118618
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 0,
+          "turns": 1122,
+          "credits": 36496.428,
+          "uncached_text_input_tokens": 63538094,
+          "cached_text_input_tokens": 1863936640,
+          "text_output_tokens": 7006611,
+          "text_total_tokens": 1934481345
+        },
+        {
+          "client_id": "CODEX_SERVICE_EXEC",
+          "users": 1,
+          "threads": 33,
+          "turns": 33,
+          "credits": 1606.4863,
+          "uncached_text_input_tokens": 3917506,
+          "cached_text_input_tokens": 59217664,
+          "text_output_tokens": 502103,
+          "text_total_tokens": 63637273
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 33,
+          "turns": 1155
+        }
+      ]
+    },
+    {
+      "date": "2026-08-12",
+      "totals": {
+        "users": 1,
+        "threads": 4,
+        "turns": 717,
+        "credits": 14218.8796,
+        "uncached_text_input_tokens": 27345642,
+        "cached_text_input_tokens": 680626688,
+        "text_output_tokens": 3057121,
+        "text_total_tokens": 711029451
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 0,
+          "turns": 713,
+          "credits": 13701.3825,
+          "uncached_text_input_tokens": 26550796,
+          "cached_text_input_tokens": 655646720,
+          "text_output_tokens": 2915932,
+          "text_total_tokens": 685113448
+        },
+        {
+          "client_id": "CODEX_SERVICE_EXEC",
+          "users": 1,
+          "threads": 4,
+          "turns": 4,
+          "credits": 517.4971,
+          "uncached_text_input_tokens": 794846,
+          "cached_text_input_tokens": 24979968,
+          "text_output_tokens": 141189,
+          "text_total_tokens": 25916003
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 4,
+          "turns": 717
+        }
+      ]
+    },
+    {
+      "date": "2026-08-13",
+      "totals": {
+        "users": 1,
+        "threads": 3,
+        "turns": 139,
+        "credits": 3536.3709,
+        "uncached_text_input_tokens": 7276246,
+        "cached_text_input_tokens": 173345792,
+        "text_output_tokens": 613357,
+        "text_total_tokens": 181235395
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 0,
+          "turns": 136,
+          "credits": 3486.478125,
+          "uncached_text_input_tokens": 7027287,
+          "cached_text_input_tokens": 172369920,
+          "text_output_tokens": 604591,
+          "text_total_tokens": 180001798
+        },
+        {
+          "client_id": "CODEX_SERVICE_EXEC",
+          "users": 1,
+          "threads": 3,
+          "turns": 3,
+          "credits": 49.892775,
+          "uncached_text_input_tokens": 248959,
+          "cached_text_input_tokens": 975872,
+          "text_output_tokens": 8766,
+          "text_total_tokens": 1233597
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 3,
+          "turns": 139
+        }
+      ]
+    },
+    {
+      "date": "2026-08-14",
+      "totals": {
+        "users": 1,
+        "threads": 0,
+        "turns": 70,
+        "credits": 2822.4968249999997,
+        "uncached_text_input_tokens": 5523999,
+        "cached_text_input_tokens": 142511616,
+        "text_output_tokens": 467469,
+        "text_total_tokens": 148503084
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 0,
+          "turns": 70,
+          "credits": 2822.4968249999997,
+          "uncached_text_input_tokens": 5523999,
+          "cached_text_input_tokens": 142511616,
+          "text_output_tokens": 467469,
+          "text_total_tokens": 148503084
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 0,
+          "turns": 70
+        }
+      ]
+    },
+    {
+      "date": "2026-08-15",
+      "totals": {
+        "users": 1,
+        "threads": 5,
+        "turns": 61,
+        "credits": 4605.482325,
+        "uncached_text_input_tokens": 7058219,
+        "cached_text_input_tokens": 251124736,
+        "text_output_tokens": 778861,
+        "text_total_tokens": 258961816
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 0,
+          "turns": 56,
+          "credits": 3925.3648,
+          "uncached_text_input_tokens": 5958100,
+          "cached_text_input_tokens": 215140864,
+          "text_output_tokens": 655122,
+          "text_total_tokens": 221754086
+        },
+        {
+          "client_id": "CODEX_SERVICE_EXEC",
+          "users": 1,
+          "threads": 5,
+          "turns": 5,
+          "credits": 680.117525,
+          "uncached_text_input_tokens": 1100119,
+          "cached_text_input_tokens": 35983872,
+          "text_output_tokens": 123739,
+          "text_total_tokens": 37207730
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 5,
+          "turns": 61
+        }
+      ]
+    },
+    {
+      "date": "2026-08-16",
+      "totals": {
+        "users": 1,
+        "threads": 1,
+        "turns": 16,
+        "credits": 1338.403975,
+        "uncached_text_input_tokens": 1856879,
+        "cached_text_input_tokens": 77852928,
+        "text_output_tokens": 177510,
+        "text_total_tokens": 79887317
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 1,
+          "turns": 16,
+          "credits": 1338.403975,
+          "uncached_text_input_tokens": 1856879,
+          "cached_text_input_tokens": 77852928,
+          "text_output_tokens": 177510,
+          "text_total_tokens": 79887317
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 1,
+          "turns": 16
+        }
+      ]
+    },
+    {
+      "date": "2026-08-22",
+      "totals": {
+        "users": 1,
+        "threads": 3,
+        "turns": 7,
+        "credits": 377.27466,
+        "uncached_text_input_tokens": 645739,
+        "cached_text_input_tokens": 26910976,
+        "text_output_tokens": 87182,
+        "text_total_tokens": 27643897
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 3,
+          "turns": 7,
+          "credits": 377.27466,
+          "uncached_text_input_tokens": 645739,
+          "cached_text_input_tokens": 26910976,
+          "text_output_tokens": 87182,
+          "text_total_tokens": 27643897
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 3,
+          "turns": 7
+        }
+      ]
+    },
+    {
+      "date": "2026-08-23",
+      "totals": {
+        "users": 1,
+        "threads": 0,
+        "turns": 10,
+        "credits": 1015.96072,
+        "uncached_text_input_tokens": 2155598,
+        "cached_text_input_tokens": 71739392,
+        "text_output_tokens": 166014,
+        "text_total_tokens": 74061004
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 0,
+          "turns": 10,
+          "credits": 1015.96072,
+          "uncached_text_input_tokens": 2155598,
+          "cached_text_input_tokens": 71739392,
+          "text_output_tokens": 166014,
+          "text_total_tokens": 74061004
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 0,
+          "turns": 10
+        }
+      ]
+    },
+    {
+      "date": "2026-08-24",
+      "totals": {
+        "users": 1,
+        "threads": 0,
+        "turns": 22,
+        "credits": 5295.98612,
+        "uncached_text_input_tokens": 9045420,
+        "cached_text_input_tokens": 395142912,
+        "text_output_tokens": 880030,
+        "text_total_tokens": 405068362
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 0,
+          "turns": 22,
+          "credits": 5295.98612,
+          "uncached_text_input_tokens": 9045420,
+          "cached_text_input_tokens": 395142912,
+          "text_output_tokens": 880030,
+          "text_total_tokens": 405068362
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 0,
+          "turns": 22
+        }
+      ]
+    },
+    {
+      "date": "2026-08-25",
+      "totals": {
+        "users": 1,
+        "threads": 2,
+        "turns": 52,
+        "credits": 6296.09972,
+        "uncached_text_input_tokens": 8352574,
+        "cached_text_input_tokens": 495282432,
+        "text_output_tokens": 1016036,
+        "text_total_tokens": 504651042
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 2,
+          "turns": 52,
+          "credits": 6296.09972,
+          "uncached_text_input_tokens": 8352574,
+          "cached_text_input_tokens": 495282432,
+          "text_output_tokens": 1016036,
+          "text_total_tokens": 504651042
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 2,
+          "turns": 52
+        }
+      ]
+    },
+    {
+      "date": "2026-08-26",
+      "totals": {
+        "users": 1,
+        "threads": 0,
+        "turns": 17,
+        "credits": 2820.57262,
+        "uncached_text_input_tokens": 4265811,
+        "cached_text_input_tokens": 217482752,
+        "text_output_tokens": 438328,
+        "text_total_tokens": 222186891
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 0,
+          "turns": 17,
+          "credits": 2820.57262,
+          "uncached_text_input_tokens": 4265811,
+          "cached_text_input_tokens": 217482752,
+          "text_output_tokens": 438328,
+          "text_total_tokens": 222186891
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 0,
+          "turns": 17
+        }
+      ]
+    },
+    {
+      "date": "2026-08-27",
+      "totals": {
+        "users": 1,
+        "threads": 4,
+        "turns": 61,
+        "credits": 35076.150324,
+        "uncached_text_input_tokens": 43399968,
+        "cached_text_input_tokens": 2827323392,
+        "text_output_tokens": 4927304,
+        "text_total_tokens": 2875650664
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 4,
+          "turns": 61,
+          "credits": 35076.150324,
+          "uncached_text_input_tokens": 43399968,
+          "cached_text_input_tokens": 2827323392,
+          "text_output_tokens": 4927304,
+          "text_total_tokens": 2875650664
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.6-luna",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 2,
+          "turns": 2
+        },
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 2,
+          "turns": 59
+        }
+      ]
+    },
+    {
+      "date": "2026-08-28",
+      "totals": {
+        "users": 1,
+        "threads": 3,
+        "turns": 42,
+        "credits": 40617.895253999995,
+        "uncached_text_input_tokens": 50816369,
+        "cached_text_input_tokens": 3287721984,
+        "text_output_tokens": 5319439,
+        "text_total_tokens": 3343857792
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 1,
+          "threads": 3,
+          "turns": 42,
+          "credits": 40617.895253999995,
+          "uncached_text_input_tokens": 50816369,
+          "cached_text_input_tokens": 3287721984,
+          "text_output_tokens": 5319439,
+          "text_total_tokens": 3343857792
+        }
+      ],
+      "models": [
+        {
+          "model": "gpt-5.6-luna",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 2,
+          "turns": 2
+        },
+        {
+          "model": "gpt-5.6-sol",
+          "credits": 0.0,
+          "users": 1,
+          "threads": 1,
+          "turns": 40
+        }
+      ]
+    },
+    {
+      "date": "2026-08-29",
+      "totals": {
+        "users": 0,
+        "threads": 0,
+        "turns": 0,
+        "credits": 15504.873192,
+        "uncached_text_input_tokens": 23112562,
+        "cached_text_input_tokens": 1218464768,
+        "text_output_tokens": 2018632,
+        "text_total_tokens": 1243595962
+      },
+      "clients": [
+        {
+          "client_id": "CODEX_CLI",
+          "users": 0,
+          "threads": 0,
+          "turns": 0,
+          "credits": 15504.873192,
+          "uncached_text_input_tokens": 23112562,
+          "cached_text_input_tokens": 1218464768,
+          "text_output_tokens": 2018632,
+          "text_total_tokens": 1243595962
+        }
+      ]
+    }
+  ],
+  "group_by": "day"
+}

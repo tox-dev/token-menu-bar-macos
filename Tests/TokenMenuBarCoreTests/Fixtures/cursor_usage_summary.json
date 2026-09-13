@@ -1,0 +1,49 @@
+{
+  "billingCycleStart": "2026-08-10T00:00:00.000Z",
+  "billingCycleEnd": "2026-09-10T00:00:00.000Z",
+  "membershipType": "pro_plus",
+  "limitType": "user",
+  "isUnlimited": false,
+  "individualUsage": {
+    "plan": {
+      "enabled": true,
+      "used": 1500,
+      "limit": 5000,
+      "remaining": 3500,
+      "breakdown": {
+        "included": 0,
+        "bonus": 0,
+        "total": 0
+      },
+      "autoPercentUsed": 12.5,
+      "apiPercentUsed": 47.5,
+      "totalPercentUsed": 30.0
+    },
+    "onDemand": {
+      "enabled": true,
+      "used": 500,
+      "limit": 10000,
+      "remaining": 9500
+    },
+    "overall": {
+      "enabled": false,
+      "used": 7384,
+      "limit": 10000,
+      "remaining": 2616
+    }
+  },
+  "teamUsage": {
+    "onDemand": {
+      "enabled": true,
+      "used": 2000,
+      "limit": 50000,
+      "remaining": 48000
+    },
+    "pooled": {
+      "enabled": true,
+      "used": 250,
+      "limit": 1000,
+      "remaining": 750
+    }
+  }
+}

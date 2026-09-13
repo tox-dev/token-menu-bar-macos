@@ -1,0 +1,26 @@
+{{ define "main" }}
+<article class="page">
+  <div class="wrap">
+    {{ with .Parent }}
+      {{ if not .IsHome }}
+        <p class="breadcrumb"><a href="{{ .RelPermalink }}">{{ .Title }}</a></p>
+      {{ end }}
+    {{ end }}
+    <h1 class="page-title">
+      {{ with .Params.provider }}
+        <img src="{{ (printf "brand/glyph/%s.svg" .) | relURL }}" alt="" width="32" height="32">
+      {{ end }}
+      {{ .Title }}
+    </h1>
+    {{ with .Description }}<p class="page-lede">{{ . }}</p>{{ end }}
+    {{ if ge (len .Fragments.Identifiers) 3 }}
+      <nav class="page-toc" aria-label="On this page">
+        {{ .TableOfContents }}
+      </nav>
+    {{ end }}
+    <div class="prose">
+      {{ .Content }}
+    </div>
+  </div>
+</article>
+{{ end }}

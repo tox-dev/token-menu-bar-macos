@@ -1,0 +1,40 @@
+{
+  "access_type_sku": "copilot_pro_seat",
+  "analytics_tracking_id": "abc",
+  "assigned_date": "2024-11-01T00:00:00Z",
+  "can_signup_for_limited": false,
+  "chat_enabled": true,
+  "copilot_plan": "pro_plus",
+  "organization_login_list": [],
+  "quota_reset_date": "2026-09-01",
+  "token_based_billing": true,
+  "quota_snapshots": {
+    "premium_interactions": {
+      "entitlement": 300,
+      "remaining": -15,
+      "percent_remaining": -5,
+      "quota_id": "premium_interactions",
+      "quota_remaining": -15,
+      "overage_count": 15,
+      "overage_permitted": true,
+      "unlimited": false,
+      "credits_used": 31
+    },
+    "chat": {
+      "entitlement": 0,
+      "remaining": 0,
+      "unlimited": true
+    },
+    "completions": {
+      "entitlement": "4000",
+      "remaining": "1000",
+      "unlimited": false,
+      "credits_used": "2"
+    },
+    "zz_custom": {
+      "entitlement": 0,
+      "remaining": 0,
+      "unlimited": false
+    }
+  }
+}

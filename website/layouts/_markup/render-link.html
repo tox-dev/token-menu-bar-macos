@@ -1,0 +1,17 @@
+{{- $u := urls.Parse .Destination -}}
+{{- $host := (urls.Parse site.BaseURL).Hostname -}}
+{{- $external := and $u.IsAbs (ne $u.Hostname "") (ne $u.Hostname $host) -}}
+{{- $destination := .Destination -}}
+{{- if and (not $u.IsAbs) (eq $u.Host "") (ne $u.Path "") -}}
+  {{- with .Page.GetPage $u.Path -}}
+    {{- $destination = .RelPermalink -}}
+    {{- with $u.RawQuery }}{{ $destination = printf "%s?%s" $destination . }}{{ end -}}
+    {{- with $u.Fragment }}{{ $destination = printf "%s#%s" $destination . }}{{ end -}}
+  {{- else -}}
+    {{- errorf "Unresolved documentation link %q in %s" $.Destination $.Page.File.Path -}}
+  {{- end -}}
+{{- end -}}
+<a href="{{ $destination | safeURL }}"
+  {{- with .Title }} title="{{ . }}"{{ end }}
+  {{- if $external }} target="_blank" rel="noopener noreferrer"{{ end -}}
+>{{ .Text | safeHTML }}</a>
