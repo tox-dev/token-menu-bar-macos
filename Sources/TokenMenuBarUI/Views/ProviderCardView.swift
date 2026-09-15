@@ -360,7 +360,7 @@ private struct WrappingIdentityButton: NSViewRepresentable {
   }
 }
 
-private final class WrappingIdentityButtonCell: NSButtonCell {
+private final class WrappingIdentityButtonCell: FilledButtonCell {
   // macOS 14 constrains flexible-push titles to one line despite the cell's wrapping flags.
   override func cellSize(forBounds bounds: NSRect) -> NSSize {
     NSSize(width: bounds.width, height: titleHeight(width: bounds.width - 16) + 8)

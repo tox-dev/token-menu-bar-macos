@@ -159,6 +159,16 @@ public struct NativeActionButton<Label: View>: View {
   }
 }
 
+/// On the macOS 27 SDK, AppKit draws push and rounded bezels at a fixed height, so a wrapped title or a two-line image
+/// overflows the bezel and its edge strokes through the content. This cell paints the fill SwiftUI's bordered buttons
+/// use at whatever height the content needs.
+class FilledButtonCell: NSButtonCell {
+  override func drawBezel(withFrame frame: NSRect, in controlView: NSView) {
+    (isHighlighted || state == .on ? NSColor.systemFill : .secondarySystemFill).setFill()
+    NSBezierPath(roundedRect: frame, xRadius: 5, yRadius: 5).fill()
+  }
+}
+
 final class NativeButtonContainer: NSView {
   let button: NSButton
 

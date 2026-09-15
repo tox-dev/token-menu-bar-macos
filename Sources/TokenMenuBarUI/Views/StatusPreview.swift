@@ -80,10 +80,11 @@ private struct StatusPreviewCellButton: NSViewRepresentable {
 
   func makeNSView(context: Context) -> NativeButtonContainer {
     let button = StatusPreviewButton()
+    button.cell = StatusPreviewButtonCell(imageCell: nil)
     button.target = context.coordinator
     button.action = #selector(Coordinator.press(_:))
     button.setButtonType(.toggle)
-    button.bezelStyle = .rounded
+    button.bezelStyle = .regularSquare
     button.controlSize = .small
     button.imagePosition = .imageOnly
     button.imageScaling = .scaleNone
@@ -99,8 +100,7 @@ private struct StatusPreviewCellButton: NSViewRepresentable {
   }
 
   func sizeThatFits(_ proposal: ProposedViewSize, nsView: NativeButtonContainer, context: Context) -> CGSize? {
-    // The wrapper reserves the bezel's frame, including AppKit's alignment insets on macOS 14/15.
-    nsView.button.frame(forAlignmentRect: CGRect(origin: .zero, size: nsView.button.cell!.cellSize)).size
+    nsView.button.cell!.cellSize
   }
 
   func makeCoordinator() -> Coordinator {
@@ -127,6 +127,21 @@ private struct StatusPreviewCellButton: NSViewRepresentable {
     @objc func press(_: NSButton) {
       action()
     }
+  }
+}
+
+private final class StatusPreviewButtonCell: FilledButtonCell {
+  private static let padding = NSSize(width: 6, height: 2)
+
+  override var cellSize: NSSize {
+    let image = image?.size ?? .zero
+    return NSSize(width: image.width + 2 * Self.padding.width, height: image.height + 2 * Self.padding.height)
+  }
+
+  override func imageRect(forBounds rect: NSRect) -> NSRect {
+    let image = image?.size ?? .zero
+    return NSRect(
+      x: rect.midX - image.width / 2, y: rect.midY - image.height / 2, width: image.width, height: image.height)
   }
 }
 
