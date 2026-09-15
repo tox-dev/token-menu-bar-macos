@@ -67,13 +67,6 @@ func settingsOmitsWorkdaysForQuotasWithoutAWeeklyDuration(duration: TimeInterval
   let presentation = SettingsContextPresentation(
     settings: settings, states: [:], isSandboxed: true, loginStatus: .enabled)
   #expect(presentation.showsAnalyticsInterval && presentation.showsPaceWorkdays && presentation.showsTokenRefresh)
-  #expect(presentation.collectionSummary == "Analytics every 30 min · 5 workdays · usage.json export is on")
-}
-
-@Test @MainActor func defaultCollectionDoesNotInventAnActiveIntegration() {
-  let presentation = SettingsContextPresentation(
-    settings: Settings(defaults: testDefaults()), states: [:], isSandboxed: true, loginStatus: .enabled)
-  #expect(presentation.collectionSummary == nil)
 }
 
 @Test(arguments: [

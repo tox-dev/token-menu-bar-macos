@@ -379,7 +379,6 @@ public struct SettingsContextPresentation: Sendable, Equatable {
   public let showsTokenRefresh: Bool
   public let showsExpiringCredits: Bool
   public let needsLoginItemAction: Bool
-  public let collectionSummary: String?
   public let notificationSummary: String
 
   @MainActor public init(
@@ -405,15 +404,6 @@ public struct SettingsContextPresentation: Sendable, Equatable {
       settings.notifications.notifyOnExpiringCredits
       || active.contains { states[$0]?.snapshot?.resetCredits != nil }
     needsLoginItemAction = loginStatus.explanation != nil
-    var collection: [String] = []
-    if settings.analyticsRefreshMinutes != Settings.defaultAnalyticsMinutes {
-      collection.append("Analytics every \(settings.analyticsRefreshMinutes) min")
-    }
-    if settings.paceWorkdays != PaceEstimate.workdayRange.upperBound {
-      collection.append("\(settings.paceWorkdays) workdays")
-    }
-    if settings.writeUsageFile { collection.append("usage.json export is on") }
-    collectionSummary = collection.isEmpty ? nil : collection.joined(separator: " · ")
     var notices = settings.notifications.thresholds.map { "\($0)%" }
     if settings.notifications.notifyOnReset { notices.append("resets") }
     if settings.notifications.notifyOnAuthProblems { notices.append("sign-in") }

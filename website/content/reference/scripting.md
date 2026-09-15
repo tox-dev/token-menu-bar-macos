@@ -16,9 +16,8 @@ the app and allow a refresh to finish. It does not start the UI or fetch new dat
 The JSON contains provider `id`, `plan`, `fetchedAt` and `windows`. Each window contains `id`, `label`, `usedPercent`
 and an optional ISO-8601 `resetsAt`. It does not include credentials or email.
 
-**Settings > Data > Collection and integrations > Write usage.json** writes that document to the support directory when
-snapshots change. It is off by default. Leave it off unless an external script needs it; the app and widgets do not use
-this file.
+**Settings > Data > Collection > Write usage.json** writes that document to the support directory when snapshots change.
+It is off by default. Leave it off unless an external script needs it; the app and widgets do not use this file.
 
 ```sh
 jq -r '.providers[] | .id as $provider | .windows[] | "\($provider) \(.label): \(.usedPercent)% used"' \

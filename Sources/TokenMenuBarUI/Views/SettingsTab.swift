@@ -1010,55 +1010,11 @@ public struct SettingsTab: View {
                 + "and makes older ranges available in History."
             ))
       }
-      SupportingDetails(
-        "Collection and integrations", id: "settings.collection", state: environment.disclosures,
-        summary: context.collectionSummary
-      ) {
-        if context.showsAnalyticsInterval {
-          PanelRow("Analytics") {
-            Stepper(
-              "Every \(settings.analyticsRefreshMinutes) min", value: setting(\.analyticsRefreshMinutes),
-              in: 5...120, step: 5
-            )
-            .accessibilityLabel("Analytics refresh interval in minutes")
-            .accessibilityIdentifier("analytics-refresh-interval")
-            .richHelp(
-              TooltipContent(
-                title: "Analytics refresh interval",
-                body:
-                  "Sets the separate clock for transcript and provider analytics. "
-                  + "Shorter intervals use more disk, network, and CPU."
-              ))
-          }
-        }
-        if context.showsPaceWorkdays {
-          PanelRow("Pace") {
-            Stepper(
-              "Expect usage on \(settings.paceWorkdays) days a week", value: setting(\.paceWorkdays),
-              in: PaceEstimate.workdayRange
-            )
-            .accessibilityLabel("Expected usage days per week")
-            .accessibilityIdentifier("pace-workdays")
-            .richHelp(
-              TooltipContent(
-                title: "Workdays",
-                body:
-                  "Spreads the expected pace of windows longer than a day over Monday to the chosen weekday, so a "
-                  + "weekly window is not ahead of pace on Monday morning. Seven days keeps an even pace."
-              ))
-          }
-        }
-        PanelRow("Scripts") {
-          Toggle("Write usage.json", isOn: setting(\.writeUsageFile))
-            .toggleStyle(.checkbox)
-            .richHelp(
-              TooltipContent(
-                title: "Usage file for scripts",
-                body:
-                  "Writes usage.json for shell prompts and local dashboards to read quota percentages and reset times "
-                  + "without extra provider requests. Includes plan names, but no credential or email fields. "
-                  + "Leave off unless a script needs the file; the app and widgets do not use it."
-              ))
+      PanelRow("Collection") {
+        ResponsivePanelLayout {
+          HStack(spacing: 16) { collectionOptions }
+        } narrow: {
+          WrappingHStack(horizontalSpacing: 16, verticalSpacing: 6) { collectionOptions }
         }
       }
       NativeActionButton("Export History…", action: environment.actions.exportHistory)
@@ -1084,6 +1040,49 @@ public struct SettingsTab: View {
         }
       }
     }
+  }
+
+  @ViewBuilder private var collectionOptions: some View {
+    if context.showsAnalyticsInterval {
+      Stepper(
+        "Analytics every \(settings.analyticsRefreshMinutes) min", value: setting(\.analyticsRefreshMinutes),
+        in: 5...120, step: 5
+      )
+      .accessibilityLabel("Analytics refresh interval in minutes")
+      .accessibilityIdentifier("analytics-refresh-interval")
+      .richHelp(
+        TooltipContent(
+          title: "Analytics refresh interval",
+          body:
+            "Sets the separate clock for transcript and provider analytics. "
+            + "Shorter intervals use more disk, network, and CPU."
+        ))
+    }
+    if context.showsPaceWorkdays {
+      Stepper(
+        "Expect usage on \(settings.paceWorkdays) days a week", value: setting(\.paceWorkdays),
+        in: PaceEstimate.workdayRange
+      )
+      .accessibilityLabel("Expected usage days per week")
+      .accessibilityIdentifier("pace-workdays")
+      .richHelp(
+        TooltipContent(
+          title: "Workdays",
+          body:
+            "Spreads the expected pace of windows longer than a day over Monday to the chosen weekday, so a "
+            + "weekly window is not ahead of pace on Monday morning. Seven days keeps an even pace."
+        ))
+    }
+    Toggle("Write usage.json", isOn: setting(\.writeUsageFile))
+      .toggleStyle(.checkbox)
+      .richHelp(
+        TooltipContent(
+          title: "Usage file for scripts",
+          body:
+            "Writes usage.json for shell prompts and local dashboards to read quota percentages and reset times "
+            + "without extra provider requests. Includes plan names, but no credential or email fields. "
+            + "Leave off unless a script needs the file; the app and widgets do not use it."
+        ))
   }
 
   private var historyPath: some View {

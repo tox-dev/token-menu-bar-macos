@@ -37,18 +37,16 @@ func settingsSetupGuidanceMatchesProviderDiscovery(hasProviders: Bool) async thr
       excludes: hasProviders ? [guidance] : []))
 }
 
-@Test(arguments: [false, true]) @MainActor
-func settingsCollectionControlsRenderTheirValuesOnlyWhenExpanded(expanded: Bool) async throws {
+@Test @MainActor
+func settingsCollectionControlsRenderTheirValues() async throws {
   let environment = try makeEnvironment()
   environment.settings.analyticsRefreshMinutes = 25
   environment.settings.paceWorkdays = 4
-  environment.disclosures.setExpanded(expanded, for: "settings.collection")
-  let controls = ["Every 25 min", "Expect usage on 4 days a week", "Write usage.json"]
   try await captureSettings(
-    environment, named: "collection-\(expanded)",
+    environment, named: "collection",
     expectation: RenderedText(
-      contains: ["Collection and integrations"] + (expanded ? controls : []),
-      excludes: expanded ? [] : controls), height: 2_000)
+      contains: ["Collection", "Analytics every 25 min", "Expect usage on 4 days a week", "Write usage.json"]),
+    height: 2_000)
 }
 
 @Test(arguments: [ProviderID.claude, .codex], [false, true]) @MainActor
