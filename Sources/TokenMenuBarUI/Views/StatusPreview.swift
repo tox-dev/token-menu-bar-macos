@@ -134,12 +134,12 @@ private final class StatusPreviewButtonCell: FilledButtonCell {
   private static let padding = NSSize(width: 6, height: 2)
 
   override var cellSize: NSSize {
-    let image = image?.size ?? .zero
+    let image = image!.size
     return NSSize(width: image.width + 2 * Self.padding.width, height: image.height + 2 * Self.padding.height)
   }
 
   override func imageRect(forBounds rect: NSRect) -> NSRect {
-    let image = image?.size ?? .zero
+    let image = image!.size
     return NSRect(
       x: rect.midX - image.width / 2, y: rect.midY - image.height / 2, width: image.width, height: image.height)
   }
