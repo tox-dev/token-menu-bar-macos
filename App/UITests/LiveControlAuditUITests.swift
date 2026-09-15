@@ -1386,8 +1386,11 @@ final class LiveControlAuditUITests: XCTestCase {
 
   @MainActor
   private func scroll(_ scrollView: XCUIElement, by delta: CGFloat) {
-    scrollView.hover()
-    scrollView.scroll(byDeltaX: 0, deltaY: delta)
+    // The center can sit over a nested scroller or control that consumes the wheel; the leading padding holds neither.
+    let pointer = scrollView.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.5))
+      .withOffset(CGVector(dx: PopoverGeometry.contentPadding / 2, dy: 0))
+    pointer.hover()
+    pointer.scroll(byDeltaX: 0, deltaY: delta)
   }
 
   @MainActor
