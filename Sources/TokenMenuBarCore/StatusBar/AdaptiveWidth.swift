@@ -64,15 +64,38 @@ public struct AdaptiveWidthPlanner: Sendable, Equatable {
   }
 
   public static func isVisible(
-    itemFrame: CGRect, screenFrames: [CGRect], occlusionVisible: Bool, serverVisible: Bool, macOSMajor: Int
+    itemFrame: CGRect, screenFrames: [CGRect], occlusionVisible: Bool, placed: Bool, macOSMajor: Int
   ) -> Bool {
-    // macOS 27 reports stale status-item frames and occlusion (FB23349447).
-    isOnScreen(itemFrame: itemFrame, screenFrames: screenFrames)
-      && (macOSMajor >= 27 ? serverVisible : occlusionVisible)
+    // macOS 27 reports a visible occlusion state for items the menu bar had no room for (FB23349447).
+    isOnScreen(itemFrame: itemFrame, screenFrames: screenFrames) && (macOSMajor >= 27 ? placed : occlusionVisible)
   }
 
   public static func hiddenByNotch(itemFrame: CGRect, leftArea: CGRect?, rightArea: CGRect?) -> Bool {
     guard let leftArea, let rightArea else { return false }
     return itemFrame.minX < rightArea.minX && itemFrame.maxX > leftArea.maxX
+  }
+}
+
+/// macOS 27 stretches a status item's frame from its old origin as soon as its length changes, then moves the item
+/// into place a moment later. When the menu bar has no room, the move never happens, so an origin that stays put after
+/// a length change is the only sign that the item did not fit; the window server does not list these windows.
+public struct StatusItemPlacement: Sendable, Equatable {
+  private var pendingOrigin: CGFloat?
+  public private(set) var isPlaced = true
+
+  public init() {}
+
+  public mutating func lengthWillChange(itemFrame: CGRect) {
+    pendingOrigin = itemFrame.minX
+  }
+
+  /// A frame still at its old origin can be a move that has not landed yet, so the change stays pending until the
+  /// item moves or its length changes again.
+  public mutating func settle(itemFrame: CGRect) -> Bool {
+    if let pendingOrigin {
+      isPlaced = abs(itemFrame.minX - pendingOrigin) >= 0.5
+      if isPlaced { self.pendingOrigin = nil }
+    }
+    return isPlaced
   }
 }

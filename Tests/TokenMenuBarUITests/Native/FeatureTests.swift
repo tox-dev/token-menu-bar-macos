@@ -179,7 +179,8 @@ private enum ControllerExit: CaseIterable {
   #expect(
     StatusItemController.onScreenFrame(of: window, screens: screens, occlusionVisible: { _ in true }, macOSMajor: 26)
       == window.frame)
-  #expect(StatusItemController.onScreenFrame(of: window, screens: screens, macOSMajor: 27) == nil)
+  #expect(StatusItemController.onScreenFrame(of: window, screens: screens, placed: false, macOSMajor: 27) == nil)
+  #expect(StatusItemController.onScreenFrame(of: window, screens: screens, macOSMajor: 27) == window.frame)
   window.setFrameOrigin(NSPoint(x: 100_000, y: 10))
   #expect(StatusItemController.onScreenFrame(of: window, screens: screens) == nil)
   window.setFrameOrigin(NSPoint(x: (screens.first?.frame.maxX ?? 0) - 10, y: 10))

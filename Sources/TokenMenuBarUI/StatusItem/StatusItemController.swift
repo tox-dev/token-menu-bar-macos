@@ -64,9 +64,12 @@ public final class StatusItemController {
   public var frontmostContext: () -> String = {
     normalizedContext(NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
   }
-  public var visibleItemFrame: (NSStatusItem) -> CGRect? = { StatusItemController.onScreenFrame(of: $0.button?.window) }
+  public var visibleItemFrame: ((NSStatusItem) -> CGRect?)?
+  private var placement = StatusItemPlacement()
   private var lastForeignContext = ""
-  public var fitCheckDelay: Duration = .milliseconds(30)
+  // macOS 27 moves a resized item into place asynchronously, and checking before the move lands reads as no room.
+  public var fitCheckDelay: Duration = .milliseconds(
+    ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 27 ? 100 : 30)
   private var observers: [(center: NotificationCenter, token: any NSObjectProtocol)] = []
   private var appearanceObservation: NSKeyValueObservation?
   private(set) var model: StatusItemModel = .empty
@@ -236,21 +239,21 @@ public final class StatusItemController {
 
   public static func onScreenFrame(
     of window: NSWindow?, screens: [NSScreen] = NSScreen.screens,
-    occlusionVisible: (NSWindow) -> Bool = { $0.occlusionState.contains(.visible) },
+    occlusionVisible: (NSWindow) -> Bool = { $0.occlusionState.contains(.visible) }, placed: Bool = true,
     macOSMajor: Int = ProcessInfo.processInfo.operatingSystemVersion.majorVersion
   ) -> CGRect? {
     guard let window, window.isVisible,
       AdaptiveWidthPlanner.isVisible(
-        itemFrame: window.frame, screenFrames: screens.map(\.frame),
-        occlusionVisible: occlusionVisible(window),
-        serverVisible: macOSMajor < 27 || windowListedOnScreen(window), macOSMajor: macOSMajor)
+        itemFrame: window.frame, screenFrames: screens.map(\.frame), occlusionVisible: occlusionVisible(window),
+        placed: placed, macOSMajor: macOSMajor)
     else { return nil }
     return window.frame
   }
 
-  private static func windowListedOnScreen(_ window: NSWindow) -> Bool {
-    let windows = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]]
-    return windows?.contains { $0[kCGWindowNumber as String] as? Int == window.windowNumber } == true
+  private func itemFrame() -> CGRect? {
+    if let visibleItemFrame { return visibleItemFrame(item) }
+    guard let window = item.button?.window else { return nil }
+    return Self.onScreenFrame(of: window, placed: placement.settle(itemFrame: window.frame))
   }
 
   public func settleFitCheck() async {
@@ -258,7 +261,7 @@ public final class StatusItemController {
   }
 
   public func fits() -> Bool {
-    guard let frame = visibleItemFrame(item) else { return false }
+    guard let frame = itemFrame() else { return false }
     let screen = item.button?.window?.screen
     let areas = notchAreas?() ?? (screen?.auxiliaryTopLeftArea, screen?.auxiliaryTopRightArea)
     return !AdaptiveWidthPlanner.hiddenByNotch(itemFrame: frame, leftArea: areas.0, rightArea: areas.1)
@@ -337,7 +340,10 @@ public final class StatusItemController {
     }
     // Switching from variable to fixed length adds AppKit spacing and moves the popover anchor.
     let length = frozenLength ?? ceil(button.cell!.cellSize.width)
-    if item.length != length { item.length = length }
+    if item.length != length {
+      if let frame = item.button?.window?.frame { placement.lengthWillChange(itemFrame: frame) }
+      item.length = length
+    }
   }
 
   func updateCountdownTimer() {

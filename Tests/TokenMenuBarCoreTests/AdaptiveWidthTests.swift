@@ -141,18 +141,18 @@ func visibilityUsesOcclusionUntilTheManagedMenuBar(macOSMajor: Int) {
   let frame = CGRect(x: 500, y: 744, width: 200, height: 24)
   #expect(
     AdaptiveWidthPlanner.isVisible(
-      itemFrame: frame, screenFrames: [screen], occlusionVisible: true, serverVisible: true, macOSMajor: macOSMajor))
+      itemFrame: frame, screenFrames: [screen], occlusionVisible: true, placed: true, macOSMajor: macOSMajor))
   #expect(
     AdaptiveWidthPlanner.isVisible(
-      itemFrame: frame, screenFrames: [screen], occlusionVisible: false, serverVisible: true, macOSMajor: macOSMajor)
+      itemFrame: frame, screenFrames: [screen], occlusionVisible: false, placed: true, macOSMajor: macOSMajor)
       == (macOSMajor >= 27))
   #expect(
     !AdaptiveWidthPlanner.isVisible(
       itemFrame: CGRect(x: 528, y: 744, width: 586, height: 24), screenFrames: [screen],
-      occlusionVisible: true, serverVisible: true, macOSMajor: macOSMajor))
+      occlusionVisible: true, placed: true, macOSMajor: macOSMajor))
   #expect(
     AdaptiveWidthPlanner.isVisible(
-      itemFrame: frame, screenFrames: [screen], occlusionVisible: true, serverVisible: false, macOSMajor: macOSMajor)
+      itemFrame: frame, screenFrames: [screen], occlusionVisible: true, placed: false, macOSMajor: macOSMajor)
       == (macOSMajor < 27))
 }
 
@@ -165,4 +165,43 @@ func fontSizesMatchTheLineCount(lineCount: Int, expected: [Double]) {
   #expect(StatusMetrics.fontSizes(height: 24, lineCount: 3) == [8, 8, 8])
   #expect(StatusMetrics.fontSizes(height: 120, lineCount: 3) == [9, 9, 9])
   #expect(StatusMetrics.fontSizes(height: 1, lineCount: 3).allSatisfy { $0 == StatusMetrics.minFontSize })
+}
+
+// Frames recorded from a status item on macOS 27 as its length changed from 24 to 380, and from 24 to 900 with no room.
+@Test(arguments: [
+  (CGRect(x: 752, y: 1050, width: 36, height: 30), CGRect(x: 396, y: 1050, width: 392, height: 30), true),
+  (CGRect(x: 752, y: 1050, width: 36, height: 30), CGRect(x: 752, y: 1050, width: 912, height: 30), false),
+])
+func placementReadsWhetherALengthChangeMovedTheItem(before: CGRect, after: CGRect, placed: Bool) {
+  var placement = StatusItemPlacement()
+  placement.lengthWillChange(itemFrame: before)
+  let settled = placement.settle(itemFrame: after)
+  #expect(settled == placed)
+}
+
+@Test func placementWaitsForAMoveThatLandsAfterTheFirstCheck() {
+  var placement = StatusItemPlacement()
+  placement.lengthWillChange(itemFrame: CGRect(x: 752, y: 1050, width: 36, height: 30))
+  let beforeMove = placement.settle(itemFrame: CGRect(x: 752, y: 1050, width: 212, height: 30))
+  let afterMove = placement.settle(itemFrame: CGRect(x: 576, y: 1050, width: 212, height: 30))
+  #expect(!beforeMove && afterMove)
+}
+
+@Test func placementKeepsItsVerdictUntilTheLengthChanges() {
+  var placement = StatusItemPlacement()
+  let frame = CGRect(x: 396, y: 1050, width: 392, height: 30)
+  placement.lengthWillChange(itemFrame: CGRect(x: 752, y: 1050, width: 36, height: 30))
+  let moved = placement.settle(itemFrame: frame)
+  let unchanged = placement.settle(itemFrame: frame)
+  #expect(moved && unchanged)
+}
+
+@Test func placementMeasuresFromTheFrameBeforeTheLatestLengthChange() {
+  var placement = StatusItemPlacement()
+  let stretched = CGRect(x: 752, y: 1050, width: 912, height: 30)
+  placement.lengthWillChange(itemFrame: CGRect(x: 752, y: 1050, width: 36, height: 30))
+  let noRoom = placement.settle(itemFrame: stretched)
+  placement.lengthWillChange(itemFrame: stretched)
+  let narrower = placement.settle(itemFrame: CGRect(x: 576, y: 1050, width: 212, height: 30))
+  #expect(!noRoom && narrower)
 }

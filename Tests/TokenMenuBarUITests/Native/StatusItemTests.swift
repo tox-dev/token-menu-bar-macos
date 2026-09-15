@@ -648,3 +648,12 @@ func statusFitLogsWindowGeometryOnlyWithDetailedLogging(enabled: Bool) {
   #expect(controller.item.isVisible)
   #expect(!controller.restoreVisibility())
 }
+
+@Test @MainActor func statusItemWithoutAFrameOverrideDoesNotFitWhileHiddenOrRemoved() {
+  let controller = statusController()
+  controller.update(statusModel(format: .stacked))
+  controller.item.isVisible = false
+  #expect(!controller.fits())
+  controller.remove()
+  #expect(!controller.fits())
+}
