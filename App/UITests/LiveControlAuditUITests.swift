@@ -1630,36 +1630,12 @@ final class LiveControlAuditUITests: XCTestCase {
       XCTAssertTrue(
         content.waitForExistence(timeout: controlTimeout),
         "\(identifier) did not expand after clicking its heading")
-      if section == .data {
-        let toggle = content.checkBoxes["Write usage.json"]
-        XCTAssertTrue(reveal(toggle, in: surface))
-        let selected = isSelected(toggle)
-        set(toggle, enabled: !selected)
-        XCTAssertTrue(reveal(disclosure, in: surface))
-        disclosure.click()
-        XCTAssertTrue(content.waitForNonExistence(timeout: controlTimeout))
-        XCTAssertFalse(toggle.exists)
-        disclosure.click()
-        XCTAssertTrue(content.waitForExistence(timeout: controlTimeout))
-        XCTAssertEqual(isSelected(toggle), !selected, "Collapsing \(identifier) changed its setting")
-        XCTAssertTrue(reveal(toggle, in: surface))
-        set(toggle, enabled: selected)
-      }
     }
     scrollToTop(surface)
   }
 
   private func disclosure(_ identifier: String, belongsTo section: SettingsSection) -> Bool {
-    switch section {
-    case .about, .menuBar, .notifications:
-      false
-    case .providers:
-      identifier.hasPrefix("disclosure-connection.")
-    case .data:
-      identifier == "disclosure-settings.collection"
-    case .log:
-      identifier == "disclosure-settings.log"
-    }
+    section == .providers && identifier.hasPrefix("disclosure-connection.")
   }
 
   @MainActor

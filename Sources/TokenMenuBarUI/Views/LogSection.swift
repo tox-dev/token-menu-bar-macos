@@ -16,15 +16,13 @@ public struct LogSection: View {
   public var body: some View {
     VStack(alignment: .leading, spacing: 7) {
       options
-      SupportingDetails("View log", id: "settings.log", state: environment.disclosures) {
-        actions
-        LogViewer(
-          entries: displayedEntries, level: $level, search: $search, height: 150, newestFirst: true,
-          searchShortcut: false
-        )
-        .task {
-          for await snapshot in environment.log.snapshots() { entries = snapshot }
-        }
+      actions
+      LogViewer(
+        entries: displayedEntries, level: $level, search: $search, height: 150, newestFirst: true,
+        searchShortcut: false
+      )
+      .task {
+        for await snapshot in environment.log.snapshots() { entries = snapshot }
       }
     }
   }

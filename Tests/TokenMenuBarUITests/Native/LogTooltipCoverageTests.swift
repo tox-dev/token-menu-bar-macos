@@ -45,7 +45,6 @@ func tooltipTrackingDoesNotExposeAnAccessibilityTarget(tracksHover: Bool) {
   environment.log.logWarning("second")
   var copied: [String] = []
   environment.actions.copy = { copied.append($0) }
-  environment.disclosures.setExpanded(true, for: "settings.log")
   let section = LogSection(environment: environment)
   section.copyDisplayedEntries()
 

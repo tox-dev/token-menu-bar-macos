@@ -5,7 +5,7 @@ weight: 1
 ---
 
 1. Enable **Detailed logging** under Settings > Log before reproducing a UI or refresh problem.
-2. Reproduce it, then open **View log**. Filter by level or text, or choose **Show Full Log**.
+2. Reproduce it, then read the log viewer under Settings > Log. Filter by level or text, or choose **Show Full Log**.
 3. Use **Copy Diagnostics** in the Settings footer, or **Report Issue** in the shared footer. Review the text before
    sharing it.
 4. Turn Detailed logging off when finished.

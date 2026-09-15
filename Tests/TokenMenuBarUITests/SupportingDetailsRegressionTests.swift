@@ -196,9 +196,8 @@ func providerHeaderShowsTheAccountWithoutExpandingDetails(hidden: Bool) throws {
   if hidden { #expect(!accessibleText(hosting).contains("fixture@example.com")) }
 }
 
-@Test @MainActor func expandedLogReceivesNewEntriesWithoutRemounting() async throws {
+@Test @MainActor func logReceivesNewEntriesWithoutRemounting() async throws {
   let environment = try makeEnvironment(populate: false)
-  environment.disclosures.setExpanded(true, for: "settings.log")
   let hosting = host(LogSection(environment: environment), width: 880, height: 300)
   await mainActorTurn()
   environment.log.log("Disclosure subscription fixture")
