@@ -14,31 +14,31 @@ weight: 2
 | Hide models with no usage        | Off. Hides unused rows from the model list for the current range; it does not delete their settings or history.            |
 | Hide account and project details | Off. Masks identifying display text. It does not remove the underlying records from disk.                                  |
 
-**Display options** contains:
+The **Display** row keeps these controls on one line and wraps only when the panel is too narrow:
 
-| Control       | Default and effect                                                                                                   |
-| ------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Decimals      | 0; choose 0–2 decimal places.                                                                                        |
-| Hide 0%       | On. Hides zero-used status cells without deleting their data.                                                        |
-| Fit to space  | On. Tries narrower status layouts when the current one does not fit.                                                 |
-| Show usage as | **Used**; **Left** displays remaining quota in the menu bar, Usage and widgets. Colours still follow the used share. |
+| Control       | Default and effect                                                                                                        |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Decimals      | 0; choose 0–2 decimal places.                                                                                             |
+| Hide 0%       | On. Hides zero-used status cells without deleting their data.                                                             |
+| Fit to space  | On. Tries narrower status layouts when the current one does not fit.                                                      |
+| Show usage as | **Used**; **Remaining** displays remaining quota in the menu bar, Usage and widgets. Colours still follow the used share. |
 
 ### Custom templates
 
 The Template field appears only for **Custom**. Built-in text formats use the edited short label without requiring a
 custom template.
 
-| Token                                 | Output                                                               |
-| ------------------------------------- | -------------------------------------------------------------------- |
-| `{label}`                             | Resolved, unique short label                                         |
-| `{cell}`                              | Provider code, plus the period/model tag when needed                 |
-| `{provider}`, `{providerName}`        | Provider code or full name                                           |
-| `{window}`                            | Period/model tag                                                     |
-| `{pct}`, `{pct0}`, `{pct1}`, `{pct2}` | Percentage with configured or explicit decimals, following Used/Left |
-| `{remaining}`                         | Percentage left, independent of Used/Left                            |
-| `{pctOrReset}`                        | Percentage until exhausted, then a reset countdown                   |
-| `{reset}`, `{resetClock}`             | Countdown or reset clock time                                        |
-| `{plan}`, `{credits}`                 | Reported plan or credit balance                                      |
+| Token                                 | Output                                                                    |
+| ------------------------------------- | ------------------------------------------------------------------------- |
+| `{label}`                             | Resolved, unique short label                                              |
+| `{cell}`                              | Provider code, plus the period/model tag when needed                      |
+| `{provider}`, `{providerName}`        | Provider code or full name                                                |
+| `{window}`                            | Period/model tag                                                          |
+| `{pct}`, `{pct0}`, `{pct1}`, `{pct2}` | Percentage with configured or explicit decimals, following Used/Remaining |
+| `{remaining}`                         | Percentage left, independent of Used/Remaining                            |
+| `{pctOrReset}`                        | Percentage until exhausted, then a reset countdown                        |
+| `{reset}`, `{resetClock}`             | Countdown or reset clock time                                             |
+| `{plan}`, `{credits}`                 | Reported plan or credit balance                                           |
 
 Use `\n` for a line break and `{{` or `}}` for literal braces. Unknown tokens produce no text. For example:
 

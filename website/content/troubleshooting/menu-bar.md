@@ -15,7 +15,7 @@ the deadline passed but a new provider response has not confirmed the reset. It 
 
 ## Icon-only or hidden menu bar item
 
-Check model selection, **Hide 0%**, and **Fit to space** under Settings > Menu bar > Display options. No data, no
+Check model selection, **Hide 0%**, and **Fit to space** in the Display row under Settings > Menu bar. No data, no
 selected visible cells or an icon-only width fallback can leave only the app icon.
 
 macOS can hide status items when there is insufficient room, including around the notch. Enable Detailed logging,
