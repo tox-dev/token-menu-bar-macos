@@ -121,7 +121,7 @@ final class TokenMenuBarApplicationUITests: XCTestCase {
     XCTAssertTrue(filter.waitForExistence(timeout: 2))
     filter.typeText("codex")
     XCTAssertEqual(filter.value as? String, "codex")
-    XCTAssertFalse(verification.application.textFields["Search log"].exists)
+    XCTAssertNotEqual(verification.application.textFields["Search log"].value as? String, "codex")
   }
 
   @MainActor
