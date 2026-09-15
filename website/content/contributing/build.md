@@ -19,8 +19,8 @@ brew install jq tesseract webp
 ```
 
 Install [Xcode](https://developer.apple.com/xcode/) for distribution builds. A compatible
-[swiftly](https://swiftlang.github.io/swiftly/) toolchain can build the package. Credential reads are noninteractive,
-including ad-hoc builds. Use mock verification for development checks.
+[swiftly](https://swiftlang.github.io/swiftly/) toolchain can build the package. Use mock verification for development
+checks.
 
 ## Build and install
 
@@ -32,6 +32,11 @@ open "dist/Token Menu Bar.app"
 This opens a development build with your provider data. Run `just install` to install it in `/Applications` and open it.
 Local bundles have no Sparkle updater or widget extension. Build commands use two compiler jobs; set
 `TOKEN_MENU_BAR_BUILD_JOBS=1` on a memory-constrained machine.
+
+macOS asks before a build reads another CLI's Keychain item, such as Claude Code's. It pins **Always Allow** to the
+app's team, and an ad-hoc build has none, so every rebuild asks again. `just app` and `just install` sign with the first
+Apple Development identity in your keychain, or with `TOKEN_MENU_BAR_SIGNING_IDENTITY`, and fall back to ad hoc. Create
+a free identity under Xcode > Settings > Accounts > Manage Certificates, then approve the prompt once.
 
 ## Isolated preview
 

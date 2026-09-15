@@ -73,8 +73,8 @@ _install:
     set -euo pipefail
     installed="/Applications/Token Menu Bar.app"
     if [[ -d "$installed" && "${TOKEN_MENU_BAR_FORCE_INSTALL:-0}" != "1" ]]; then
-      team="$(codesign -dv --verbose=4 "$installed" 2>&1 | sed -n 's/^TeamIdentifier=//p' | head -1 || true)"
-      if [[ -n "$team" && "$team" != "not set" ]]; then
+      authority="$(codesign -dv --verbose=4 "$installed" 2>&1 | sed -n 's/^Authority=//p' | head -1 || true)"
+      if [[ -n "$authority" && "$authority" != "Apple Development: "* ]]; then
         echo "Refusing to replace a distribution-signed app. Set TOKEN_MENU_BAR_FORCE_INSTALL=1 to replace it." >&2
         exit 1
       fi

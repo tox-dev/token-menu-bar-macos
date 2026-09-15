@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Builds the SwiftPM executable and wraps it in a minimal, ad-hoc signed .app for local development on machines
-# without Xcode. Pass --run for real provider data or --run-demo for an isolated verification launch.
+# Builds the SwiftPM executable and wraps it in a minimal .app for local development on machines without Xcode. Pass
+# --run for real provider data or --run-demo for an isolated verification launch.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -52,7 +52,11 @@ iconset="$(mktemp -d)/TokenMenuBar.iconset"
 iconutil --convert icns --output "$app/Contents/Resources/AppIcon.icns" "$iconset"
 rm -rf "$iconset"
 
-codesign --force --sign - "$app"
+# Keychain approvals of an app without a team are pinned to its code hash, which changes with every build, so an
+# Apple Development identity keeps "Always Allow" across rebuilds. Without one the bundle is signed ad hoc.
+identities="$(security find-identity -v -p codesigning)"
+identity="${TOKEN_MENU_BAR_SIGNING_IDENTITY:-$(awk -F'"' '/"Apple Development: /{print $2; exit}' <<< "$identities")}"
+codesign --force --sign "${identity:--}" "$app"
 echo "built $app"
 
 case "${1:-}" in
