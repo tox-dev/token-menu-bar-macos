@@ -49,6 +49,15 @@ func settingsCollectionControlsRenderTheirValues() async throws {
     height: 2_000)
 }
 
+@Test @MainActor
+func logActionsRenderWithoutExpandingTheLog() async throws {
+  try await capture(
+    host(
+      LogSection(environment: try makeEnvironment(populate: false)).background(Color.white), width: 880, height: 260),
+    named: "log-actions",
+    expectation: RenderedText(contains: ["Detailed logging", "Copy", "Clear", "Show Full Log"]))
+}
+
 @Test(arguments: [ProviderID.claude, .codex], [false, true]) @MainActor
 func providerCostsKeepAttributionVisibleAndExposeAllModels(provider: ProviderID, expanded: Bool) async throws {
   let rows = ["ALPHA", "BRAVO", "CHARLIE", "DELTA", "ECHO", "FOXTROT", "GOLF"].enumerated().map { index, model in

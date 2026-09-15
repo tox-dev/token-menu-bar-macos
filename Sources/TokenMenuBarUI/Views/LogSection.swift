@@ -15,8 +15,10 @@ public struct LogSection: View {
 
   public var body: some View {
     VStack(alignment: .leading, spacing: 7) {
-      options
-      actions
+      WrappingHStack(horizontalSpacing: 16, verticalSpacing: 6) {
+        options
+        actions
+      }
       LogViewer(
         entries: displayedEntries, level: $level, search: $search, height: 150, newestFirst: true,
         searchShortcut: false
