@@ -46,8 +46,6 @@ struct SupportingDetails<Content: View>: View {
         TooltipContent(
           title: title, body: "Shows supporting details without changing any settings. Other groups stay open."))
     }
-    // AppKit places the disclosure triangle before the label's layout bounds.
-    .padding(.leading, 22)
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("disclosure-\(id)")
     .accessibilityLabel(title)
