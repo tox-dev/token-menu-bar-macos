@@ -7,7 +7,7 @@ public enum ResetPrecision: String, Codable, Sendable, Hashable {
 
 public enum UsageDisplay: String, CaseIterable, Codable, Sendable {
   case used = "Used"
-  case remaining = "Left"
+  case remaining = "Remaining"
 
   public func percent(used: Double) -> Double {
     self == .used ? used : 100 - used

@@ -85,7 +85,7 @@ func settingsOmitsWorkdaysForQuotasWithoutAWeeklyDuration(duration: TimeInterval
   settings.adaptiveWidth = false
   #expect(
     SettingsContextPresentation(settings: settings, states: [:], isSandboxed: false, loginStatus: .enabled)
-      .displaySummary == "Left · 2 decimals · Zero shown · Full width")
+      .displaySummary == "Remaining · 2 decimals · Zero shown · Full width")
 }
 
 @Test(arguments: [

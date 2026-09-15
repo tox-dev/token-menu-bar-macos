@@ -92,7 +92,7 @@ private func previewButtons(in root: NSView) -> [NSButton] {
   let labels = controls.map { control in (0..<control.segmentCount).compactMap { control.label(forSegment: $0) } }
 
   #expect(labels.contains(StatusFormat.allCases.map(\.pickerLabel)))
-  #expect(labels.contains(["Used", "Left"]))
+  #expect(labels.contains(["Used", "Remaining"]))
 }
 
 @MainActor

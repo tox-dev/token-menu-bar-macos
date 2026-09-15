@@ -646,7 +646,7 @@ public struct SettingsTab: View {
       TooltipContent(
         title: "Show usage as",
         body:
-          "Used shows the share of each window already spent; Left shows what remains. "
+          "Used shows the share of each window already spent; Remaining shows what is left. "
           + "Applies to the menu bar, the Usage tab, the widgets and the {pct} tokens; colours still follow usage."
       ))
   }
