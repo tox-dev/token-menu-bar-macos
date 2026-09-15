@@ -38,9 +38,9 @@ public struct ProviderCardView: View {
             ProviderStatusText(card: card, environment: environment)
           }
         }
-        if !card.primaryChips.isEmpty {
+        if !card.chips.isEmpty {
           WrappingHStack(horizontalSpacing: 5, verticalSpacing: 4) {
-            ForEach(card.primaryChips) { chip in
+            ForEach(card.chips) { chip in
               UsageIdentityChip(chip: chip, provider: card.provider, onCopy: environment.actions.copy)
             }
           }
@@ -52,17 +52,6 @@ public struct ProviderCardView: View {
 
       VStack(alignment: .leading, spacing: 3) {
         if let error = environment.providerLoginErrors[card.provider] { Banner(error) }
-        if !card.supportingChips.isEmpty {
-          SupportingDetails(
-            "Account details", id: "usage.\(card.provider.rawValue).account", state: environment.disclosures
-          ) {
-            WrappingHStack(horizontalSpacing: 5, verticalSpacing: 4) {
-              ForEach(card.supportingChips) { chip in
-                UsageIdentityChip(chip: chip, provider: card.provider, onCopy: environment.actions.copy)
-              }
-            }
-          }
-        }
         if card.isStale, !card.isRefreshing, let error = card.lastError {
           Banner("Showing older values: \(error)")
         }

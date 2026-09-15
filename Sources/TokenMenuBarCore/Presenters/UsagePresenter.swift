@@ -85,11 +85,9 @@ public struct WindowRow: Sendable, Hashable, Identifiable {
 
 public struct Chip: Sendable, Hashable, Identifiable {
   public let text: String
-  public let isSupportingDetail: Bool
 
-  public init(text: String, isSupportingDetail: Bool = false) {
+  public init(text: String) {
     self.text = text
-    self.isSupportingDetail = isSupportingDetail
   }
 
   public var id: String { text }
@@ -123,8 +121,6 @@ public struct ProviderCard: Sendable, Hashable, Identifiable {
   public let details: [ProviderDetail]
 
   public var id: ProviderID { provider }
-  public var primaryChips: [Chip] { chips.filter { !$0.isSupportingDetail } }
-  public var supportingChips: [Chip] { chips.filter(\.isSupportingDetail) }
 
   public var isStale: Bool {
     valueAppearance == .stale
@@ -480,11 +476,10 @@ public enum UsagePresenter {
     if let organization = shown?.organization,
       identity?.organization != identity?.email.map({ "\($0)'s Organization" })
     {
-      chips.append(Chip(text: organization, isSupportingDetail: true))
+      chips.append(Chip(text: organization))
     }
     if let until = shown?.subscriptionActiveUntil {
-      chips.append(
-        Chip(text: "Renews \(until.formatted(date: .abbreviated, time: .omitted))", isSupportingDetail: true))
+      chips.append(Chip(text: "Renews \(until.formatted(date: .abbreviated, time: .omitted))"))
     }
     if snapshot.source == .localLog { chips.append(Chip(text: "From local logs")) }
     return chips

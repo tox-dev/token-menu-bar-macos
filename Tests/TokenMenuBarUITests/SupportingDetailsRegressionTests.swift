@@ -145,7 +145,7 @@ func demoToggleRequestsTheSelectedDataMode(enabled: Bool) throws {
   #expect(environment.spendSummary.error == "Cost history could not be loaded.")
 }
 
-@Test(arguments: ["account", "resets", "provider", "credit", "creditEstimates", "local"]) @MainActor
+@Test(arguments: ["resets", "provider", "credit", "creditEstimates", "local"]) @MainActor
 func providerDisclosuresMountTheirSupportingContent(group: String) async throws {
   let environment = try makeEnvironment(populate: false)
   let detail = ProviderDetail(

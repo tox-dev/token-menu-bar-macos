@@ -12,7 +12,7 @@ func providerHeaderKeepsTheAccountVisible(provider: ProviderID, hidden: Bool) {
         provider: provider, identity: ProviderIdentity(planName: "Pro", email: "fixture@example.com"),
         windows: [], fetchedAt: fixedNow), availability: .current),
     samples: [:], options: UsageDisplayOptions(hidePersonalInformation: hidden), now: fixedNow)
-  #expect(card.primaryChips.map(\.text) == ["Pro", hidden ? "account" : "fixture@example.com"])
+  #expect(card.chips.map(\.text) == ["Pro", hidden ? "account" : "fixture@example.com"])
 }
 
 @Test(arguments: [
