@@ -246,37 +246,22 @@ struct UsageIdentityChip: View {
   }
 
   var body: some View {
-    HStack(spacing: 4) {
-      WrappingIdentityButton(
-        title: chip.text, identifier: "provider-chip-\(provider.rawValue)-\(chip.id)", help: primaryHelp,
-        action: primaryAction
-      )
-      .frame(maxWidth: 240, alignment: .leading)
-      .richHelpAccessibility(primaryHelp)
-      .accessibilityLabel(chip.text)
-      .accessibilityValue(chip.text)
-      Button(action: copyAction) {
-        Label("Copy \(chip.text)", systemImage: "doc.on.doc").labelStyle(.iconOnly)
-      }
-      .richHelp(copyHelp)
-      .accessibilityLabel("Copy \(chip.text)")
-      .accessibilityIdentifier("provider-chip-copy-\(provider.rawValue)-\(chip.id)")
-    }
-    .frame(maxWidth: 280, alignment: .leading)
-    .buttonStyle(.bordered)
-    .controlSize(.small)
+    WrappingIdentityButton(
+      title: chip.text, identifier: "provider-chip-\(provider.rawValue)-\(chip.id)", help: primaryHelp,
+      action: primaryAction
+    )
+    .frame(maxWidth: 240, alignment: .leading)
+    .richHelpAccessibility(primaryHelp)
+    .accessibilityLabel(chip.text)
+    .accessibilityValue(chip.text)
     .semanticControl(.action)
     .contextMenu {
-      Button("Copy", systemImage: "doc.on.doc", action: copyAction)
+      Button("Copy", systemImage: "doc.on.doc", action: primaryAction)
         .accessibilityHint(copyHelp.accessibilityHint)
     }
   }
 
   func primaryAction() {
-    onCopy(chip.text)
-  }
-
-  func copyAction() {
     onCopy(chip.text)
   }
 }

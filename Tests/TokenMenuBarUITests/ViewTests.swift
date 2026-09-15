@@ -436,12 +436,11 @@ private func firstSubview<View: NSView>(_ type: View.Type, in root: NSView) -> V
   #expect(refreshed == [.codex])
 }
 
-@Test @MainActor func usageIdentityChipRoutesBothCopyControls() {
+@Test @MainActor func usageIdentityChipCopiesItsValue() {
   var copied: [String] = []
   let chip = UsageIdentityChip(chip: Chip(text: "Max"), provider: .claude, onCopy: { copied.append($0) })
   chip.primaryAction()
-  chip.copyAction()
-  #expect(copied == ["Max", "Max"])
+  #expect(copied == ["Max"])
 }
 
 @Test @MainActor func usageIdentityChipKeepsExplanatoryHelp() {
@@ -1164,4 +1163,10 @@ func findView<Wanted: NSView>(_ view: NSView) -> Wanted? {
   #expect(WindowRowView(row: row, environment: environment).increaseContrast)
   let outlined = UsageBar(percent: 40, color: .green, label: "Session", outlined: true)
   #expect(inkFraction(outlined, width: 200, height: 10) > 0)
+}
+
+@Test @MainActor func usageIdentityChipHasNoSeparateCopyButton() {
+  let hosting = host(UsageIdentityChip(chip: Chip(text: "Max"), provider: .claude, onCopy: { _ in }))
+  let buttons: [NSButton] = findViews(in: hosting)
+  #expect(buttons.map(\.title) == ["Max"])
 }

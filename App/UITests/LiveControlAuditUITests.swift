@@ -603,24 +603,18 @@ final class LiveControlAuditUITests: XCTestCase {
 
       let card = application.descendants(matching: .any)["usage-provider-\(provider.rawValue)"]
       XCTAssertTrue(card.exists)
-      let copyButtons = card.buttons.matching(
-        NSPredicate(format: "label BEGINSWITH 'Copy ' AND label != 'Copy Diagnostics'")
+      XCTAssertFalse(
+        card.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Copy '")).firstMatch.exists,
+        "Identity chips copy on click without separate copy buttons")
+      let chips = card.buttons.matching(
+        NSPredicate(format: "identifier BEGINSWITH %@", "provider-chip-\(provider.rawValue)-")
       ).allElementsBoundByIndex.filter(\.isHittable)
-      for copy in copyButtons {
-        let value = String(copy.label.dropFirst("Copy ".count))
-        let primary = surface.buttons[value].firstMatch
-        if primary.exists && primary.isHittable {
-          primary.click()
-          records.append(
-            scenarioRecord(
-              tab: "Usage", label: "\(provider.displayName) identity \(value)", element: primary,
-              action: "click"))
-        }
-        copy.click()
+      for chip in chips {
+        let value = chip.label
+        chip.click()
         records.append(
           scenarioRecord(
-            tab: "Usage", label: "\(provider.displayName) copy \(value)", element: copy,
-            action: "click"))
+            tab: "Usage", label: "\(provider.displayName) identity \(value)", element: chip, action: "click"))
         copiedValues += 1
       }
     }
