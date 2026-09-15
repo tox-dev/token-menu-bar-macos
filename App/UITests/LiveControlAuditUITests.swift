@@ -1630,8 +1630,8 @@ final class LiveControlAuditUITests: XCTestCase {
       XCTAssertTrue(
         content.waitForExistence(timeout: controlTimeout),
         "\(identifier) did not expand after clicking its heading")
-      if section == .menuBar || section == .data {
-        let toggle = content.checkBoxes[section == .menuBar ? "Hide 0%" : "Write usage.json"]
+      if section == .data {
+        let toggle = content.checkBoxes["Write usage.json"]
         XCTAssertTrue(reveal(toggle, in: surface))
         let selected = isSelected(toggle)
         set(toggle, enabled: !selected)
@@ -1651,16 +1651,12 @@ final class LiveControlAuditUITests: XCTestCase {
 
   private func disclosure(_ identifier: String, belongsTo section: SettingsSection) -> Bool {
     switch section {
-    case .about:
+    case .about, .menuBar, .notifications:
       false
-    case .menuBar:
-      identifier == "disclosure-settings.display"
     case .providers:
       identifier.hasPrefix("disclosure-connection.")
     case .data:
       identifier == "disclosure-settings.collection"
-    case .notifications:
-      false
     case .log:
       identifier == "disclosure-settings.log"
     }

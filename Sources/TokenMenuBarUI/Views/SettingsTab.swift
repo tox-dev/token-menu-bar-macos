@@ -525,33 +525,16 @@ public struct SettingsTab: View {
             }
           }
         }
-        SupportingDetails(
-          "Display options", id: "settings.display", state: environment.disclosures, summary: context.displaySummary
-        ) {
-          PanelRow("Decimals") { decimalsStepper }
-          PanelRow("Options") {
+        PanelRow("Display") {
+          ResponsivePanelLayout {
+            HStack(spacing: 16) {
+              displayOptions
+            }
+          } narrow: {
             WrappingHStack(horizontalSpacing: 16, verticalSpacing: 6) {
-              Toggle("Hide 0%", isOn: menuBarSetting(\.hideZeroCells))
-                .toggleStyle(.checkbox)
-                .richHelp(
-                  TooltipContent(
-                    title: "Hide 0%",
-                    body:
-                      "Removes zero-usage models from the menu bar to save width. "
-                      + "Their data and Usage rows remain available."
-                  ))
-              Toggle("Fit to space", isOn: menuBarSetting(\.adaptiveWidth))
-                .toggleStyle(.checkbox)
-                .richHelp(
-                  TooltipContent(
-                    title: "Fit to space",
-                    body:
-                      "Uses shorter status renderings when menu bar room runs low. "
-                      + "When off, macOS may truncate a wide status item."
-                  ))
+              displayOptions
             }
           }
-          PanelRow("Show usage as") { usageDisplayPicker }
         }
         PanelRow("Privacy") {
           Toggle("Hide account and project details", isOn: menuBarSetting(\.hidePersonalInformation))
@@ -633,6 +616,32 @@ public struct SettingsTab: View {
           + "Countdown at 100% shows the percentage until a window is exhausted, then the time to its reset. "
           + "Custom uses the template and per-model short labels."
       ))
+  }
+
+  @ViewBuilder private var displayOptions: some View {
+    decimalsStepper
+    Toggle("Hide 0%", isOn: menuBarSetting(\.hideZeroCells))
+      .toggleStyle(.checkbox)
+      .richHelp(
+        TooltipContent(
+          title: "Hide 0%",
+          body:
+            "Removes zero-usage models from the menu bar to save width. "
+            + "Their data and Usage rows remain available."
+        ))
+    Toggle("Fit to space", isOn: menuBarSetting(\.adaptiveWidth))
+      .toggleStyle(.checkbox)
+      .richHelp(
+        TooltipContent(
+          title: "Fit to space",
+          body:
+            "Uses shorter status renderings when menu bar room runs low. "
+            + "When off, macOS may truncate a wide status item."
+        ))
+    HStack(spacing: 8) {
+      Text("Show usage as").semanticForeground(.secondary)
+      usageDisplayPicker
+    }
   }
 
   private var usageDisplayPicker: some View {

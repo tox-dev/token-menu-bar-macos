@@ -86,7 +86,6 @@ private func previewButtons(in root: NSView) -> [NSButton] {
 
 @Test @MainActor func formatPickerListsTheCountdownPresets() throws {
   let environment = try makeEnvironment()
-  environment.disclosures.setExpanded(true, for: "settings.display")
   let hosting = host(SettingsTab(environment: environment, mountsIncrementally: false), width: 880, height: 3_000)
   let controls = segmentedControls(in: hosting)
   let labels = controls.map { control in (0..<control.segmentCount).compactMap { control.label(forSegment: $0) } }

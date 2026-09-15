@@ -379,7 +379,6 @@ public struct SettingsContextPresentation: Sendable, Equatable {
   public let showsTokenRefresh: Bool
   public let showsExpiringCredits: Bool
   public let needsLoginItemAction: Bool
-  public let displaySummary: String
   public let collectionSummary: String?
   public let notificationSummary: String
 
@@ -406,10 +405,6 @@ public struct SettingsContextPresentation: Sendable, Equatable {
       settings.notifications.notifyOnExpiringCredits
       || active.contains { states[$0]?.snapshot?.resetCredits != nil }
     needsLoginItemAction = loginStatus.explanation != nil
-    displaySummary = [
-      settings.usageDisplay.rawValue, "\(settings.percentDecimals) decimals",
-      settings.hideZeroCells ? "Zero hidden" : "Zero shown", settings.adaptiveWidth ? "Fits to space" : "Full width",
-    ].joined(separator: " · ")
     var collection: [String] = []
     if settings.analyticsRefreshMinutes != Settings.defaultAnalyticsMinutes {
       collection.append("Analytics every \(settings.analyticsRefreshMinutes) min")

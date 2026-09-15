@@ -74,18 +74,6 @@ func settingsOmitsWorkdaysForQuotasWithoutAWeeklyDuration(duration: TimeInterval
   let presentation = SettingsContextPresentation(
     settings: Settings(defaults: testDefaults()), states: [:], isSandboxed: true, loginStatus: .enabled)
   #expect(presentation.collectionSummary == nil)
-  #expect(presentation.displaySummary == "Used · 0 decimals · Zero hidden · Fits to space")
-}
-
-@Test @MainActor func collapsedDisplayOptionsShowTheirNonDefaultValues() {
-  let settings = Settings(defaults: testDefaults())
-  settings.usageDisplay = .remaining
-  settings.percentDecimals = 2
-  settings.hideZeroCells = false
-  settings.adaptiveWidth = false
-  #expect(
-    SettingsContextPresentation(settings: settings, states: [:], isSandboxed: false, loginStatus: .enabled)
-      .displaySummary == "Remaining · 2 decimals · Zero shown · Full width")
 }
 
 @Test(arguments: [

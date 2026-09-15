@@ -194,7 +194,6 @@ func modelLabelEditsApplyImmediatelyAndSurviveFocusChanges(edits: [String]) asyn
 func customTemplateKeepsNewlinesDuringNativeEditing(edits: [String]) async throws {
   let environment = try makeEnvironment()
   environment.settings.statusFormat = .custom
-  environment.disclosures.setExpanded(true, for: "settings.display")
   let fixture = NativeHosting(
     SettingsTab(environment: environment, mountsIncrementally: false), width: 880, height: 1_600)
   defer { fixture.close() }
