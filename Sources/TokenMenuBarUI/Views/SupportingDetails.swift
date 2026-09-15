@@ -2,8 +2,8 @@ import SwiftUI
 import TokenMenuBarCore
 
 struct SupportingDetails<Content: View>: View {
-  // Before macOS 26, AppKit places the disclosure triangle outside the label's layout bounds.
-  private static var triangleInset: CGFloat { if #available(macOS 26, *) { 0 } else { 22 } }
+  // Before macOS 27, AppKit places the disclosure triangle outside the label's layout bounds.
+  private static var triangleInset: CGFloat { if #available(macOS 27, *) { 0 } else { 22 } }
 
   let id: String
   let title: String
