@@ -11,7 +11,8 @@ expected_updater="${EXPECTED_UPDATER:-required}"
 archive="$out/TokenMenuBar.xcarchive"
 placeholder_key="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 public_key="${SPARKLE_PUBLIC_ED_KEY:-$placeholder_key}"
-if [[ "$signed" == "true" && "$public_key" == "$placeholder_key" ]]; then
+# Only the Direct build embeds the updater, so only it needs the release key; Homebrew and App Store forbid Sparkle.
+if [[ "$signed" == "true" && "$expected_updater" == "required" && "$public_key" == "$placeholder_key" ]]; then
   echo "a signed build needs SPARKLE_PUBLIC_ED_KEY set to the release EdDSA public key" >&2
   exit 1
 fi
