@@ -27,8 +27,14 @@ if [[ "$mode" != "--unsigned" ]]; then
     echo "Sparkle generate_appcast was not found in DerivedData or App" >&2
     exit 1
   }
+  # Sparkle refuses a directory holding two archives of one version, and the feed offers the zip, so the disk image
+  # stays out of the directory it reads.
+  feed="$(mktemp -d)"
+  trap 'rm -rf "$feed"' EXIT
+  cp "$out/TokenMenuBar.zip" "$feed/"
   echo "$SPARKLE_PRIVATE_ED_KEY" |
-    "$generate_appcast" --ed-key-file - --download-url-prefix "$download_prefix" "$out"
+    "$generate_appcast" --ed-key-file - --download-url-prefix "$download_prefix" "$feed"
+  cp "$feed/appcast.xml" "$out/appcast.xml"
   grep -q 'sparkle:edSignature=' "$out/appcast.xml" || {
     echo "generated appcast has no Sparkle EdDSA signature" >&2
     exit 1
