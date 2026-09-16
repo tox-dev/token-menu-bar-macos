@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
     paths: ["website/**", "Scripts/test-docs.sh", "mise.toml", "mise.lock", ".readthedocs.yaml", ".github/workflows/docs.yml"]
+  # Every pull request reports this check, because the branch rules require it whatever a pull request touches.
   pull_request:
-    paths: ["website/**", "Scripts/test-docs.sh", "mise.toml", "mise.lock", ".readthedocs.yaml", ".github/workflows/docs.yml"]
   workflow_dispatch:
 
 permissions:
