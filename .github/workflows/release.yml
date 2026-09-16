@@ -8,28 +8,14 @@ on:
       tag:
         description: Existing tag to build (v1.2.3)
         required: true
-  # Prepare Release calls this after tagging, so the whole release is one run and needs no token of its own.
+  # Prepare Release calls this after tagging, so the whole release is one run and needs no token of its own. Each job
+  # names the release environment and reads its secrets there; declaring them here would demand repository copies.
   workflow_call:
     inputs:
       tag:
         description: The tag to build
         required: true
         type: string
-    secrets:
-      DEVELOPER_ID_CERTIFICATE_BASE64: {required: true}
-      DEVELOPER_ID_CERTIFICATE_PASSWORD: {required: true}
-      APPLE_DISTRIBUTION_CERTIFICATE_BASE64: {required: false}
-      APPLE_DISTRIBUTION_CERTIFICATE_PASSWORD: {required: false}
-      MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_BASE64: {required: false}
-      MAC_INSTALLER_DISTRIBUTION_CERTIFICATE_PASSWORD: {required: false}
-      APP_STORE_PROVISIONING_PROFILE_BASE64: {required: false}
-      APP_STORE_WIDGET_PROVISIONING_PROFILE_BASE64: {required: false}
-      APPLE_TEAM_ID: {required: true}
-      APP_STORE_CONNECT_KEY_ID: {required: true}
-      APP_STORE_CONNECT_ISSUER_ID: {required: true}
-      APP_STORE_CONNECT_KEY_BASE64: {required: true}
-      SPARKLE_PUBLIC_ED_KEY: {required: true}
-      SPARKLE_PRIVATE_ED_KEY: {required: true}
 
 permissions:
   contents: read
