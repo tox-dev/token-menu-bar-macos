@@ -1440,7 +1440,18 @@ final class LiveControlAuditUITests: XCTestCase {
     guard canCancel else { return }
     cancel.click()
     XCTAssertTrue(cancel.waitForNonExistence(timeout: 2))
+    activate(application)
     XCTAssertTrue(application.descendants(matching: .any)["popover-surface"].waitForExistence(timeout: 2))
+  }
+
+  /// Hit testing spans every application on screen, so a window of the runner or of whichever application a native
+  /// panel handed activation back to can cover a control this one still reports as visible.
+  @MainActor
+  private func activate(_ application: XCUIApplication) {
+    application.activate()
+    XCTAssertTrue(
+      waitUntil(timeout: controlTimeout) { application.state == .runningForeground },
+      "The application left the foreground, so its controls cannot be reached")
   }
 
   @MainActor
@@ -1544,6 +1555,7 @@ final class LiveControlAuditUITests: XCTestCase {
     in surface: XCUIElement, application: XCUIApplication, snapshot: any XCUIElementSnapshot,
     auditedControls: inout Set<[String]>
   ) -> Int {
+    activate(application)
     let visible = visibleSnapshots(in: snapshot, within: snapshot.frame)
     for text in visible where text.elementType == .staticText {
       XCTAssertFalse(text.label.isEmpty && (text.value as? String ?? "").isEmpty, "Visible text has no accessible text")
