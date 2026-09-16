@@ -23,7 +23,8 @@ if [[ "$signed" == "true" ]]; then
   xcodebuild -project App/TokenMenuBar.xcodeproj -scheme "$scheme" -configuration "$configuration" \
     -destination 'platform=macOS' -archivePath "$archive" \
     DEVELOPMENT_TEAM="${TEAM_ID:?}" SPARKLE_PUBLIC_ED_KEY="$public_key" \
-    APP_GROUP_ID="${TEAM_ID}.dev.tox.token-menu-bar" SELF_UPDATE_ENABLED=YES archive | tail -20
+    APP_GROUP_ID="${TEAM_ID}.dev.tox.token-menu-bar" \
+    SELF_UPDATE_ENABLED="$([[ "$expected_updater" == "required" ]] && echo YES || echo NO)" archive | tail -20
   cat > "$out/export.plist" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
