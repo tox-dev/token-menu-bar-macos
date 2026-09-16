@@ -1260,6 +1260,8 @@ final class LiveControlAuditUITests: XCTestCase {
     XCTAssertTrue(
       waitUntil(timeout: controlTimeout) { String(describing: stepper.value) != before },
       "Stepper \(stepper.identifier) did not change from \(before)")
+    // A pointer left on the first arrow raises this control's rich tooltip over the other one.
+    coordinateOutsidePanel(surface, frame: surface.frame).hover()
     XCTAssertTrue(reveal(decrementFirst ? increment : decrement, in: surface))
     (decrementFirst ? increment : decrement).click()
     XCTAssertTrue(
