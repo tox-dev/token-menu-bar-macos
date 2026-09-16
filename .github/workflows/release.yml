@@ -104,9 +104,11 @@ jobs:
       - name: Test the running application
         run: |
           set -o pipefail
+          # Xcode records a launch snapshot per app launch and says it found no debugger, dozens of times a run, which
+          # crowds the tail out of the real result.
           Scripts/with-test-desktop.sh xcodebuild -project App/TokenMenuBar.xcodeproj -scheme TokenMenuBar-Direct -configuration Verification \
             -destination 'platform=macOS' -derivedDataPath .build/release-ui-derived \
-            -only-testing:TokenMenuBarApplicationUITests test | tail -50
+            -only-testing:TokenMenuBarApplicationUITests test | awk '!/IDELaunchParametersSnapshot/' | tail -50
 
   direct:
     name: Direct and Homebrew downloads
