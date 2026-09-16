@@ -2,9 +2,6 @@ import SwiftUI
 import TokenMenuBarCore
 
 struct SupportingDetails<Content: View>: View {
-  // Before macOS 27, AppKit places the disclosure triangle outside the label's layout bounds.
-  private static var triangleInset: CGFloat { if #available(macOS 27, *) { 0 } else { 22 } }
-
   let id: String
   let title: String
   let summary: String?
@@ -49,7 +46,6 @@ struct SupportingDetails<Content: View>: View {
         TooltipContent(
           title: title, body: "Shows supporting details without changing any settings. Other groups stay open."))
     }
-    .padding(.leading, Self.triangleInset)
     .accessibilityElement(children: .contain)
     .accessibilityIdentifier("disclosure-\(id)")
     .accessibilityLabel(title)

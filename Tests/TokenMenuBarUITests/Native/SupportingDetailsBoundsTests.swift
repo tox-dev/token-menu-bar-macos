@@ -6,10 +6,14 @@ import TokenMenuBarTestSupport
 
 @testable import TokenMenuBarUI
 
-@Test @MainActor func supportingDisclosureKeepsItsHitTargetInsideTheContent() async throws {
+// AppKit draws the triangle left of the group's own bounds, so the card and tab padding around a group is what has to
+// keep it reachable.
+@Test @MainActor func supportingDisclosureKeepsItsHitTargetInsideTheTabPadding() async throws {
   let fixture = NativeHosting(
     SupportingDetails("Details", id: "details", state: DisclosureState()) { Text("Supporting detail") }
-      .frame(maxWidth: .infinity, alignment: .leading),
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(.horizontal, 11)
+      .padding(.horizontal, PopoverGeometry.contentPadding),
     width: 400, height: 100)
   defer { fixture.close() }
   fixture.show()
