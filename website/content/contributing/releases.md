@@ -32,9 +32,10 @@ The Direct job requires signing credentials and [Sparkle](https://sparkle-projec
 its credentials and skips with a note in the run summary if they are missing. Direct and Homebrew releases can proceed
 while the App Store account is pending.
 
-The first release is still in development. Pipeline configuration is not evidence that a release or App Store listing
-exists. Check the repository's releases and full PR CI matrix before declaring a build ready. Require the deployed macOS
-14, 15 and 26 checks. Add actual macOS 27 acceptance after its runner image rollout.
+Version 0.1.0 published on 2026-09-16 through the Direct and Homebrew channels. Pipeline configuration is not evidence
+that a later release or an App Store listing exists. Check the repository's releases and full PR CI matrix before
+declaring a build ready. Require the deployed macOS 14, 15 and 26 checks. Release UI tests cover macOS 26 and 27 only,
+so the older runtimes rest on the pull request matrix.
 
 The three channels are separate Xcode application targets. Only Direct compiles and links `SparkleUpdater`; Homebrew and
 App Store do not link the Sparkle product and carry no Sparkle keys in `Info.plist`. Release verification checks both
