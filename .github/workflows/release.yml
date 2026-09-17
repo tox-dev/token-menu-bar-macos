@@ -48,7 +48,9 @@ jobs:
         run: |
           gh api repos/actions/runner-images/releases/tags/xcode-27-arm64%2F20260907.0173 | Scripts/ci-runtime-matrix.sh
       # A job cannot read secrets in its own `if`, so the release works out here which legs it can publish.
-      - name: Check the App Store credentials
+      # A tag that reaches only two of the three channels is a half-published release, so a missing credential stops
+      # the run here rather than leaving the App Store behind without anyone noticing.
+      - name: Require the App Store credentials
         id: check
         env:
           APPLE_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.APPLE_DISTRIBUTION_CERTIFICATE_BASE64 }}
@@ -65,11 +67,10 @@ jobs:
             [ -n "${!name}" ] || missing="$missing $name"
           done
           if [ -n "$missing" ]; then
-            echo "app_store=false" >> "$GITHUB_OUTPUT"
-            echo "Skipping the App Store upload, no:$missing" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "app_store=true" >> "$GITHUB_OUTPUT"
+            echo "::error::Cannot upload to the App Store without:$missing"
+            exit 1
           fi
+          echo "app_store=true" >> "$GITHUB_OUTPUT"
   runtime-tests:
     name: Release UI tests (${{ matrix.name }} runtime)
     needs: preflight

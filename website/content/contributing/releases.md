@@ -28,9 +28,9 @@ flowchart LR
     class G,C,A ship;
 ```
 
-The Direct job requires signing credentials and [Sparkle](https://sparkle-project.org) keys. The App Store job checks
-its credentials and skips with a note in the run summary if they are missing. Direct and Homebrew releases can proceed
-while the App Store account is pending.
+Every job requires its credentials: the Direct job needs signing credentials and [Sparkle](https://sparkle-project.org)
+keys, and the release stops before any job runs when an App Store certificate or profile is missing, rather than
+publishing two channels of three.
 
 The first release is still in development. Pipeline configuration is not evidence that a release or App Store listing
 exists. Check the repository's releases and full PR CI matrix before declaring a build ready. Require the deployed macOS
