@@ -2,7 +2,7 @@ name: TokenMenuBar
 options:
   bundleIdPrefix: dev.tox
   deploymentTarget:
-    macOS: "14.0"
+    macOS: "15.0"
   xcodeVersion: "26.0"
   createIntermediateGroups: true
   generateEmptyDirectories: false
@@ -22,7 +22,7 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     # The git-derived version, which names the commit a dev build came from; see Scripts/version.sh
     SOURCE_VERSION: "0.1.0"
-    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    MACOSX_DEPLOYMENT_TARGET: "15.0"
     ARCHS: arm64 x86_64
     ONLY_ACTIVE_ARCH: NO
     # Archives strip by default, but a plain `xcodebuild build` does not, and the difference is over half the
@@ -94,7 +94,7 @@ targetTemplates:
         TMBSelfUpdateEnabled: $(SELF_UPDATE_ENABLED)
         TMBVerificationOnly: $(VERIFICATION_ONLY)
         LSUIElement: true
-        LSMinimumSystemVersion: "14.0"
+        LSMinimumSystemVersion: "15.0"
         LSApplicationCategoryType: public.app-category.developer-tools
         NSHumanReadableCopyright: "Copyright © 2026 Bernát Gábor. MIT licensed."
         ITSAppUsesNonExemptEncryption: false

@@ -12,7 +12,7 @@ cask "token-menu-bar" do
     strategy :github_latest
   end
 
-  depends_on macos: :sonoma
+  depends_on macos: :sequoia
 
   app "Token Menu Bar.app"
   uninstall quit: "dev.tox.token-menu-bar"

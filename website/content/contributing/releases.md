@@ -37,7 +37,7 @@ that a later release or an App Store listing exists. Check the repository's rele
 declaring a build ready.
 
 The release runs no application tests of its own. It reads the CI verdict for the tagged commit and refuses to publish
-unless the newest run passed, so a tag carries the full matrix of macOS 14, 15, 26 and 27 rather than the two runtimes a
+unless the newest run passed, so a tag carries the full matrix of macOS 15, 26 and 27 rather than the two runtimes a
 release once repeated. Everything the release still checks concerns the artifact instead of behaviour: deployment
 targets, both architecture slices, Mach-O validity, updater load commands, notarization and the appcast signature.
 

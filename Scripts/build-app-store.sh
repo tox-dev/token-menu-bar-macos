@@ -20,7 +20,7 @@ xcodebuild -project App/TokenMenuBar.xcodeproj -scheme TokenMenuBar-AppStore -co
   -destination 'platform=macOS' -archivePath "$archive" DEVELOPMENT_TEAM="$TEAM_ID" archive | tail -20
 
 app="$archive/Products/Applications/Token Menu Bar.app"
-Scripts/verify-deployment-targets.sh "$app" 14.0
+Scripts/verify-deployment-targets.sh "$app" 15.0
 Scripts/verify-app-bundle.sh "$app" "App Store" forbidden
 
 # Xcode matches a certificate name against the common name, and the portal issues installer certificates under a name

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 app="${1:?usage: verify-deployment-targets.sh <app> [maximum-version]}"
-maximum="${2:-14.0}"
+maximum="${2:-15.0}"
 [[ -d "$app" ]] || {
   echo "missing application bundle: $app" >&2
   exit 1

@@ -1,6 +1,6 @@
 # Token Menu Bar
 
-A macOS menu bar app for AI coding quota, reset countdowns and pacing, with a shared History chart. Requires macOS 14 or
+A macOS menu bar app for AI coding quota, reset countdowns and pacing, with a shared History chart. Requires macOS 15 or
 later on Apple silicon or Intel.
 
 ## Install

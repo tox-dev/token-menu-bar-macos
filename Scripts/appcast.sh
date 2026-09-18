@@ -54,7 +54,7 @@ cat > "$out/appcast.xml" << XML
       <pubDate>$(date -u +"%a, %d %b %Y %H:%M:%S +0000")</pubDate>
       <sparkle:version>${build}</sparkle:version>
       <sparkle:shortVersionString>${version}</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <enclosure url="${download_prefix}TokenMenuBar.zip" length="${length}" type="application/octet-stream" />
     </item>
   </channel>

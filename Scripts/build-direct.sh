@@ -50,7 +50,7 @@ else
   codesign --force --deep --sign - "$out/Token Menu Bar.app"
 fi
 
-Scripts/verify-deployment-targets.sh "$out/Token Menu Bar.app" 14.0
+Scripts/verify-deployment-targets.sh "$out/Token Menu Bar.app" 15.0
 Scripts/verify-app-bundle.sh "$out/Token Menu Bar.app" "$expected_distribution" "$expected_updater"
 codesign --verify --deep --strict --verbose=2 "$out/Token Menu Bar.app"
 echo "exported $out/Token Menu Bar.app (scheme=$scheme, signed=$signed)"

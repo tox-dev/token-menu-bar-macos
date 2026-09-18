@@ -112,7 +112,7 @@ the process identified by that app after checking the verification launch argume
 separately from tab latency measurements. The wrapper uses Apple's
 [`TEST_RUNNER_` environment forwarding](https://developer.apple.com/documentation/xcode/environment-variable-reference).
 
-CI requires macOS 14, 15 and 26 on hosted runners. A Linux preparation job checks the
+CI requires macOS 15 and 26 on hosted runners. A Linux preparation job checks the
 [macOS 27 image release](https://github.com/actions/runner-images/releases/tag/xcode-27-arm64%2F20260907.0173). Until
 GitHub completes that rollout, CI omits macOS 27 package tests, UI audits and distribution builds. The job summary
 records the omission. After GitHub converts the prerelease to a release, CI adds macOS 27 to those matrices and the

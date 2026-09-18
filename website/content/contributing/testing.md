@@ -35,7 +35,7 @@ thresholds on CI.
 
 ## Panel acceptance
 
-Run this check on macOS 14, 15, 26, and 27 before a release:
+Run this check on macOS 15, 26, and 27 before a release:
 
 ```sh
 just run-demo
@@ -59,6 +59,6 @@ The demo launch uses seeded providers, a separate defaults suite, and a temporar
 
 The functional application UI suite checks all three tabs for accessibility faults, controls and panel positioning. It
 uses bounded waits to catch hangs and removes its defaults and support files after each test. CI requires GitHub-hosted
-macOS 14, 15 and 26. A rollout gate adds macOS 27 after GitHub completes its image deployment; runtime assertions remain
-in each job. Until then, macOS 27 jobs are omitted, not retried against randomly assigned macOS 26 images. The
-`xcode-27` label alone does not prove macOS 27 coverage.
+macOS 15 and 26. A rollout gate adds macOS 27 after GitHub completes its image deployment; runtime assertions remain in
+each job. Until then, macOS 27 jobs are omitted, not retried against randomly assigned macOS 26 images. The `xcode-27`
+label alone does not prove macOS 27 coverage.

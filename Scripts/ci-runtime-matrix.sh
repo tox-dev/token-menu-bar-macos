@@ -9,11 +9,10 @@ release="$(jq -ce '
   then . else error("Invalid macOS 27 rollout metadata") end
 ')"
 
-matrices="$(jq -cn --argjson release "$release" --arg macos14 "${MACOS_14_RUNNER:-macos-14}" \
+matrices="$(jq -cn --argjson release "$release" \
   --argjson diagnostic "${DIAGNOSTIC_UI_RUNTIME:-0}" --arg group "${UI_GROUP:-}" '
   ($release.draft == false and $release.prerelease == false) as $ready |
   [
-    {"runtime-major":14, "minimum-xcode":16, runner:$macos14},
     {"runtime-major":15, "minimum-xcode":26, runner:"macos-15"},
     {"runtime-major":26, "minimum-xcode":26, runner:"macos-26"},
     {"runtime-major":27, "minimum-xcode":27, runner:"xcode-27"} | select(."runtime-major" != 27 or $ready) |
@@ -44,9 +43,9 @@ matrices="$(jq -cn --argjson release "$release" --arg macos14 "${MACOS_14_RUNNER
 
 jq -r 'to_entries[] | "\(.key)=\(.value | tojson)"' <<< "$matrices" >> "$GITHUB_OUTPUT"
 if jq -e '.runtimes | index(27)' <<< "$matrices" > /dev/null; then
-  message="GitHub completed the macOS 27 image rollout. CI includes macOS 14, 15, 26 and 27 with runtime checks."
+  message="GitHub completed the macOS 27 image rollout. CI includes macOS 15, 26 and 27 with runtime checks."
 else
-  message="GitHub has not completed the macOS 27 image rollout. CI requires macOS 14, 15 and 26; macOS 27 jobs are omitted until deployment completes."
+  message="GitHub has not completed the macOS 27 image rollout. CI requires macOS 15 and 26; macOS 27 jobs are omitted until deployment completes."
 fi
 echo "$message"
 echo "$message" >> "$GITHUB_STEP_SUMMARY"

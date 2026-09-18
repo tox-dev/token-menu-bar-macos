@@ -28,7 +28,7 @@ cleanup() {
 trap cleanup EXIT
 cp -R "$app" "$staging/"
 ln -s /Applications "$staging/Applications"
-# ULMO mounts on macOS 10.15 and later, below the app's macOS 14 deployment floor.
+# ULMO mounts on macOS 10.15 and later, below the app's macOS 15 deployment floor.
 hdiutil create -volname "Token Menu Bar $version" -srcfolder "$staging" -ov -format ULMO -fs HFS+ \
   "$out/$archive_basename.dmg" > /dev/null
 

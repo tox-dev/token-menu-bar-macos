@@ -7,7 +7,7 @@ aliases: [/start/install/]
 
 ## Install
 
-Token Menu Bar targets macOS 14, 15, 26 and 27 on Apple silicon and Intel.
+Token Menu Bar targets macOS 15, 26 and 27 on Apple silicon and Intel.
 
 [Version 0.1.0](https://github.com/tox-dev/token-menu-bar-macos/releases/latest) is the current release. Apple notarized
 both downloads, so Gatekeeper opens them without a detour through System Settings.
