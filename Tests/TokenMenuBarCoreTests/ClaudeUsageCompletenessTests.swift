@@ -85,7 +85,7 @@ func claudeAcceptsRecognizedEmptyUsage(json: String) async {
   transport.on(path: "/api/oauth/profile", .json("claude_profile"))
   let provider = ClaudeProvider(
     credentials: DiscoveredClaudeKeychainStore(account: "fixture", keychain: keychain.client),
-    localAccountURL: nil, transcripts: ClaudeTranscriptReader(root: temporaryDirectory()),
+    transcripts: ClaudeTranscriptReader(root: temporaryDirectory()),
     client: APIClient(transport: transport, log: makeLog()), log: makeLog(), allowRefresh: { false },
     configuredLocalService: ClaudeOAuthCredentials.keychainService)
   let result = await provider.fetch(now: fixedNow, options: FetchOptions(includeAnalytics: true))

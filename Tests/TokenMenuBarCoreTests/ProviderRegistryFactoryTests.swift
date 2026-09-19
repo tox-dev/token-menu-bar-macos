@@ -275,9 +275,7 @@ private func providerResourceURLs(home: URL, environment: [String: String]) -> [
 private func prepareProviderCredentials(resourceURLs: [String: URL]) throws {
   for resource in ProviderID.allSandboxResources {
     let url = resourceURLs[resource.id]!
-    try FileManager.default.createDirectory(
-      at: resource.kind == .file ? url.deletingLastPathComponent() : url,
-      withIntermediateDirectories: true)
+    try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
   }
 
   let claudeHome = resourceURLs[ProviderID.claude.sandboxResources[0].id]!

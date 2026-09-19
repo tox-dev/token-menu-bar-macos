@@ -10,9 +10,21 @@ weight: 1
 Sign in through Claude Code with `claude auth login`, then enable Claude in **Settings > Providers**. Use **Show all
 providers** if Claude is absent. Check **Authentication** for the source in use.
 
-The app reads Keychain service `Claude Code-credentials` or `~/.claude/.credentials.json`. Local profile and transcript
-files live under `~/.claude`; `CLAUDE_CONFIG_DIR` selects a different root. See
-[custom credential paths](/start/connect/#custom-credential-paths) for Finder and login-item launches.
+The app reads Keychain service `Claude Code-credentials`, then `~/.claude/.credentials.json`, which Claude Code writes
+only when the Keychain refuses its sign-in. Local profile and transcript files live under `~/.claude`;
+`CLAUDE_CONFIG_DIR` selects a different root. See [custom credential paths](/start/connect/#custom-credential-paths) for
+Finder and login-item launches.
+
+### What macOS asks
+
+- **Keychain password.** The first read of `Claude Code-credentials` brings up the macOS dialog described under
+  [Keychain access](/start/connect/#keychain-access). Choose **Always Allow**.
+- **The dialog can return.** Claude Code rewrites its Keychain item whenever it renews its sign-in, which can happen
+  several times a day, and the rewrite drops the approval. macOS then asks again on the next read. After **Deny** the
+  app waits 30 minutes before it reads the item again.
+- **App Store build.** Grant `~/.claude` once if you want [History](/reference/history/) token counts and cost
+  estimates; it holds the transcripts. Quota and plan come from the Keychain sign-in without it. See
+  [folder grants](/start/connect/#folder-grants).
 
 ## Quota and credits
 

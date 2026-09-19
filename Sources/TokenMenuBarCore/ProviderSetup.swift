@@ -136,6 +136,15 @@ public struct ResourceAccessState: Sendable, Equatable, Identifiable {
   public static func notRequired(_ resource: SandboxResource) -> ResourceAccessState {
     ResourceAccessState(resource: resource, health: .notRequired, isRequired: false)
   }
+
+  /// The first folder still worth granting: an alternative counts as met once any folder in its group is granted.
+  public static func firstMissing(in states: [ResourceAccessState]) -> ResourceAccessState? {
+    let candidates = states.filter(\.isRequired)
+    let metGroups = Set(candidates.filter { $0.health == .granted }.compactMap(\.resource.alternativesGroup))
+    return candidates.first {
+      $0.health != .granted && !($0.resource.alternativesGroup.map(metGroups.contains) ?? false)
+    }
+  }
 }
 
 public enum ProviderRecoveryAction: Sendable, Equatable {
@@ -259,7 +268,7 @@ public struct ProviderSetupState: Sendable, Equatable {
         action: .refreshProvider(provider))
     }
     if !credential.isUsable,
-      let resource = resources.first(where: { $0.isRequired && $0.health != .granted })
+      let resource = ResourceAccessState.firstMissing(in: resources)
     {
       issue = ProviderRecoveryIssue(
         kind: .resourceAccess,

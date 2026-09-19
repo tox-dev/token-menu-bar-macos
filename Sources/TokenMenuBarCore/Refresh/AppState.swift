@@ -278,7 +278,7 @@ public final class AppState {
     ).issue
     switch state.availability {
     case .authenticationRequired:
-      if let resource = setup.resources.first(where: { $0.isRequired && $0.health != .granted }) {
+      if let resource = ResourceAccessState.firstMissing(in: setup.resources) {
         return ProviderRecoveryIssue(
           kind: .resourceAccess,
           title: resource.health == .stale ? "Access grant needs renewal" : "File access needed",

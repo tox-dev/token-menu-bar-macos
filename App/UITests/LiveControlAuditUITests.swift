@@ -893,6 +893,12 @@ final class LiveControlAuditUITests: XCTestCase {
       records.append(
         scenarioRecord(
           tab: "Settings", label: "\(provider.displayName) enabled", element: toggle, action: "toggle twice"))
+      let guide = row.buttons["\(provider.displayName) setup guide"]
+      XCTAssertTrue(reveal(guide, in: surface), "Missing \(provider.displayName) setup guide")
+      guide.click()
+      records.append(
+        scenarioRecord(
+          tab: "Settings", label: "\(provider.displayName) setup guide", element: guide, action: "click"))
       let stepper = row.steppers.firstMatch
       XCTAssertTrue(stepper.exists, "Missing \(provider.displayName) refresh interval")
       XCTAssertTrue(reveal(stepper, in: surface))
@@ -925,6 +931,10 @@ final class LiveControlAuditUITests: XCTestCase {
     var resourceActions = 0
     for provider in ProviderID.allCases {
       let row = application.descendants(matching: .any)["\(provider.displayName) setup"]
+      let toggle = row.checkBoxes[provider.displayName]
+      XCTAssertTrue(reveal(toggle, in: surface), "Missing \(provider.displayName) provider row")
+      let wasEnabled = isSelected(toggle)
+      set(toggle, enabled: true)
       for action in row.buttons.matching(
         NSPredicate(format: "label IN %@", ["Copy command", "Check again", "Grant access", "Contact administrator"])
       ).allElementsBoundByIndex {
@@ -952,6 +962,7 @@ final class LiveControlAuditUITests: XCTestCase {
             tab: "Settings", label: "\(provider.displayName) resource \(action.label)", element: action,
             action: "open panel and Cancel"))
       }
+      set(toggle, enabled: wasEnabled)
     }
     XCTAssertEqual(recoveryActions, ProviderID.allCases.count, "Each provider must expose its recovery action")
     XCTAssertEqual(
@@ -1510,7 +1521,7 @@ final class LiveControlAuditUITests: XCTestCase {
       required.formUnion([
         "Usage|Refresh \(provider.displayName)", "Settings|\(provider.displayName) model select-all",
         "Settings|\(provider.displayName) enabled", "Settings|\(provider.displayName) refresh interval",
-        "Settings|\(provider.displayName) authentication source",
+        "Settings|\(provider.displayName) authentication source", "Settings|\(provider.displayName) setup guide",
       ])
     }
     required = required.filter {
@@ -1541,7 +1552,7 @@ final class LiveControlAuditUITests: XCTestCase {
       return .log
     default:
       if label.hasPrefix("Notification threshold ") { return .notifications }
-      if [" enabled", " refresh interval", " authentication source"].contains(where: label.hasSuffix) {
+      if [" enabled", " refresh interval", " authentication source", " setup guide"].contains(where: label.hasSuffix) {
         return .providers
       }
       return .menuBar

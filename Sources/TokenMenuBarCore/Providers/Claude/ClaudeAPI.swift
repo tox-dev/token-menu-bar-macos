@@ -356,9 +356,9 @@ enum ClaudeMapper {
   }
 
   static func identity(
-    profile: ClaudeAPI.ProfileResponse?, credentials: ClaudeOAuthCredentials?, local: ClaudeLocalAccount?
+    profile: ClaudeAPI.ProfileResponse?, credentials: ClaudeOAuthCredentials?
   ) -> ProviderIdentity {
-    let tier = profile?.organization?.rateLimitTier ?? credentials?.rateLimitTier ?? local?.rateLimitTier
+    let tier = profile?.organization?.rateLimitTier ?? credentials?.rateLimitTier
     let base: String
     switch profile?.organization?.organizationType ?? credentials?.subscriptionType {
     case "claude_max", "max": base = "Max"
@@ -379,8 +379,8 @@ enum ClaudeMapper {
     return ProviderIdentity(
       planName: multiplier.map { "\(base) \($0)x" } ?? base,
       tier: tier,
-      email: profile?.account?.email ?? local?.email,
-      organization: profile?.organization?.name ?? local?.organizationName
+      email: profile?.account?.email,
+      organization: profile?.organization?.name
     )
   }
 

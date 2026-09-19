@@ -13,6 +13,13 @@ providers** if it is absent.
 The app reads Keychain service `gemini`, account `antigravity`, and can contact the running client's local language
 server. **Authentication** and **Connection details** identify the source in use.
 
+### What macOS asks
+
+- **Keychain password.** Antigravity keeps its sign-in only in the Keychain, so the first read brings up the dialog
+  described under [Keychain access](/start/connect/#keychain-access). Choose **Always Allow**.
+- **App Store build.** No folder grant. The sandbox hides other apps' processes, so the app cannot find a running
+  Antigravity language server and reports quota through Google's Cloud Code endpoint.
+
 ## Available data
 
 Usage shows shared model pools, short and weekly windows, and reported tier and identity. The app uses the running

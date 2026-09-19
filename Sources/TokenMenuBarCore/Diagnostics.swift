@@ -75,6 +75,10 @@ public struct AppInfo: Sendable, Equatable {
   public static let noticesURL = URL(
     string: "https://token-menu-bar-macos.readthedocs.io/en/latest/explanation/notices/")!
 
+  public static func setupGuideURL(for provider: ProviderID) -> URL {
+    URL(string: "https://token-menu-bar-macos.readthedocs.io/en/latest/reference/providers/\(provider.rawValue)/")!
+  }
+
   public static func from(bundle: Bundle, isAppStore: Bool) -> AppInfo {
     from(bundle: bundle, distribution: isAppStore ? .appStore : .direct)
   }

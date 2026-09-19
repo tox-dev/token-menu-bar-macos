@@ -44,7 +44,7 @@ import TokenMenuBarTestSupport
 @Test func nestedCoverageClaudeProfileFallsBackToItsExpiredCache() async throws {
   let transport = NestedCoverageClaudeTransport()
   let provider = ClaudeProvider(
-    credentials: MemoryClaudeStore(validClaude), localAccountURL: nil,
+    credentials: MemoryClaudeStore(validClaude),
     client: APIClient(transport: transport, log: makeLog(), clock: testClock), log: makeLog(),
     allowRefresh: { false })
 

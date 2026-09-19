@@ -82,7 +82,6 @@ public enum ProviderRegistryFactory {
     ])
     let claude = ClaudeProvider(
       credentials: claudeCredentials,
-      localAccountURL: configuration.url(for: ProviderID.claude.sandboxResources[1]),
       transcripts: ClaudeTranscriptReader(
         root: claudeHome.appendingPathComponent("projects"),
         stateURL: configuration.supportDirectory.appendingPathComponent("claude-transcript-offsets.json")),

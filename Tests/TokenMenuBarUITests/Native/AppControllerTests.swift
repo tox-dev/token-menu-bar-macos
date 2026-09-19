@@ -726,8 +726,8 @@ func openingSettingsPreparesCurrentUsageBeforeItsHost(visible: Bool) throws {
   #expect(sandboxedGraph.registry[.codex]?.credentialDescription.contains(configuredCodex.path + "/auth.json") == true)
   #expect(sandboxedGraph.history.location == root.appendingPathComponent("configured-support/usage.sqlite"))
   #expect(
-    ProviderID.claude.sandboxResources[1].configuredURL(environment: [:], home: root).lastPathComponent
-      == ".claude.json")
+    ProviderID.cursor.sandboxResources[1].configuredURL(environment: [:], home: root).lastPathComponent
+      == ".cursor")
   // a stored bookmark replaces the configured path when the build is sandboxed
   let bookmarked = makeSettings()
   bookmarked.setBookmark(bookmark, for: codexHome)

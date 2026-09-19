@@ -287,25 +287,6 @@ func credentialFileSavePreservesSymlinksAndOwnerOnlyPermissions(kindName: String
   try ChainedClaudeCredentialStore([]).save(ClaudeOAuthCredentials(accessToken: "x", refreshToken: nil, expiresAt: nil))
 }
 
-@Test func claudeLocalAccountReadsOauthAccount() throws {
-  let directory = temporaryDirectory()
-  let url = directory.appendingPathComponent(".claude.json")
-  #expect(ClaudeLocalAccount.load(from: url) == nil)
-  try Data(
-    #"""
-    {"oauthAccount":{"emailAddress":"a@b.c","organizationName":"Org",
-    "organizationRateLimitTier":"default_claude_max_5x","hasExtraUsageEnabled":true}}
-    """#
-    .utf8
-  ).write(to: url)
-  #expect(
-    ClaudeLocalAccount.load(from: url)
-      == ClaudeLocalAccount(
-        email: "a@b.c", organizationName: "Org", rateLimitTier: "default_claude_max_5x", hasExtraUsageEnabled: true))
-  try Data(#"{"other":1}"#.utf8).write(to: url)
-  #expect(ClaudeLocalAccount.load(from: url) == nil)
-}
-
 @Test func codexAuthParsesTokensAndClaims() {
   let auth = CodexAuth(document: Fixtures.codexAuth())!
   #expect(auth.accessToken == "ACCESS-EXAMPLE")

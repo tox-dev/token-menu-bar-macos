@@ -51,11 +51,10 @@ private let expiredClaude = ClaudeOAuthCredentials(
   accessToken: "old", refreshToken: "ref", expiresAt: fixedNow.addingTimeInterval(-10))
 
 func claudeProvider(
-  _ store: any ClaudeCredentialStore, transport: StubTransport, allowRefresh: Bool = false, localAccount: URL? = nil,
-  transcripts: URL? = nil
+  _ store: any ClaudeCredentialStore, transport: StubTransport, allowRefresh: Bool = false, transcripts: URL? = nil
 ) -> ClaudeProvider {
   ClaudeProvider(
-    credentials: store, localAccountURL: localAccount,
+    credentials: store,
     transcripts: transcripts.map { ClaudeTranscriptReader(root: $0) },
     client: APIClient(transport: transport, log: makeLog(), clock: testClock), log: makeLog(),
     allowRefresh: { allowRefresh })
@@ -168,17 +167,14 @@ func claudeProvider(
   transport.on(
     { $0.url?.path.hasSuffix("/profile") == true && $0.value(forHTTPHeaderField: "Authorization") == "Bearer tok" },
     .respond(.json("claude_profile")))
-  let localURL = temporaryDirectory().appendingPathComponent(".claude.json")
-  try Data(#"{"oauthAccount":{"emailAddress":"local@example.com","organizationName":"Local"}}"#.utf8).write(
-    to: localURL)
   let store = MemoryClaudeStore(validClaude)
-  let provider = claudeProvider(store, transport: transport, localAccount: localURL)
+  let provider = claudeProvider(store, transport: transport)
   let first = await provider.fetch(now: fixedNow, options: FetchOptions())
   #expect(first.outcome.snapshot?.identity?.email == "user@example.com")
   try store.save(
     ClaudeOAuthCredentials(accessToken: "other", refreshToken: nil, expiresAt: nil, subscriptionType: "max"))
   let second = await provider.fetch(now: fixedNow.addingTimeInterval(7200), options: FetchOptions())
-  #expect(second.outcome.snapshot?.identity?.email == "local@example.com")
+  #expect(second.outcome.snapshot?.identity?.email == nil)
   #expect(second.warnings.count == 1)
 }
 

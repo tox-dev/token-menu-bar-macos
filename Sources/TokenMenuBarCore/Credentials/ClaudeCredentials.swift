@@ -362,29 +362,3 @@ public struct ChainedClaudeCredentialStore: ClaudeCredentialStore {
     try target.save(credentials)
   }
 }
-
-public struct ClaudeLocalAccount: Sendable, Equatable {
-  public let email: String?
-  public let organizationName: String?
-  public let rateLimitTier: String?
-  public let hasExtraUsageEnabled: Bool?
-
-  public init(email: String?, organizationName: String?, rateLimitTier: String?, hasExtraUsageEnabled: Bool?) {
-    self.email = email
-    self.organizationName = organizationName
-    self.rateLimitTier = rateLimitTier
-    self.hasExtraUsageEnabled = hasExtraUsageEnabled
-  }
-
-  public static func load(from url: URL) -> ClaudeLocalAccount? {
-    guard let data = try? Data(contentsOf: url), let json = try? JSONDecoder().decode(JSONValue.self, from: data),
-      let account = json["oauthAccount"]
-    else { return nil }
-    return ClaudeLocalAccount(
-      email: account["emailAddress"]?.stringValue,
-      organizationName: account["organizationName"]?.stringValue,
-      rateLimitTier: account["organizationRateLimitTier"]?.stringValue,
-      hasExtraUsageEnabled: account["hasExtraUsageEnabled"]?.boolValue
-    )
-  }
-}

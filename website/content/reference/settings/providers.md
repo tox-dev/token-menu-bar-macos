@@ -10,7 +10,9 @@ setup view, not empty sign-in cards in Usage.
 
 Each provider has its mark, an enable box and an **Authentication** source. **Connection details** adds the safe
 credential path, account identity, service state and last success. Recovery actions remain outside that disclosure. The
-App Store build shows resource-grant buttons where needed.
+App Store build shows a provider's folder-grant buttons once that provider is enabled. **Setup guide** on each provider
+opens that provider's [page](/reference/providers/), which lists the credentials the app reads and what macOS asks you
+to approve.
 
 Enabled providers expose a refresh stepper, up to 30 minutes. Each [provider page](/reference/providers/) gives its
 polling default and open-panel floor. [Rate-limit backoff](/explanation/collection/) takes precedence.

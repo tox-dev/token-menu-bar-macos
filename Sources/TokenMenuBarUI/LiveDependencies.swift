@@ -234,9 +234,7 @@ public enum LiveDependencies {
     }
     guard profile.nativePanels else { return { _ in nil } }
     return { resource in
-      let initialURL =
-        resource.kind == .file ? supportDirectory.appendingPathComponent("verification-selection") : supportDirectory
-      return await chosen({ directoryPanel(resource: resource, default: initialURL) }, run: run)
+      await chosen({ directoryPanel(resource: resource, default: supportDirectory) }, run: run)
     }
   }
 
@@ -477,10 +475,10 @@ public enum LiveDependencies {
   @MainActor
   public static func directoryPanel(resource: SandboxResource, default directory: URL) -> NSOpenPanel {
     let panel = NSOpenPanel()
-    panel.canChooseDirectories = resource.kind == .directory
-    panel.canChooseFiles = resource.kind == .file
+    panel.canChooseDirectories = true
+    panel.canChooseFiles = false
     panel.showsHiddenFiles = true
-    panel.directoryURL = resource.kind == .file ? directory.deletingLastPathComponent() : directory
+    panel.directoryURL = directory
     panel.message = "Select \(resource.label) so \(resource.provider.displayName) usage can be read."
     return panel
   }

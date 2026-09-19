@@ -15,6 +15,13 @@ selects the home containing `.gemini/oauth_creds.json`. Gemini credential-storag
 also affect discovery. [Custom credential paths](/start/connect/#custom-credential-paths) explains how to pass overrides
 to a GUI launch.
 
+### What macOS asks
+
+- **Keychain password**, only when `GEMINI_FORCE_ENCRYPTED_FILE_STORAGE=true` is set, which moves Gemini CLI's sign-in
+  into the `gemini-cli-oauth` Keychain item. Otherwise the app reads `oauth_creds.json` and needs no password. See
+  [Keychain access](/start/connect/#keychain-access).
+- **App Store build.** Grant `~/.gemini` once; see [folder grants](/start/connect/#folder-grants).
+
 ## Available data
 
 Usage shows per-model quota buckets, tier and reported credits. History contains the quota samples collected by Token

@@ -395,10 +395,11 @@ func sandboxResourcesFollowTheirConfiguredLocation(id: String, environment: [Str
 }
 
 @Test func sandboxResourcesDescribeEveryProviderPath() {
-  #expect(ProviderID.allSandboxResources.count == 8)
-  #expect(ProviderID.claude.sandboxResources.map(\.kind) == [.directory, .file])
+  #expect(ProviderID.allSandboxResources.count == 7)
+  #expect(ProviderID.claude.sandboxResources.map(\.id) == ["claude.home"])
   #expect(ProviderID.allSandboxResources.allSatisfy { $0.label.hasPrefix("~/") })
-  #expect(Set(ProviderID.allSandboxResources.map(\.id)).count == 8)
+  #expect(ProviderID.allSandboxResources.allSatisfy { !$0.explanation.isEmpty })
+  #expect(Set(ProviderID.allSandboxResources.map(\.id)).count == 7)
 }
 
 @Test(
@@ -443,4 +444,28 @@ func exportCommandNeedsAFlagAndADirectory(arguments: [String]) {
   #expect(legacy.resetPrecision == .instant)
   #expect(legacy.id == window.id)
   #expect(legacy.resetsAt == window.resetsAt)
+}
+
+@Test func sandboxResourcesSayHowMuchEachOneMatters() {
+  let needs = Dictionary(uniqueKeysWithValues: ProviderID.allSandboxResources.map { ($0.id, $0.need) })
+  #expect(needs["claude.home"] == .optional)
+  #expect(needs["codex.home"] == .required)
+  #expect(needs["gemini.home"] == .required)
+  #expect(needs["cursor.support"] == .oneOf("cursor") && needs["cursor.home"] == .oneOf("cursor"))
+  #expect(needs["copilot.home"] == .oneOf("copilot") && needs["copilot.config"] == .oneOf("copilot"))
+}
+
+@Test func anAlternativeIsMetOnceAnyFolderInItsGroupIsGranted() {
+  let cursor = ProviderID.cursor.sandboxResources
+  let neither = cursor.map { ResourceAccessState(resource: $0, health: .needed) }
+  #expect(ResourceAccessState.firstMissing(in: neither)?.resource == cursor[0])
+  let one = [
+    ResourceAccessState(resource: cursor[0], health: .needed),
+    ResourceAccessState(resource: cursor[1], health: .granted),
+  ]
+  #expect(ResourceAccessState.firstMissing(in: one) == nil)
+  let claude = ProviderID.claude.sandboxResources[0]
+  #expect(
+    ResourceAccessState.firstMissing(in: [ResourceAccessState(resource: claude, health: .needed)])?.resource == claude)
+  #expect(ResourceAccessState.firstMissing(in: [ResourceAccessState.notRequired(claude)]) == nil)
 }

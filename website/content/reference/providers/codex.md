@@ -13,6 +13,13 @@ The app reads `~/.codex/auth.json`, Keychain service `Codex Auth` and discovered
 the selected home's `sessions` directory. **Authentication** and **Connection details** identify the source in use.
 `CODEX_HOME` selects a different root; see [custom credential paths](/start/connect/#custom-credential-paths).
 
+### What macOS asks
+
+- **Keychain password**, when a `Codex Auth` Keychain item exists. The app reads that item first unless
+  `~/.codex/config.toml` sets `cli_auth_credentials_store = "file"`, then falls back to `auth.json`. See
+  [Keychain access](/start/connect/#keychain-access).
+- **App Store build.** Grant `~/.codex` once; see [folder grants](/start/connect/#folder-grants).
+
 ## Quota and credits
 
 Usage shows session, weekly and scoped model limits, reported credits, spend controls and reset-credit expiry. Weekly

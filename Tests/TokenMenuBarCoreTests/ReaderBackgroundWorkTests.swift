@@ -85,7 +85,7 @@ import TokenMenuBarTestSupport
     root: try backgroundScanRoot(prefix: "session"), workEntryBudget: 1, backgroundWorkDelay: 60)
   let retainedReader = WeakReference(reader)
   var provider: ClaudeProvider? = ClaudeProvider(
-    credentials: MemoryClaudeStore(validClaude), localAccountURL: nil, transcripts: reader,
+    credentials: MemoryClaudeStore(validClaude), transcripts: reader,
     client: APIClient(transport: StubTransport(), log: makeLog(), clock: testClock), log: makeLog(),
     allowRefresh: { false })
   _ = await reader?.refresh(now: fixedNow)
@@ -93,7 +93,7 @@ import TokenMenuBarTestSupport
   reader = nil
 
   provider = ClaudeProvider(
-    credentials: MemoryClaudeStore(validClaude), localAccountURL: nil, transcripts: nil,
+    credentials: MemoryClaudeStore(validClaude), transcripts: nil,
     client: APIClient(transport: StubTransport(), log: makeLog(), clock: testClock), log: makeLog(),
     allowRefresh: { false })
   try await waitForRelease(retainedReader)

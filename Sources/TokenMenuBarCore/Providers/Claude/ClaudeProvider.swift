@@ -6,7 +6,6 @@ public actor ClaudeProvider: UsageProvider {
   public nonisolated let id: ProviderID = .claude
   public nonisolated let pollingPolicy = PollingPolicy.defaults(for: .claude)
   private let credentials: any ClaudeCredentialStore
-  private let localAccountURL: URL?
   private let configuredLocalService: String?
   private let transcripts: ClaudeTranscriptReader?
   private let client: APIClient
@@ -18,7 +17,6 @@ public actor ClaudeProvider: UsageProvider {
 
   public init(
     credentials: any ClaudeCredentialStore,
-    localAccountURL: URL?,
     transcripts: ClaudeTranscriptReader? = nil,
     client: APIClient,
     log: LogBuffer,
@@ -26,7 +24,6 @@ public actor ClaudeProvider: UsageProvider {
     configuredLocalService: String? = nil
   ) {
     self.credentials = credentials
-    self.localAccountURL = localAccountURL
     self.configuredLocalService = configuredLocalService
     self.transcripts = transcripts
     self.client = client
@@ -111,13 +108,12 @@ public actor ClaudeProvider: UsageProvider {
       configuredLocalService.map { service in
         !activeSource.id.hasPrefix("claude.keychain:") || activeSource.id == "claude.keychain:\(service)"
       } ?? true
-    let local = matchesLocalScope ? localAccountURL.flatMap(ClaudeLocalAccount.load(from:)) : nil
     var profile: ClaudeAPI.ProfileResponse?
     switch profileResult {
     case .success(let value): profile = value
     case .failure(let error): warnings.append("Profile unavailable: \(error.message)")
     }
-    let identity = ClaudeMapper.identity(profile: profile, credentials: active, local: local)
+    let identity = ClaudeMapper.identity(profile: profile, credentials: active)
     let transcript =
       matchesLocalScope ? await transcripts?.refresh(now: now, retentionDays: options.analyticsDays) : nil
     if !matchesLocalScope {

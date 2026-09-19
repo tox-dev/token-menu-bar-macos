@@ -14,6 +14,12 @@ The app reads Cursor's `User/globalStorage/state.vscdb` under its Application Su
 `~/.cursor/auth.json`. **Authentication** and **Connection details** identify the source in use. Database access is
 read-only.
 
+### What macOS asks
+
+- **No Keychain password.** Cursor keeps its session in files.
+- **App Store build.** Grant the folder of the client you sign in with: `~/Library/Application Support/Cursor` for the
+  Cursor app or `~/.cursor` for `cursor-agent`. One is enough; see [folder grants](/start/connect/#folder-grants).
+
 ## Available data
 
 Usage shows billing-cycle plan and on-demand usage, plus team pools and membership details when reported. History
