@@ -1,6 +1,6 @@
 cask "token-menu-bar" do
-  version "0.1.3"
-  sha256 "5f7ca513bfd4b8e331d148504311fd1519108bba707c5852b89171ccfbc8bee0"
+  version "0.1.4"
+  sha256 "689a5768bd20e3cdec2c37a7b0621f930fe30bd2be36bc8f4f2baf0d20a7ff9c"
 
   url "https://github.com/tox-dev/token-menu-bar-macos/releases/download/v#{version}/TokenMenuBar-Homebrew.dmg"
   name "Token Menu Bar"
