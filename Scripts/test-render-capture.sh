@@ -33,7 +33,7 @@ BASH
 [[ "$status" == 7 ]]
 for outcome in empty interrupted zero failed restarted; do
   if "${capture[@]}" Scripts/with-render-checks.sh 1 --capture-only \
-    bash -s "$outcome" > "$probe/$outcome-suite" 2>&1 << 'BASH'; then
+    bash -s "$outcome" > "$probe/$outcome-suite" 2>&1 << 'BASH'
 touch "$TOKEN_MENU_BAR_RENDER_ARTIFACTS/sample.ocr.json"
 case "$1" in
   empty) ;;
@@ -43,6 +43,7 @@ case "$1" in
   restarted) echo 'Test run with 1 test passed after 0.001 seconds.'; echo 'Test run started.' ;;
 esac
 BASH
+  then
     echo "Accepted a $outcome suite without successful completion." >&2
     exit 1
   fi
